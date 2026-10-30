@@ -2,6 +2,7 @@
 # Dependencies
 # ------------------------
 node_modules/
+.pnpm-store/
 
 
 # ------------------------
@@ -37,6 +38,7 @@ coverage/
 # Prisma generated output
 # ------------------------
 generated/prisma/
+apps/api/generated/prisma/
 
 
 # ------------------------
@@ -78,3 +80,13 @@ Thumbs.db
 
 # Optional:
 # .vscode/
+
+# ------------------------
+# Docker
+# ------------------------
+
+# Keep Dockerfile, Dockerfile.dev, docker-compose.yml,
+# and .dockerignore tracked in Git.
+
+# Optional: ignore local-only Compose overrides
+# docker-compose.override.yml

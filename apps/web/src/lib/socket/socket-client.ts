@@ -15,10 +15,7 @@ let socket: Socket<
 
 export const createSocket = () => {
     if (!socket) {
-        socket = io<
-            ServerToClientEvents,
-            ClientToServerEvents
-        >(SOCKET_URL!, {
+        socket = io(SOCKET_URL!, {
             autoConnect: true,
             withCredentials: true,
         });

@@ -4,9 +4,7 @@ import { registerUserSchema } from "../../authentication/user.schema";
 export const createUserSchema =
     registerUserSchema.extend({
         roleIds: z
-            .array(
-                z.coerce.number().int().positive()
-            )
+            .array(z.coerce.number<number>().int().positive())
             .min(1, "At least one role is required"),
     });
 
@@ -19,7 +17,7 @@ export const updateUserSchema = createUserSchema
     .partial()
     .extend({
         roleIds: z
-            .array(z.coerce.number().int().positive())
+            .array(z.coerce.number<number>().int().positive())
             .optional(),
 
         password: z

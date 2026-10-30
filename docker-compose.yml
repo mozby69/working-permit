@@ -1,0 +1,68 @@
+
+name: workspace-ts
+
+services:
+  api:
+    image: workspace-ts-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    command: >
+      sh -c "pnpm --filter api exec prisma generate &&
+             pnpm --filter api dev"
+    env_file:
+      - ./apps/api/.env.docker
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - api_node_modules:/workspace/apps/api/node_modules
+      - web_node_modules:/workspace/apps/web/node_modules
+      - shared_node_modules:/workspace/packages/shared/node_modules
+    networks:
+      - app_net
+      - postgres17_net
+    restart: unless-stopped
+
+  web:
+    image: workspace-ts-web:local
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    command: pnpm --filter web dev
+    env_file:
+      - ./apps/web/.env.docker
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - api_node_modules:/workspace/apps/api/node_modules
+      - web_node_modules:/workspace/apps/web/node_modules
+      - shared_node_modules:/workspace/packages/shared/node_modules
+    networks:
+      - app_net
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  root_node_modules:
+  api_node_modules:
+  web_node_modules:
+  shared_node_modules:
+
+networks:
+  app_net:
+    driver: bridge
+  postgres17_net:
+    external: true

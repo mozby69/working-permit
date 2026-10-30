@@ -1,10 +1,11 @@
-// components/users/UserForm.tsx
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { Label } from "@/components/ui/Label";
+import { Input } from "@/components/ui/Input";
+import { FieldError } from "@/components/ui/FieldError";
 
 import {
     createUserSchema,
@@ -14,6 +15,8 @@ import {
 } from "@repo/shared";
 
 import { UserFormProps } from "../../types/access-control.types";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Button } from "@/components/ui/Button";
 
 export function UserForm({
     mode,
@@ -28,6 +31,7 @@ export function UserForm({
     const {
         register,
         handleSubmit,
+        control,
         reset,
         formState: { errors },
     } = useForm<CreateUserSchema | UpdateUserSchema>({
@@ -51,7 +55,7 @@ export function UserForm({
                 username: user.username,
                 email: user.email ?? "",
                 password: "",
-                roleIds: user.roles.map(Number),
+                roleIds: user.roles.map((role) => role.id),
                 isActive: user.isActive,
             });
 
@@ -83,57 +87,53 @@ export function UserForm({
             className="space-y-4"
         >
             <div>
-                <label className="block text-sm font-medium text-black">
+                <Label htmlFor="name" className="text-black">
                     Name
-                </label>
+                </Label>
 
-                <input
+                <Input
+                    type="text"
                     {...register("name")}
                     className="w-full rounded-md border border-black px-3 py-2 text-black"
                 />
 
-                {errors.name?.message && (
-                    <p className="text-sm text-red-600">
-                        {String(errors.name.message)}
-                    </p>
-                )}
+                <FieldError message={errors.name?.message} />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-black">
+                <Label htmlFor="name" className="text-black">
                     Username
-                </label>
+                </Label>
 
-                <input
+                <Input
+                    type="text"
                     {...register("username")}
                     className="w-full rounded-md border border-black px-3 py-2 text-black"
                 />
 
-                {errors.username?.message && (
-                    <p className="text-sm text-red-600">
-                        {String(errors.username.message)}
-                    </p>
-                )}
+                <FieldError message={errors.username?.message} />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-black">
+                <Label htmlFor="name" className="text-black">
                     Email
-                </label>
+                </Label>
 
-                <input
+                <Input
                     type="email"
                     {...register("email")}
                     className="w-full rounded-md border border-black px-3 py-2 text-black"
                 />
+
+                <FieldError message={errors.email?.message} />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-black">
+                <Label htmlFor="password" className="text-black">
                     Password
-                </label>
+                </Label>
 
-                <input
+                <Input
                     type="password"
                     {...register("password")}
                     placeholder={
@@ -141,47 +141,68 @@ export function UserForm({
                     }
                     className="w-full rounded-md border border-black px-3 py-2 text-black"
                 />
+
+                <FieldError message={errors.password?.message} />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-black">
+                <Label className="text-black">
                     Roles
-                </label>
+                </Label>
 
-                {roles.map((role) => (
-                    <label
-                        key={role.id}
-                        className="flex items-center gap-2 text-black"
-                    >
-                        <input
-                            type="checkbox"
-                            value={role.id}
-                            {...register("roleIds")}
-                        />
+                <Controller
+                    name="roleIds"
+                    control={control}
+                    render={({ field }) => (
+                        <div className="space-y-2">
+                            {roles.map((role) => {
+                                const checked = field.value?.includes(role.id) ?? false;
 
-                        {role.name}
-                    </label>
-                ))}
+                                return (
+                                    <label
+                                        key={role.id}
+                                        className="flex items-center gap-2 text-black"
+                                    >
+                                        <Checkbox
+                                            checked={checked}
+                                            onChange={(event) => {
+                                                const current = field.value ?? [];
+
+                                                if (event.target.checked) {
+                                                    field.onChange([
+                                                        ...current,
+                                                        role.id,
+                                                    ]);
+                                                } else {
+                                                    field.onChange(
+                                                        current.filter(
+                                                            (id) => id !== role.id
+                                                        )
+                                                    );
+                                                }
+                                            }}
+                                        />
+
+                                        {role.name}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    )}
+                />
+
+                <FieldError message={errors.roleIds?.message} />
             </div>
 
             {isEdit && (
                 <label className="flex items-center gap-2 text-black">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         {...register("isActive")}
                     />
 
                     Active
                 </label>
             )}
-
-            <button
-                type="submit"
-                disabled={isSubmitting}
-                className="hidden"
-            >
-                Submit
-            </button>
         </form>
     );
 }

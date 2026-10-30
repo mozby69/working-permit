@@ -1,0 +1,48 @@
+
+# ------------------------
+# Git
+# ------------------------
+.git
+
+# ------------------------
+# Dependencies
+# ------------------------
+node_modules
+**/node_modules
+
+# ------------------------
+# Build / Output
+# ------------------------
+.turbo
+**/.next
+**/out
+**/dist
+**/build
+**/coverage
+**/*.tsbuildinfo
+
+# ------------------------
+# Logs
+# ------------------------
+**/logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ------------------------
+# Environment files
+# ------------------------
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# ------------------------
+# IDE / OS
+# ------------------------
+.idea
+.vscode
+.DS_Store
+Thumbs.db

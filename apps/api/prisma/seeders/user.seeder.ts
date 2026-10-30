@@ -24,14 +24,12 @@ export async function seedUsers() {
         },
         update: {
             name: "System",
-            id: adminRole.id,
             username: "Admin",
         },
         create: {
             email: "admin@fms.local",
             password,
             name: "System",
-            id: adminRole.id,
             username: "Admin",
         },
     });

@@ -9,7 +9,7 @@ import type {
     User,
 } from "@repo/shared";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import PermissionGuard from "@/components/guards/PermissionGuard";
 
 import { UserTable } from "../components/users/UserTable";

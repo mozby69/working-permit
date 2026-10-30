@@ -1,7 +1,7 @@
 import type { User } from "@repo/shared";
 import { Table, type TableColumn } from "@/components/common/Table";
 import PermissionGuard from "@/components/guards/PermissionGuard";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { UserTableProps } from "../../types/access-control.types";
 import { Printer, Power } from "lucide-react";
 
