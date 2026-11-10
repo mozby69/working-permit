@@ -29,19 +29,19 @@ export async function findAllUsers(
             {
                 name: {
                     contains: search,
-                    mode: "insensitive",
+                    // mode: "insensitive",
                 },
             },
             {
                 username: {
                     contains: search,
-                    mode: "insensitive",
+                    // mode: "insensitive",
                 },
             },
             {
                 email: {
                     contains: search,
-                    mode: "insensitive",
+                    // mode: "insensitive",
                 },
             },
         ];
@@ -378,25 +378,23 @@ export async function updateRole(
 }
 
 export async function updateRolePermissions(
-    roleId: number,
-    permissionIds: number[]
+  roleId: number,
+  permissionIds: number[]
 ) {
-    return prisma.$transaction(async (tx) => {
-        await tx.rolePermission.deleteMany({
-            where: {
-                roleId,
-            },
-        });
-
-        if (permissionIds.length > 0) {
-            await tx.rolePermission.createMany({
-                data: permissionIds.map(
-                    (permissionId) => ({
-                        roleId,
-                        permissionId,
-                    })
-                ),
-            });
-        }
+  return prisma.$transaction(async (tx) => {
+    await tx.rolePermission.deleteMany({
+      where: { roleId },
     });
+
+    if (permissionIds.length === 0) {
+      return;
+    }
+
+    await tx.rolePermission.createMany({
+      data: permissionIds.map((permissionId) => ({
+        roleId,
+        permissionId,
+      })),
+    });
+  });
 }

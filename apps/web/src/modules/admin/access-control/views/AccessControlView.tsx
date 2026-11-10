@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDisclosure } from "@/hooks/useDisclosure";
 import { AccessControlContent } from "./AccessControlContent";
 import { Skeleton } from "boneyard-js/react";
@@ -24,6 +24,7 @@ import {
 import { CreateRoleSchema, CreateUserSchema, Role, UpdateRoleSchema, UpdateUserSchema, User } from "@repo/shared";
 import { useDebounce } from "@/hooks/useDebounce";
 import { accessControlFixture } from "../fixtures/accessControlFixtures";
+// import { Button } from "@/components/ui/Button";
 import { Button } from "@/components/ui/Button";
 import { getApiErrorMessage } from "@/lib/api/get-api-error-message";
 import { useAccessControlSocket } from "../hooks/useAccessControlSocket";
@@ -271,6 +272,7 @@ export default function AccessControlView() {
 
     return (
         <>
+        <div className="min-h-screen bg-slate-50/70 px-4 py-6 sm:px-6 lg:px-8">
             <Skeleton
                 name="admin-access-control"
                 // loading={showSkeleton}
@@ -414,6 +416,8 @@ export default function AccessControlView() {
                     }
                 />
             </Modal>
+
+            </div>
         </>
     );
 }

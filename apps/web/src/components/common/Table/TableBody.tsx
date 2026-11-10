@@ -104,7 +104,7 @@ export function TableBody<T>({
                                                         row
                                                     )
                                                 }
-                                                className="text-sm text-amber-600 hover:underline"
+                                                className="text-sm bg-blue-700 text-white px-4 py-1.5 rounded-md hover:bg-blue-600"
                                             >
                                                 Edit
                                             </button>
@@ -118,7 +118,7 @@ export function TableBody<T>({
                                                         row
                                                     )
                                                 }
-                                                className="text-sm text-red-600 hover:underline"
+                                                className="text-sm bg-red-700 text-white px-4 py-1.5 rounded-md hover:bg-red-600"
                                             >
                                                 Delete
                                             </button>

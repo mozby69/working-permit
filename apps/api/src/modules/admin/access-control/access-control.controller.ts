@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { sendSuccess } from "@/lib/http/response";
 import * as accessControlService from "./access-control.service";
 import { emitUserCreated } from "@/socket/emitters/user.emitter";
+import { updateRolePermissionsSchema } from "@repo/shared";
 
 export async function getUsersController(
     req: Request,
@@ -182,23 +183,45 @@ export async function getPermissionsController(
 }
 
 export async function updateRolePermissionsController(
-    req: Request,
-    res: Response,
-    next: NextFunction
+  req: Request,
+  res: Response
 ) {
+  try {
+    const roleId = Number(req.params.roleId);
 
-    try {
-        const result =
-            await accessControlService.updateRolePermissions(
-                Number(req.params.roleId),
-                req.body.permissionIds
-            );
-
-        sendSuccess(res, result, {
-            statusCode: 200,
-            message: "Role updated successfully",
-        });
-    } catch (error) {
-        next(error);
+    if (!Number.isSafeInteger(roleId) || roleId <= 0) {
+      return res.status(400).json({
+        message: "Invalid role ID",
+      });
     }
+
+    const parsed =
+      updateRolePermissionsSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid permissions payload",
+        errors: parsed.error.flatten(),
+      });
+    }
+
+    const { permissionIds } = parsed.data;
+
+    await accessControlService.updateRolePermissions(
+  roleId,
+  { permissionIds }
+);
+
+    return res.status(200).json({
+      success: true,
+      message: "Role permissions updated successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update role permissions",
+    });
+  }
 }

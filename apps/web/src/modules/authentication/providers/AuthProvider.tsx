@@ -65,6 +65,11 @@ export function AuthProvider({
                 return;
             }
 
+            if (roles.includes("COORDINATOR")) {
+                router.replace("/workingPermit");
+                return;
+            }
+
             router.replace("/");
         },
         [queryClient, router]

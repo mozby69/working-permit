@@ -98,7 +98,7 @@ export function TableHeader({
                 )}
 
                 {actions && (
-                    <div className="ml-auto flex items-center gap-2 bg-red-900">
+                    <div className="ml-auto flex items-center gap-2">
                         {actions}
                     </div>
                 )}

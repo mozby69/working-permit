@@ -10,6 +10,19 @@ export async function seedPermissions() {
             code: "ADMIN_MANAGE",
             name: "Manage Admin",
         },
+        {
+            code: "BRANCH_MANAGE",
+            name: "Manage Branch",
+        },
+        {
+            code: "VIEW_WORKING_PERMIT",
+            name: "view list",
+        },
+
+        {
+            code: "ADD_WORKING_PERMIT",
+            name: "add working",
+        },
     ];
 
     for (const permission of permissions) {

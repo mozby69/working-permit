@@ -80,12 +80,13 @@ export function UserTable({
                 <PermissionGuard
                     permissions={["ADMIN_MANAGE"]}
                 >
-                    <Button
+                    <button
                         type="button"
                         onClick={onCreate}
+                        className="bg-green-800 rounded px-4 py-2 hover:bg-green-700 text-white"
                     >
                         Create User
-                    </Button>
+                    </button>
                 </PermissionGuard>
             }
 

@@ -6,11 +6,24 @@
 generator client {
   provider     = "prisma-client"
   output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  moduleFormat = "esm"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
+}
+
+
+enum WorkingPermitStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+enum RequestLevel {
+  LEVEL_1
+  LEVEL_2
 }
 
 model User {
@@ -80,4 +93,84 @@ model RolePermission {
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
+}
+
+
+model WorkingPermit {
+  id               String     @id @default(uuid()) @db.VarChar(36)
+  referenceNumber  String     @unique @map("reference_number") @db.VarChar(30)
+  requestTo        String     @map("request_to") @db.VarChar(100)
+
+  fromId Int @map("from_id")
+  branchDepartmentId Int @map("branch_dep_id")
+
+  requestLevel RequestLevel   @map("request_level") 
+  date             DateTime   @db.Date
+  requestFor       String     @map("request_for") @db.Text
+  //branchDepartment String     @map("branch_department") @db.VarChar(150)
+  requestedBy      String     @map("requested_by") @db.VarChar(100)
+  checkedBy        String?    @map("checked_by") @db.VarChar(100)
+  attachment       String?    @db.VarChar(500)
+
+  status WorkingPermitStatus  @default(PENDING)
+
+  fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
+  branchDepartment DepartmentBranches @relation("WorkingPermitBranch",fields: [branchDepartmentId],references: [id])
+
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  @@index([requestTo])
+  @@index([date])
+  @@index([fromId])
+
+  @@map("working_permit")
+}
+
+model ReferenceCounter {
+  name      String @id @db.VarChar(50)
+  lastValue Int    @map("last_value")
+
+  @@map("reference_counters")
+}
+
+
+model DepartmentBranches{
+  id          Int     @id @default(autoincrement()) @map("id")
+  entity_name             String     @db.VarChar(100)
+  workingPermitsFrom WorkingPermit[] @relation("WorkingPermitFrom")
+  workingPermitsBranch WorkingPermit[] @relation("WorkingPermitBranch")
+
+  checkerId Int? @map("checker_id")
+  CheckerList CheckerList? @relation("DepartmentBranch",fields: [checkerId],references: [id])
+
+  isBranch Boolean @default(true)
+  
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime?   @updatedAt @map("updated_at")
+  @@map("department_branches")
+}
+
+
+
+model CheckerList {
+  id          Int     @id @default(autoincrement()) @map("id")
+  name String         @db.VarChar(100)
+
+  departmentBranch DepartmentBranches[] @relation("DepartmentBranch")
+
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  @@map("checker_list")
+}
+
+model WorkerList{
+    id          Int               @id @default(autoincrement()) @map("id")
+    worker_name String            @db.VarChar(100)
+    approved_by String            @db.VarChar(100)
+    final_approved_by String      @db.VarChar(100)
+
+    createdAt    DateTime         @default(now()) @map("created_at")
+
+    @@map("worker_list")
 }

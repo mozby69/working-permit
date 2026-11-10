@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Label } from "@/components/ui/Label";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { FieldError } from "@/components/ui/FieldError";
 
 import {

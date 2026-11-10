@@ -17,3 +17,14 @@ export type ApiErrorResponse = {
     message: string;
     code?: string;
 };
+
+
+
+
+
+
+export interface QueryParamsDatatable {
+  page: number;
+  limit: number;
+  search?: string;
+}
