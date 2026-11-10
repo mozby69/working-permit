@@ -41,6 +41,19 @@ export async function addRequestRepo(data: AddRequestInput) {
       );
     }
 
+      const worker = await tx.workerList.findUnique({
+      where: {
+        id: data.requestToId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!worker) {
+      throw new Error("Selected request recipient does not exist.");
+    }
+
     // 3. Generate reference number
     const counter = await tx.referenceCounter.upsert({
       where: {
@@ -62,7 +75,14 @@ export async function addRequestRepo(data: AddRequestInput) {
     return tx.workingPermit.create({
       data: {
         referenceNumber,
-        requestTo: data.requestTo,
+  
+
+
+        WorkerList: {
+          connect: {
+            id: worker.id,
+          },
+        },
 
         fromDepartment: {
           connect: {
@@ -133,26 +153,28 @@ export async function getDepartmentBranchesRepo() {
 
 
 export async function displayWorkingPermit(params: QueryParams) {
-  const {
-    page = 1,
-    limit = 10,
-    search,
-  } = params;
+  const { page = 1, limit = 10, search } = params;
 
   const where: Prisma.WorkingPermitWhereInput = {};
 
   if (search?.trim()) {
+    const term = search.trim();
+
     where.OR = [
       {
         referenceNumber: {
-          contains: search.trim(),
+          contains: term,
         },
       },
-      // {
-      //   branchDepartment: {
-      //     contains: search.trim(),
-      //   },
-      // },
+      {
+        WorkerList: {
+          is: {
+            worker_name: {
+              contains: term,
+            },
+          },
+        },
+      },
     ];
   }
 
@@ -162,26 +184,35 @@ export async function displayWorkingPermit(params: QueryParams) {
       select: {
         id: true,
         referenceNumber: true,
-        requestTo: true,
+        requestToId: true,
         requestLevel: true,
-        date:true,
-        requestFor:true,
-        requestedBy:true,
-        checkedBy:true,
-        attachment:true,
-        status:true,
-  
-        fromDepartment: {
+        date: true,
+        requestFor: true,
+        requestedBy: true,
+        checkedBy: true,
+        attachment: true,
+        status: true,
+
+        WorkerList: {
           select: {
-          entity_name:true,
+            id: true,
+            worker_name: true,
+            approved_by: true,
+            final_approved_by: true,
           },
         },
-        branchDepartment:{
-          select:{
-            entity_name:true,
-          }
+
+        fromDepartment: {
+          select: {
+            entity_name: true,
+          },
         },
-  
+
+        branchDepartment: {
+          select: {
+            entity_name: true,
+          },
+        },
       },
 
       skip: (page - 1) * limit,
@@ -192,9 +223,7 @@ export async function displayWorkingPermit(params: QueryParams) {
       },
     }),
 
-    prisma.workingPermit.count({
-      where,
-    }),
+    prisma.workingPermit.count({ where }),
   ]);
 
   return {
@@ -207,7 +236,6 @@ export async function displayWorkingPermit(params: QueryParams) {
     },
   };
 }
-
 
 
 

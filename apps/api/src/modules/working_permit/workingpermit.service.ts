@@ -9,7 +9,7 @@ export async function createRequestService(params: AddRequestInput,id: number) {
   return workingRepo.addRequestRepo({
     //id,
     //referenceNumber: params.referenceNumber,
-    requestTo: params.requestTo,
+
     fromId: params.fromId,
     requestLevel: params.requestLevel,
     date: params.date,
@@ -18,6 +18,7 @@ export async function createRequestService(params: AddRequestInput,id: number) {
     requestedBy: params.requestedBy,
     checkedBy: params.checkedBy,
     attachment: params.attachment,
+    requestToId: params.requestToId,
     status: "PENDING",
   });
 }
@@ -33,13 +34,12 @@ export async function getDepartmentBranchesService() {
 }
 
 
-export async function getSubscriptionService(params: QueryParams) {
+export async function getWorkingPermitService(params: QueryParams) {
   const result = await workingRepo.displayWorkingPermit(params);
 
   const normalized = result.data.map((permit) => ({
     id: permit.id,
     referenceNumber: permit.referenceNumber,
-    requestTo: permit.requestTo,
     requestLevel: permit.requestLevel,
     date: permit.date.toISOString(),
     requestFor: permit.requestFor,
@@ -54,10 +54,19 @@ export async function getSubscriptionService(params: QueryParams) {
     branchDepartment: {
       entityName: permit.branchDepartment.entity_name,
     },
+    WorkerList:{
+      worker_name: permit.WorkerList.worker_name,
+      approved_by: permit.WorkerList.approved_by,
+      final_approved_by: permit.WorkerList.final_approved_by
+    }
   }));
 
   return {
     data: normalized,
     pagination: result.pagination,
   };
+}
+
+export async function getWorkerListService() {
+  return workingRepo.getWorkerRepo();
 }

@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, QueryParamsDatatable, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParamsDatatable, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -16,12 +16,7 @@ export async function addWorkingPermitService(payload: AddRequestInput) {
 
 
 
-type NextReferenceResponse = {
-  success: boolean;
-  data: {
-    referenceNumber: string;
-  };
-};
+
 
 export async function getNextReferenceService(): Promise<string> {
   const response = await api.get<NextReferenceResponse>(
@@ -35,33 +30,7 @@ export async function getNextReferenceService(): Promise<string> {
 
 
 
-export type DepartmentBranch = {
-  id: number;
-  entityName: string;
-  isBranch: boolean;
-  checkerId: number | null;
-  checker: {
-    id: number;
-    name: string;
-  } | null;
-};
 
-type DepartmentBranchApi = {
-  id: number;
-  entity_name: string;
-  isBranch: boolean;
-  checkerId: number | null;
-
-  CheckerList: {
-    id: number;
-    name: string;
-  } | null;
-};
-
-type DepartmentBranchesResponse = {
-  success: boolean;
-  data: DepartmentBranchApi[];
-};
 
 export async function getDepartmentBranchesService(): Promise<
   DepartmentBranch[]

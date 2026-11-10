@@ -16,7 +16,7 @@ export const workingPermitStatus = z.enum([
 
 export const addRequestSchema = z.object({
  // referenceNumber: z.string().trim().min(1, "Reference number is required"),
-  requestTo: z.string().trim().min(1, "Request recipient is required"),
+  requestToId: z.number().int().positive("Please select a request recipient"),
   fromId: z.number().int().positive("Please select a department or branch"),
   requestLevel: levelEnum,
   date: z.date().optional(),

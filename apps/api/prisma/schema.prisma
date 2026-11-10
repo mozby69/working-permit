@@ -99,10 +99,11 @@ model RolePermission {
 model WorkingPermit {
   id               String     @id @default(uuid()) @db.VarChar(36)
   referenceNumber  String     @unique @map("reference_number") @db.VarChar(30)
-  requestTo        String     @map("request_to") @db.VarChar(100)
+ // requestTo        String     @map("request_to") @db.VarChar(100)
 
   fromId Int @map("from_id")
   branchDepartmentId Int @map("branch_dep_id")
+  requestToId Int @map("requestTo")
 
   requestLevel RequestLevel   @map("request_level") 
   date             DateTime   @db.Date
@@ -116,11 +117,12 @@ model WorkingPermit {
 
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
   branchDepartment DepartmentBranches @relation("WorkingPermitBranch",fields: [branchDepartmentId],references: [id])
+  WorkerList WorkerList @relation(fields: [requestToId],references: [id])
 
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  @@index([requestTo])
+  @@index([requestToId])
   @@index([date])
   @@index([fromId])
 
@@ -169,6 +171,8 @@ model WorkerList{
     worker_name String            @db.VarChar(100)
     approved_by String            @db.VarChar(100)
     final_approved_by String      @db.VarChar(100)
+
+    WorkingPermitWorker           WorkingPermit[] @relation()
 
     createdAt    DateTime         @default(now()) @map("created_at")
 

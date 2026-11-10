@@ -103,7 +103,7 @@ export async function getDepartmentBranchesController(
 
 export async function getWorkingPermitController(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const result = await workingPermitService.getSubscriptionService({
+        const result = await workingPermitService.getWorkingPermitService({
             page: Number(req.query.page) || 1,
             limit: Number(req.query.limit) || 10,
 
@@ -120,4 +120,14 @@ export async function getWorkingPermitController(req: Request, res: Response, ne
     } catch (error) {
         next(error);
     }
+}
+
+export async function getWorkerListController(req: Request,res: Response,next: NextFunction): Promise<void> {
+  try {
+    const workers = await workingPermitService.getWorkerListService();
+
+    sendSuccess(res, workers);
+  } catch (error) {
+    next(error);
+  }
 }
