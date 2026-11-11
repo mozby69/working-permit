@@ -114,6 +114,9 @@ model WorkingPermit {
   attachment       String?    @db.VarChar(500)
 
   status WorkingPermitStatus  @default(PENDING)
+  CheckedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
+  approvedFirstApprover  WorkingPermitStatus@default(PENDING) @map("approver_first")
+  approvedFinalApprover WorkingPermitStatus  @default(PENDING) @map("approver_final")
 
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
   branchDepartment DepartmentBranches @relation("WorkingPermitBranch",fields: [branchDepartmentId],references: [id])

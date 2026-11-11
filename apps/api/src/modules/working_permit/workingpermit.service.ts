@@ -40,6 +40,8 @@ export async function getWorkingPermitService(params: QueryParams) {
   const normalized = result.data.map((permit) => ({
     id: permit.id,
     referenceNumber: permit.referenceNumber,
+    requestToId: permit.requestToId,
+    requestTo: permit.WorkerList.worker_name,
     requestLevel: permit.requestLevel,
     date: permit.date.toISOString(),
     requestFor: permit.requestFor,
@@ -47,18 +49,24 @@ export async function getWorkingPermitService(params: QueryParams) {
     checkedBy: permit.checkedBy,
     attachment: permit.attachment,
     status: permit.status,
+    CheckedStatus: permit.CheckedStatus,
+    approvedFinalApprover: permit.approvedFinalApprover,
+    approvedFirstApprover: permit.approvedFirstApprover,
 
     fromDepartment: {
       entityName: permit.fromDepartment.entity_name,
     },
+
     branchDepartment: {
       entityName: permit.branchDepartment.entity_name,
     },
-    WorkerList:{
-      worker_name: permit.WorkerList.worker_name,
-      approved_by: permit.WorkerList.approved_by,
-      final_approved_by: permit.WorkerList.final_approved_by
-    }
+
+    requestToWorker: {
+      id: permit.WorkerList.id,
+      workerName: permit.WorkerList.worker_name,
+      approvedBy: permit.WorkerList.approved_by,
+      finalApprovedBy: permit.WorkerList.final_approved_by,
+    },
   }));
 
   return {

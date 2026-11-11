@@ -80,3 +80,36 @@ export async function getWorkingPermitService(
   return wpListResponseSchema.parse(response.data);
 }
 
+
+
+export type Worker = {
+  id: number;
+  workerName: string;
+  approvedBy: string;
+  finalApprovedBy: string;
+};
+
+type WorkerApi = {
+  id: number;
+  worker_name: string;
+  approved_by: string;
+  final_approved_by: string;
+};
+
+type WorkerListResponse = {
+  success: boolean;
+  data: WorkerApi[];
+};
+
+export async function getWorkerListService(): Promise<Worker[]> {
+  const response = await api.get<WorkerListResponse>(
+    "/working-permit/worker-list"
+  );
+
+  return response.data.data.map((worker) => ({
+    id: worker.id,
+    workerName: worker.worker_name,
+    approvedBy: worker.approved_by,
+    finalApprovedBy: worker.final_approved_by,
+  }));
+}

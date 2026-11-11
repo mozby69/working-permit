@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Controller, FieldErrors, useForm } from "react-hook-form";
+import { Controller, FieldErrors, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays,
@@ -15,7 +15,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { AddRequestInput, addRequestSchema, AddRequestSchema } from "@repo/shared";
-import { useCreateWorkingPermit,useNextWorkingPermitReference} from "@/modules/workingPermit/hooks/useWorkingPermit";
+import { useCreateWorkingPermit,useNextWorkingPermitReference, useWorkerList} from "@/modules/workingPermit/hooks/useWorkingPermit";
 import { useDepartmentBranches } from "@/modules/workingPermit/hooks/useWorkingPermit"; 
 import { DepartmentBranchSelect } from "../ui/departmentBranches";
 import toast from "react-hot-toast";
@@ -56,6 +56,12 @@ const errorClass =
 
 export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
 
+  const {
+  data: workers = [],
+  isLoading: isWorkersLoading,
+  isError: isWorkersError,
+} = useWorkerList();
+
 
   const {
       data: nextReference,
@@ -84,13 +90,14 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
     handleSubmit,
     reset,
     setValue,
+    
     formState: { errors, isSubmitting },
     } = useForm<AddRequestInput, unknown, AddRequestSchema>({
     resolver: zodResolver(addRequestSchema),
 
   defaultValues: {
     //referenceNumber: referenceNo,
-    requestTo: "",
+    requestToId: 0,
     fromId: 0,
     requestLevel: "LEVEL_1",
     requestFor: "",
@@ -157,6 +164,30 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
     );
   };
 
+
+
+const selectedWorkerId = useWatch({
+  control,
+  name: "requestToId",
+});
+
+const selectedWorker = workers.find(
+  (worker) => worker.id === selectedWorkerId
+);
+
+const approvers = [
+  {
+    label: "Approver 1",
+    name: selectedWorker?.approvedBy ?? "Not assigned",
+  },
+  {
+    label: "Final Approver",
+    name: selectedWorker?.finalApprovedBy ?? "Not assigned",
+  },
+];
+
+
+
   
 return (
   <form
@@ -220,24 +251,35 @@ return (
             Request To <span className="text-red-500">*</span>
           </label>
 
-          <select
-            id="requestTo"
-            {...register("requestTo")}
-            aria-invalid={Boolean(errors.requestTo)}
-            className={`${inputClass} ${
-              errors.requestTo ? "border-red-500" : ""
-            }`}
-          >
-            <option value="">Select department</option>
-            <option value="MIS DEPARTMENT">MIS DEPARTMENT</option>
-            <option value="PSPMI DEPARTMENT">PSPMI DEPARTMENT</option>
-          </select>
+        <Controller
+          name="requestToId"
+          control={control}
+          render={({ field }) => (
+            <select
+              value={field.value || ""}
+              onBlur={field.onBlur}
+              onChange={(event) => {
+                field.onChange(Number(event.target.value));
+              }}
+              disabled={isWorkersLoading || isWorkersError}
+              className={inputClass}
+            >
+              <option value="">Select recipient</option>
 
-          {errors.requestTo && (
-            <p role="alert" className={errorClass}>
-              {errors.requestTo.message}
-            </p>
+              {workers.map((worker) => (
+                <option key={worker.id} value={worker.id}>
+                  {worker.workerName}
+                </option>
+              ))}
+            </select>
           )}
+        />
+
+        {errors.requestToId && (
+          <p className="mt-1 text-xs text-red-500">
+            {errors.requestToId.message}
+          </p>
+        )}
         </div>
 
         {/* FROM */}
@@ -461,35 +503,33 @@ return (
         </div>
       </div>
 
-      {/* DESIGNATED APPROVERS */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-slate-600" />
+    {/* DESIGNATED APPROVERS */}
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-slate-600" />
 
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-            Designated Approvers
-          </h4>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {[
-            "Christine G. Nepomuceno",
-            "Edgardo G. Guerrero Jr.",
-          ].map((name, index) => (
-            <div
-              key={name}
-              className="rounded-lg border border-slate-200 bg-white p-4">
-              <p className="text-xs text-slate-500">
-                Approver {index + 1}
-              </p>
-
-              <p className="mt-1.5 text-sm font-medium text-slate-800">
-                {name}
-              </p>
-            </div>
-          ))}
-        </div>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Designated Approvers
+        </h4>
       </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {approvers.map((approver) => (
+          <div
+            key={approver.label}
+            className="rounded-lg border border-slate-200 bg-white p-4"
+          >
+            <p className="text-xs text-slate-500">
+              {approver.label}
+            </p>
+
+            <p className="mt-1.5 text-sm font-medium text-slate-800">
+              {approver.name}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
     </section>
 
     {/* SUPPORTING DOCUMENTS */}

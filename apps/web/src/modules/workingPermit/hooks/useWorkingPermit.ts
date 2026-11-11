@@ -56,3 +56,10 @@ export function useGetWorkingPermit(params: serviceWorkingPermit.QueryParams) {
 }
 
 
+export function useWorkerList() {
+  return useQuery({
+    queryKey: ["worker-list"],
+    queryFn: serviceWorkingPermit.getWorkerListService,
+    staleTime: 5 * 60 * 1000,
+  });
+}

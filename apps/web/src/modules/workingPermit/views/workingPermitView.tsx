@@ -9,8 +9,7 @@ import { useGetWorkingPermit } from "../hooks/useWorkingPermit";
 import { TableColumn } from "@/components/common/Table";
 import { formatCurrency, WorkingPermitResponse } from "@repo/shared";
 import DataTable from "@/components/common/Datatable/Datatable";
-
-
+import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 
 
 export default function WorkingPermitView(){
@@ -32,6 +31,8 @@ export default function WorkingPermitView(){
       data: wpResponse,
       isPending,
       isFetching,
+      isError,
+      error,
     } = useGetWorkingPermit({
       page: userPage,
       limit: userLimit,
@@ -65,15 +66,15 @@ export default function WorkingPermitView(){
             </span>
           ),
         },
-        // {
-        //   key: "branchDepartment",
-        //   header: "Branch",
-        //   render: (row) => (
-        //     <span className="capitalize">
-        //       {row.branchDepartment}
-        //     </span>
-        //   ),
-        // },
+        {
+          key: "branchDepartment",
+          header: "Branch",
+          render: (row) => (
+            <span className="capitalize">
+              {row.branchDepartment.entityName}
+            </span>
+          ),
+        },
         {
           key: "requestLevel",
           header: "Level",
@@ -83,6 +84,36 @@ export default function WorkingPermitView(){
             </span>
           ),
         },
+          
+        {
+          key: "CheckedStatus",
+          header: "Checked Status",
+          render: (row) => (
+                <WorkingPermitStatusBadge status={row.CheckedStatus} />
+          ),
+        },
+            {
+          key: "approvedFirstApprover",
+          header: "Approver 1",
+          render: (row) => (
+             <WorkingPermitStatusBadge status={row.approvedFirstApprover} />
+          ),
+        },
+        {
+          key: "approvedFinalApprover",
+          header: "Approver 2",
+          render: (row) => (
+              <WorkingPermitStatusBadge status={row.approvedFinalApprover} />
+          ),
+        },
+      {
+          key: "status",
+          header: "Status",
+          render: (row) => (
+            <WorkingPermitStatusBadge status={row.status} />
+          ),
+        },
+     
      
       ];
 
@@ -146,6 +177,11 @@ export default function WorkingPermitView(){
     </div>
 
 
+    {isError && (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        Failed to load Working Permits: {error.message}
+      </div>
+    )}
 
        <DataTable<WorkingPermitResponse>
           title="Working Permit List"

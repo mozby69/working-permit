@@ -192,6 +192,9 @@ export async function displayWorkingPermit(params: QueryParams) {
         checkedBy: true,
         attachment: true,
         status: true,
+        CheckedStatus:true,
+        approvedFinalApprover:true,
+        approvedFirstApprover:true,
 
         WorkerList: {
           select: {

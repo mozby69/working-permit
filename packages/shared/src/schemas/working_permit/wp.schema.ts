@@ -11,7 +11,7 @@ export const workingPermitStatus = z.enum([
   "APPROVED",
   "REJECTED",
   "COMPLETED",
-  "CANCELLED",
+  "IN_PROGRESS"
 ]);
 
 export const addRequestSchema = z.object({
@@ -26,6 +26,9 @@ export const addRequestSchema = z.object({
   checkedBy: z.string().trim().min(1, "Checked by is required"),
   attachment: z.string().optional(),
   status: workingPermitStatus.default("PENDING"),
+  CheckedStatus: workingPermitStatus.default("PENDING"),
+  approvedFinalApprover: workingPermitStatus.default("PENDING"),
+  approvedFirstApprover: workingPermitStatus.default("PENDING"),
 });
 
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
@@ -33,32 +36,22 @@ export type AddRequestInput = z.input<typeof addRequestSchema>;
 
 
 
-
-// export const workingPermitResponseSchema = z.object({
-//   id: z.string(),
-//   referenceNumber: z.string(),
-//   requestTo: z.string(),
-//   requestLevel: levelEnum,
-//   date: z.string(),
-//   requestFor: z.string(),
-//   branchDepartment: z.string(),
-//   requestedBy: z.string(),
-//   checkedBy: z.string().nullable(),
-//   attachment: z.string().nullable(),
-//   status: workingPermitStatus,
-
-//   fromDepartment: z.object({
-//     entityName: z.string(),
-//   }),
-//     branchDepartmentId: z.object({
-//     entityName: z.string(),
-//   }),
-// });
+//***************************************** */
 
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
   referenceNumber: z.string(),
+  requestToId: z.number(),
   requestTo: z.string(),
+
+  // Related WorkerList record
+  requestToWorker: z.object({
+    id: z.number(),
+    workerName: z.string(),
+    approvedBy: z.string(),
+    finalApprovedBy: z.string(),
+  }),
+
   requestLevel: levelEnum,
   date: z.string(),
   requestFor: z.string(),
@@ -66,6 +59,9 @@ export const workingPermitResponseSchema = z.object({
   checkedBy: z.string().nullable(),
   attachment: z.string().nullable(),
   status: workingPermitStatus,
+  CheckedStatus: workingPermitStatus,
+  approvedFinalApprover: workingPermitStatus,
+  approvedFirstApprover: workingPermitStatus,
 
   fromDepartment: z.object({
     entityName: z.string(),
@@ -96,4 +92,3 @@ export type WorkingPermitResponse = z.infer<
 export type WPListResponse = z.infer<
   typeof wpListResponseSchema
 >;
-

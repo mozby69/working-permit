@@ -3,7 +3,8 @@ import {
     Users,
     Truck,
     ClipboardList,
-    Settings
+    Settings,
+    File
 } from "lucide-react";
 
 import { NavigationItem } from "@/types/navigation.types";
@@ -33,5 +34,11 @@ export const navigation: NavigationItem[] = [
         href: ROUTES.UNAUTHORIZED, // temporary
         icon: Settings,
         roles: ["SUPER_ADMIN"],
+    },
+      {
+        title: "Working Permit",
+        href: ROUTES.USER.WORKING_PERMIT,
+        icon: File,
+        roles: ["COORDINATOR","CHECKER"],
     },
 ];
