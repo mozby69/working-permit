@@ -20,6 +20,7 @@ enum WorkingPermitStatus {
   REJECTED
   COMPLETED
   CANCELLED
+  IN_PROGRESS
 }
 enum RequestLevel {
   LEVEL_1
@@ -36,6 +37,9 @@ model User {
   isActive Boolean @default(true) @map("is_active")
 
   roles UserRole[]
+  departmentBranches DepartmentBranches[] @relation("DepartmentChecker")
+  firstApproverAssignments WorkerList[] @relation("FirstApprover")
+  finalApproverAssignments WorkerList[] @relation("FinalApprover")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -49,6 +53,8 @@ model Role {
   description String? @db.Text
 
   users UserRole[]
+
+  
 
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
@@ -99,8 +105,6 @@ model RolePermission {
 model WorkingPermit {
   id               String     @id @default(uuid()) @db.VarChar(36)
   referenceNumber  String     @unique @map("reference_number") @db.VarChar(30)
- // requestTo        String     @map("request_to") @db.VarChar(100)
-
   fromId Int @map("from_id")
   branchDepartmentId Int @map("branch_dep_id")
   requestToId Int @map("requestTo")
@@ -108,19 +112,18 @@ model WorkingPermit {
   requestLevel RequestLevel   @map("request_level") 
   date             DateTime   @db.Date
   requestFor       String     @map("request_for") @db.Text
-  //branchDepartment String     @map("branch_department") @db.VarChar(150)
+
   requestedBy      String     @map("requested_by") @db.VarChar(100)
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
   attachment       String?    @db.VarChar(500)
 
-  status WorkingPermitStatus  @default(PENDING)
-  CheckedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
-  approvedFirstApprover  WorkingPermitStatus@default(PENDING) @map("approver_first")
-  approvedFinalApprover WorkingPermitStatus  @default(PENDING) @map("approver_final")
+
 
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
   branchDepartment DepartmentBranches @relation("WorkingPermitBranch",fields: [branchDepartmentId],references: [id])
   WorkerList WorkerList @relation(fields: [requestToId],references: [id])
+
+  ApprovalTable           ApprovalTable[] @relation()
 
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
@@ -140,14 +143,16 @@ model ReferenceCounter {
 }
 
 
-model DepartmentBranches{
+model DepartmentBranches {
   id          Int     @id @default(autoincrement()) @map("id")
   entity_name             String     @db.VarChar(100)
   workingPermitsFrom WorkingPermit[] @relation("WorkingPermitFrom")
   workingPermitsBranch WorkingPermit[] @relation("WorkingPermitBranch")
 
   checkerId Int? @map("checker_id")
-  CheckerList CheckerList? @relation("DepartmentBranch",fields: [checkerId],references: [id])
+
+  checker User? @relation("DepartmentChecker",fields: [checkerId],references: [id],onDelete: SetNull)
+
 
   isBranch Boolean @default(true)
   
@@ -158,22 +163,14 @@ model DepartmentBranches{
 
 
 
-model CheckerList {
-  id          Int     @id @default(autoincrement()) @map("id")
-  name String         @db.VarChar(100)
-
-  departmentBranch DepartmentBranches[] @relation("DepartmentBranch")
-
-  createdAt        DateTime   @default(now()) @map("created_at")
-
-  @@map("checker_list")
-}
 
 model WorkerList{
     id          Int               @id @default(autoincrement()) @map("id")
     worker_name String            @db.VarChar(100)
-    approved_by String            @db.VarChar(100)
-    final_approved_by String      @db.VarChar(100)
+    firstApproverUserId Int? @map("first_approver_user_id")
+    finalApproverUserId Int? @map("final_approver_user_id")
+    firstApproverUser User? @relation("FirstApprover", fields: [firstApproverUserId], references: [id])
+    finalApproverUser User? @relation("FinalApprover",fields: [finalApproverUserId],references: [id])
 
     WorkingPermitWorker           WorkingPermit[] @relation()
 
@@ -181,3 +178,33 @@ model WorkerList{
 
     @@map("worker_list")
 }
+
+
+
+model ApprovalTable {
+  id               String     @id @default(uuid()) @db.VarChar(36)
+  index_num Int    @unique @default(autoincrement()) @map("index_num")
+
+  workingPermitId String @map("working_permit_id") @db.VarChar(36)
+  workingPermit WorkingPermit @relation(fields: [workingPermitId],references: [id], onDelete: Cascade)
+
+
+  status WorkingPermitStatus  @default(PENDING)
+  CheckedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
+  FirstApproverStatus  WorkingPermitStatus@default(PENDING) @map("approver_first_status")
+  FinalApproverStatus WorkingPermitStatus  @default(PENDING) @map("approver_final_status")
+
+  statusAt                  DateTime? @map("status_at")
+  checkedStatusAt           DateTime? @map("checked_status_at")
+  firstApproverApprovedAt   DateTime? @map("first_approver_approved_at")
+  finalApproverApprovedAt   DateTime? @map("final_approver_approved_at")
+
+
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime?   @updatedAt @map("updated_at")
+
+
+
+  @@map("approval_table")
+}
+

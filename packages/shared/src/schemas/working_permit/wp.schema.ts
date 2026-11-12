@@ -25,10 +25,10 @@ export const addRequestSchema = z.object({
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   checkedBy: z.string().trim().min(1, "Checked by is required"),
   attachment: z.string().optional(),
-  status: workingPermitStatus.default("PENDING"),
-  CheckedStatus: workingPermitStatus.default("PENDING"),
-  approvedFinalApprover: workingPermitStatus.default("PENDING"),
-  approvedFirstApprover: workingPermitStatus.default("PENDING"),
+ // status: workingPermitStatus.default("PENDING"),
+  // CheckedStatus: workingPermitStatus.default("PENDING"),
+  // approvedFinalApprover: workingPermitStatus.default("PENDING"),
+  // approvedFirstApprover: workingPermitStatus.default("PENDING"),
 });
 
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
@@ -44,24 +44,30 @@ export const workingPermitResponseSchema = z.object({
   requestToId: z.number(),
   requestTo: z.string(),
 
-  // Related WorkerList record
   requestToWorker: z.object({
     id: z.number(),
     workerName: z.string(),
-    approvedBy: z.string(),
-    finalApprovedBy: z.string(),
-  }),
 
+    firstApproverUserId: z.number().nullable(),
+    finalApproverUserId: z.number().nullable(),
+
+    firstApprover: z.object({
+      id: z.number(),
+      name: z.string(),
+    }).nullable(),
+
+    finalApprover: z.object({
+      id: z.number(),
+      name: z.string(),
+    }).nullable(),
+  }),
   requestLevel: levelEnum,
   date: z.string(),
   requestFor: z.string(),
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
   attachment: z.string().nullable(),
-  status: workingPermitStatus,
-  CheckedStatus: workingPermitStatus,
-  approvedFinalApprover: workingPermitStatus,
-  approvedFirstApprover: workingPermitStatus,
+
 
   fromDepartment: z.object({
     entityName: z.string(),
@@ -69,6 +75,13 @@ export const workingPermitResponseSchema = z.object({
 
   branchDepartment: z.object({
     entityName: z.string(),
+  }),
+
+  approval: z.object({
+    status: workingPermitStatus,
+    checkedStatus: workingPermitStatus,
+    firstApproverStatus: workingPermitStatus,
+    finalApproverStatus: workingPermitStatus,
   }),
 });
 

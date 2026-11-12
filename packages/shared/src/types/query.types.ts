@@ -3,4 +3,5 @@ export interface QueryParams {
     limit?: number;
     search?: string;
     sort?: string;
+    userId?: number;
 }

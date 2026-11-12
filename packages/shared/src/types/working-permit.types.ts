@@ -6,18 +6,21 @@ export type DepartmentBranch = {
   checker: {
     id: number;
     name: string;
+    username: string;
+    isActive: boolean;
   } | null;
 };
 
-export type DepartmentBranchApi = {
+type DepartmentBranchApi = {
   id: number;
   entity_name: string;
   isBranch: boolean;
   checkerId: number | null;
-
-  CheckerList: {
+  checker: {
     id: number;
     name: string;
+    username: string;
+    isActive: boolean;
   } | null;
 };
 
@@ -31,4 +34,11 @@ export type NextReferenceResponse = {
   data: {
     referenceNumber: string;
   };
+};
+
+
+export type QueryParams = {
+  page: number;
+  limit: number;
+  search?: string;
 };

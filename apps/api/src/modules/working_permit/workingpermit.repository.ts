@@ -72,39 +72,55 @@ export async function addRequestRepo(data: AddRequestInput) {
 
     const referenceNumber = `WP${counter.lastValue}`;
 
-    return tx.workingPermit.create({
-      data: {
-        referenceNumber,
-  
+     return tx.workingPermit.create({
+          data: {
+            referenceNumber,
+
+            WorkerList: {
+              connect: {
+                id: worker.id,
+              },
+            },
+
+            fromDepartment: {
+              connect: {
+                id: fromDepartment.id,
+              },
+            },
+
+            branchDepartment: {
+              connect: {
+                id: branchDepartment.id,
+              },
+            },
+
+            requestLevel: data.requestLevel,
+            date: getDate(),
+            requestFor: data.requestFor,
+            requestedBy: data.requestedBy,
+            checkedBy: data.checkedBy ?? null,
+            attachment: data.attachment ?? null,
 
 
-        WorkerList: {
-          connect: {
-            id: worker.id,
+            ApprovalTable: {
+              create: {
+                status: "PENDING",
+                CheckedStatus: "PENDING",
+                approvedFirstApprover: "PENDING",
+                approvedFinalApprover: "PENDING",
+
+                statusAt: null,
+                checkedStatusAt: null,
+                firstApproverApprovedAt: null,
+                finalApproverApprovedAt: null,
+              },
+            },
           },
-        },
 
-        fromDepartment: {
-          connect: {
-            id: fromDepartment.id,
+          include: {
+            ApprovalTable: true,
           },
-        },
-
-        branchDepartment: {
-          connect: {
-            id: branchDepartment.id,
-          },
-        },
-
-        requestLevel: data.requestLevel,
-        date: getDate(),
-        requestFor: data.requestFor,
-        requestedBy: data.requestedBy,
-        checkedBy: data.checkedBy ?? null,
-        attachment: data.attachment ?? null,
-        status: "PENDING",
-      },
-    });
+        });
   });
 }
 
@@ -122,8 +138,6 @@ export async function getNextReferenceRepo() {
 }
 
 
-
-
 export async function getDepartmentBranchesRepo() {
   return prisma.departmentBranches.findMany({
     select: {
@@ -132,13 +146,16 @@ export async function getDepartmentBranchesRepo() {
       isBranch: true,
       checkerId: true,
 
-      CheckerList: {
+      checker: {
         select: {
           id: true,
           name: true,
+          username: true,
+          isActive: true,
         },
       },
     },
+
     orderBy: {
       entity_name: "asc",
     },
@@ -150,10 +167,8 @@ export async function getDepartmentBranchesRepo() {
 
 
 
-
-
 export async function displayWorkingPermit(params: QueryParams) {
-  const { page = 1, limit = 10, search } = params;
+  const { page = 1, limit = 10, search, userId } = params;
 
   const where: Prisma.WorkingPermitWhereInput = {};
 
@@ -191,17 +206,31 @@ export async function displayWorkingPermit(params: QueryParams) {
         requestedBy: true,
         checkedBy: true,
         attachment: true,
-        status: true,
-        CheckedStatus:true,
-        approvedFinalApprover:true,
-        approvedFirstApprover:true,
 
         WorkerList: {
           select: {
             id: true,
             worker_name: true,
-            approved_by: true,
-            final_approved_by: true,
+            firstApproverUserId: true,
+            finalApproverUserId: true,
+
+            firstApproverUser: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                isActive: true,
+              },
+            },
+
+            finalApproverUser: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                isActive: true,
+              },
+            },
           },
         },
 
@@ -216,6 +245,20 @@ export async function displayWorkingPermit(params: QueryParams) {
             entity_name: true,
           },
         },
+        
+        
+        ApprovalTable:{
+          select:{
+            status:true,
+            CheckedStatus:true,
+            FirstApproverStatus:true,
+            FinalApproverStatus:true,
+            statusAt:true,
+            checkedStatusAt:true,
+            firstApproverApprovedAt:true,
+            finalApproverApprovedAt:true,
+          }
+        }
       },
 
       skip: (page - 1) * limit,
@@ -245,14 +288,35 @@ export async function displayWorkingPermit(params: QueryParams) {
 
 
 
+
 export async function getWorkerRepo() {
   return prisma.workerList.findMany({
     select: {
       id: true,
       worker_name: true,
-      approved_by: true,
-      final_approved_by: true,
+
+      firstApproverUserId: true,
+      finalApproverUserId: true,
+
+      firstApproverUser: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          isActive: true,
+        },
+      },
+
+      finalApproverUser: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          isActive: true,
+        },
+      },
     },
+
     orderBy: {
       worker_name: "asc",
     },
