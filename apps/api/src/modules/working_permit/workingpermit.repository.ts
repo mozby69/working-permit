@@ -142,7 +142,7 @@ export async function getDepartmentBranchesRepo() {
   return prisma.departmentBranches.findMany({
     select: {
       id: true,
-      entity_name: true,
+      entityName: true,
       isBranch: true,
       checkerId: true,
 
@@ -157,7 +157,7 @@ export async function getDepartmentBranchesRepo() {
     },
 
     orderBy: {
-      entity_name: "asc",
+      entityName: "asc",
     },
   });
 }
@@ -236,13 +236,13 @@ export async function displayWorkingPermit(params: QueryParams) {
 
         fromDepartment: {
           select: {
-            entity_name: true,
+            entityName: true,
           },
         },
 
         branchDepartment: {
           select: {
-            entity_name: true,
+            entityName: true,
           },
         },
         

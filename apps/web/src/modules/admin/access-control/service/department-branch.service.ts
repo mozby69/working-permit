@@ -1,12 +1,7 @@
 import api from "@/lib/api/api-client";
+import { ApiResponse, CreateDepartmentBranchInput, DepartmentBranch, UpdateDepartmentBranchInput } from "@repo/shared";
 
-export type DepartmentBranch = {
-  id: number;
-  entity_name: string;
-  isBranch: boolean;
-  checkerId: number | null;
-  createdAt: string;
-};
+
 
 export type DepartmentBranchFilter = {
   isBranch?: boolean;
@@ -16,8 +11,11 @@ type DepartmentBranchResponse = {
   success: boolean;
   data: DepartmentBranch[];
 };
+const API_URL = "/admin/department-branches";
 
-export async function getDepartmentBranches(
+export const departmentBranchService = {
+
+ async getAll(
   params: DepartmentBranchFilter = {}
 ): Promise<DepartmentBranchResponse> {
   const response = await api.get<DepartmentBranchResponse>(
@@ -26,4 +24,29 @@ export async function getDepartmentBranches(
   );
 
   return response.data;
+},
+
+    async create(payload: CreateDepartmentBranchInput){
+        const response = await api.post<
+            ApiResponse<DepartmentBranch>
+        >(API_URL, payload);
+        
+        return response.data.data;
+    },
+
+    async update(
+        id:number,
+        payload: UpdateDepartmentBranchInput
+    ){
+        const response = await api.patch<
+            ApiResponse<DepartmentBranch>
+            >(`${API_URL}/${id}`, payload);
+            
+        return response.data.data;
+    },
+
+    async delete(id: number){
+        await api.delete(`${API_URL}/${id}`);
+    }
+
 }

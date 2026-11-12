@@ -145,7 +145,7 @@ model ReferenceCounter {
 
 model DepartmentBranches {
   id          Int     @id @default(autoincrement()) @map("id")
-  entity_name             String     @db.VarChar(100)
+  entityName             String     @db.VarChar(100) @map("entity_name")
   workingPermitsFrom WorkingPermit[] @relation("WorkingPermitFrom")
   workingPermitsBranch WorkingPermit[] @relation("WorkingPermitBranch")
 
