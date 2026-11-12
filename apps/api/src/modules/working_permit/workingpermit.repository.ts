@@ -6,7 +6,7 @@ import { Prisma } from "../../../generated/prisma/client";
 
 
 
-export async function addRequestRepo(data: AddRequestInput) {
+export async function addRequestRepo(data: AddRequestInput, userId: number) {
   return prisma.$transaction(async (tx) => {
 
     const fromDepartment = await tx.departmentBranches.findFirst({
@@ -76,6 +76,11 @@ export async function addRequestRepo(data: AddRequestInput) {
           data: {
             referenceNumber,
 
+          createdBy: {
+            connect: {
+              id: userId,
+            },
+          },
             WorkerList: {
               connect: {
                 id: worker.id,
@@ -105,9 +110,9 @@ export async function addRequestRepo(data: AddRequestInput) {
             ApprovalTable: {
               create: {
                 status: "PENDING",
-                CheckedStatus: "PENDING",
-                approvedFirstApprover: "PENDING",
-                approvedFinalApprover: "PENDING",
+                checkedStatus: "PENDING",
+                firstApproverStatus: "PENDING",
+                finalApproverStatus: "PENDING",
 
                 statusAt: null,
                 checkedStatusAt: null,
@@ -142,7 +147,7 @@ export async function getDepartmentBranchesRepo() {
   return prisma.departmentBranches.findMany({
     select: {
       id: true,
-      entity_name: true,
+      entityName: true,
       isBranch: true,
       checkerId: true,
 
@@ -157,7 +162,7 @@ export async function getDepartmentBranchesRepo() {
     },
 
     orderBy: {
-      entity_name: "asc",
+      entityName: "asc",
     },
   });
 }
@@ -167,38 +172,145 @@ export async function getDepartmentBranchesRepo() {
 
 
 
-export async function displayWorkingPermit(params: QueryParams) {
-  const { page = 1, limit = 10, search, userId } = params;
+export type QueryParamWP = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  userId: number;
+  roles: string[];
+};
+
+export async function displayWorkingPermit(params: QueryParamWP) {
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    userId,
+    roles = [],
+  } = params;
+
+
+  if (
+    !Number.isSafeInteger(userId) ||
+    userId <= 0
+  ) {
+    throw new Error(
+      "Authenticated user ID is required"
+    );
+  }
+
+
+  const currentPage =
+    Number.isSafeInteger(page) && page > 0
+      ? page
+      : 1;
+
+  const pageLimit =
+    Number.isSafeInteger(limit) && limit > 0
+      ? Math.min(limit, 100)
+      : 10;
+
+
+  const visibilityFilters: Prisma.WorkingPermitWhereInput[] = [];
+
+  const isAdmin = roles.includes("ADMIN");
+  const isCoordinator = roles.includes("COORDINATOR");
+  const isChecker = roles.includes("CHECKER");
+
+  if (isCoordinator) {
+    visibilityFilters.push({
+      createdById: userId,
+    });
+  }
+
+  if (isChecker) {
+    visibilityFilters.push({
+      sequence: 1,
+
+      fromDepartment: {
+        is: {
+          checkerId: userId,
+        },
+      },
+
+      ApprovalTable: {
+        some: {
+          status: "PENDING",
+          checkedStatus: "PENDING",
+        },
+      },
+    });
+  }
+
+  // -------------------------------------------
+  // 4. Build Prisma WHERE
+  // -------------------------------------------
 
   const where: Prisma.WorkingPermitWhereInput = {};
 
-  if (search?.trim()) {
-    const term = search.trim();
+  if (!isAdmin) {
+    if (visibilityFilters.length === 0) {
+      // No permitted role: return no records
+      where.id = {
+        in: [],
+      };
+    } else {
+      where.OR = visibilityFilters;
+    }
+  }
 
-    where.OR = [
-      {
-        referenceNumber: {
-          contains: term,
+  // -------------------------------------------
+  // 5. Apply search without overriding roles
+  // -------------------------------------------
+
+  const term = search?.trim();
+
+  if (term) {
+    const searchFilter: Prisma.WorkingPermitWhereInput = {
+      OR: [
+        {
+          referenceNumber: {
+            contains: term,
+          },
         },
-      },
-      {
-        WorkerList: {
-          is: {
-            worker_name: {
-              contains: term,
+        {
+          WorkerList: {
+            is: {
+              worker_name: {
+                contains: term,
+              },
             },
           },
         },
-      },
+      ],
+    };
+
+    // AND ensures both visibility and search match.
+    const visibilityWhere: Prisma.WorkingPermitWhereInput = {
+      ...where,
+    };
+
+    delete where.OR;
+    delete where.id;
+
+    where.AND = [
+      visibilityWhere,
+      searchFilter,
     ];
   }
+
+  // -------------------------------------------
+  // 6. Fetch Working Permits and total count
+  // -------------------------------------------
 
   const [wp_data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({
       where,
+
       select: {
         id: true,
         referenceNumber: true,
+        sequence: true,
         requestToId: true,
         requestLevel: true,
         date: true,
@@ -206,6 +318,7 @@ export async function displayWorkingPermit(params: QueryParams) {
         requestedBy: true,
         checkedBy: true,
         attachment: true,
+        createdById: true,
 
         WorkerList: {
           select: {
@@ -236,54 +349,66 @@ export async function displayWorkingPermit(params: QueryParams) {
 
         fromDepartment: {
           select: {
-            entity_name: true,
+            id: true,
+            entityName: true,
+            checkerId: true,
           },
         },
 
         branchDepartment: {
           select: {
-            entity_name: true,
+            entityName: true,
           },
         },
-        
-        
-        ApprovalTable:{
-          select:{
-            status:true,
-            CheckedStatus:true,
-            FirstApproverStatus:true,
-            FinalApproverStatus:true,
-            statusAt:true,
-            checkedStatusAt:true,
-            firstApproverApprovedAt:true,
-            finalApproverApprovedAt:true,
-          }
-        }
+
+        ApprovalTable: {
+          select: {
+            status: true,
+            checkedStatus: true,
+            finalApproverStatus: true,
+            firstApproverStatus: true,
+            statusAt: true,
+            checkedStatusAt: true,
+            firstApproverApprovedAt: true,
+            finalApproverApprovedAt: true,
+          },
+
+          orderBy: {
+            createdAt: "desc",
+          },
+
+          take: 1,
+        },
       },
 
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (currentPage - 1) * pageLimit,
+      take: pageLimit,
 
       orderBy: {
         createdAt: "desc",
       },
     }),
 
-    prisma.workingPermit.count({ where }),
+    prisma.workingPermit.count({
+      where,
+    }),
   ]);
+
+  // -------------------------------------------
+  // 7. Return data with pagination
+  // -------------------------------------------
 
   return {
     data: wp_data,
+
     pagination: {
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: currentPage,
+      limit: pageLimit,
+      totalPages: Math.ceil(total / pageLimit),
     },
   };
 }
-
-
 
 
 

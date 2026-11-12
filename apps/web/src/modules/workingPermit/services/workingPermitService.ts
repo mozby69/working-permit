@@ -39,7 +39,7 @@ export async function getDepartmentBranchesService(): Promise<DepartmentBranch[]
 
   return response.data.data.map((department) => ({
     id: department.id,
-    entityName: department.entity_name,
+    entityName: department.entityName,
     isBranch: department.isBranch,
     checkerId: department.checkerId,
     checker: department.checker,

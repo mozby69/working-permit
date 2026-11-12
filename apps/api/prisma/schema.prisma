@@ -27,6 +27,7 @@ enum RequestLevel {
   LEVEL_2
 }
 
+
 model User {
   id       Int     @id @default(autoincrement()) @map("user_id")
   name     String  @db.VarChar(150)
@@ -40,6 +41,7 @@ model User {
   departmentBranches DepartmentBranches[] @relation("DepartmentChecker")
   firstApproverAssignments WorkerList[] @relation("FirstApprover")
   finalApproverAssignments WorkerList[] @relation("FinalApprover")
+  createdWorkingPermits WorkingPermit[] @relation("WorkingPermitCreator")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -105,32 +107,35 @@ model RolePermission {
 model WorkingPermit {
   id               String     @id @default(uuid()) @db.VarChar(36)
   referenceNumber  String     @unique @map("reference_number") @db.VarChar(30)
-  fromId Int @map("from_id")
-  branchDepartmentId Int @map("branch_dep_id")
-  requestToId Int @map("requestTo")
-
   requestLevel RequestLevel   @map("request_level") 
   date             DateTime   @db.Date
   requestFor       String     @map("request_for") @db.Text
-
   requestedBy      String     @map("requested_by") @db.VarChar(100)
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
   attachment       String?    @db.VarChar(500)
 
+  sequence         Int        @default(1)
 
-
+  fromId Int @map("from_id")
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
+
+  branchDepartmentId Int @map("branch_dep_id")
   branchDepartment DepartmentBranches @relation("WorkingPermitBranch",fields: [branchDepartmentId],references: [id])
+
+  requestToId Int @map("requestTo")
   WorkerList WorkerList @relation(fields: [requestToId],references: [id])
 
-  ApprovalTable           ApprovalTable[] @relation()
+  createdById Int @map("created_by_id")
+  createdBy User @relation("WorkingPermitCreator",fields: [createdById],references: [id])
 
+  ApprovalTable           ApprovalTable[] @relation()
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   @@index([requestToId])
   @@index([date])
   @@index([fromId])
+  @@index([createdById])
 
   @@map("working_permit")
 }
@@ -145,7 +150,7 @@ model ReferenceCounter {
 
 model DepartmentBranches {
   id          Int     @id @default(autoincrement()) @map("id")
-  entity_name             String     @db.VarChar(100)
+  entityName             String     @map("entity_name") @db.VarChar(100)
   workingPermitsFrom WorkingPermit[] @relation("WorkingPermitFrom")
   workingPermitsBranch WorkingPermit[] @relation("WorkingPermitBranch")
 
@@ -183,16 +188,16 @@ model WorkerList{
 
 model ApprovalTable {
   id               String     @id @default(uuid()) @db.VarChar(36)
-  index_num Int    @unique @default(autoincrement()) @map("index_num")
+  indexNum Int    @unique @default(autoincrement()) @map("index_num")
 
   workingPermitId String @map("working_permit_id") @db.VarChar(36)
   workingPermit WorkingPermit @relation(fields: [workingPermitId],references: [id], onDelete: Cascade)
 
 
   status WorkingPermitStatus  @default(PENDING)
-  CheckedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
-  FirstApproverStatus  WorkingPermitStatus@default(PENDING) @map("approver_first_status")
-  FinalApproverStatus WorkingPermitStatus  @default(PENDING) @map("approver_final_status")
+  checkedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
+  firstApproverStatus  WorkingPermitStatus@default(PENDING) @map("approver_first_status")
+  finalApproverStatus WorkingPermitStatus  @default(PENDING) @map("approver_final_status")
 
   statusAt                  DateTime? @map("status_at")
   checkedStatusAt           DateTime? @map("checked_status_at")

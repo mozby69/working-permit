@@ -2,30 +2,32 @@
 import Modal from "@/components/common/ModalHeader";
 import { FilesIcon, Plus } from "lucide-react";
 import ModalAddRequest from "../components/modal/AddRequest";
-import { useDisclosure } from "@/hooks/useDisclosure";
+// import { useDisclosure } from "@/hooks/useDisclosure";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState } from "react";
 import { useGetWorkingPermit } from "../hooks/useWorkingPermit";
 import { TableColumn } from "@/components/common/Table";
-import { formatCurrency, WorkingPermitResponse } from "@repo/shared";
+import {  WorkingPermitResponse } from "@repo/shared";
 import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
+import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
 
 
 export default function WorkingPermitView(){
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isModalOpen2, setIsModalOpen2] = useState(false);
     const [userPage, setUserPage] = useState(1);
-    const [userLimit, setUserLimit] = useState(10);
+    const [userLimit] = useState(10);
     const [userSearch, setUserSearch] = useState("");
     const debouncedSearch = useDebounce(userSearch, 500);
-    const userModal = useDisclosure();
+    //const userModal = useDisclosure();
 
 
 
-      const openModal = () => {
-        userModal.open();
-      }
+      // const openModal = () => {
+      //   userModal.open();
+      // }
 
 
       const {
@@ -85,6 +87,15 @@ export default function WorkingPermitView(){
             </span>
           ),
         },
+         {
+          key: "fromDepartment",
+          header: "From",
+          render: (row) => (
+            <span className="capitalize">
+              {row.fromDepartment.entityName}
+            </span>
+          ),
+        },
           
         {
           key: "CheckedStatus",
@@ -121,8 +132,9 @@ export default function WorkingPermitView(){
             render: (row) => (
               <TableRowActions<WorkingPermitResponse>
                 item={row}
-                onView={(permit) => {
-                  console.log("View:", permit.referenceNumber);
+                viewLabel="View Request"
+                onView={(permit) => { 
+                  setIsModalOpen2(true);
                 }}
                 onEdit={(permit) => {
                   console.log("Edit:", permit.id);
@@ -244,6 +256,19 @@ export default function WorkingPermitView(){
         />
     </Modal>
 
+
+
+     <Modal
+        isOpen={isModalOpen2}
+        onClose={() => setIsModalOpen2(false)}
+        title="View Request"
+        size="lg"
+        >
+
+        <ViewWorkingPermit
+          
+        />
+    </Modal>
 
 
     

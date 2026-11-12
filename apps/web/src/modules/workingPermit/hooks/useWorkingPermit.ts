@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { QueryParams, QueryParamsDatatable } from '@repo/shared';
+import { QueryParams } from '@repo/shared';
 
 
 

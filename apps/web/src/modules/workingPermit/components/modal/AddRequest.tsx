@@ -290,61 +290,61 @@ return (
 
         {/* FROM */}
      
-   <div className="min-w-0 space-y-1.5">
-  <label className="block text-[13px] font-medium text-slate-700">
-    From <span className="text-red-500">*</span>
-  </label>
+        <div className="min-w-0 space-y-1.5">
+        <label className="block text-[13px] font-medium text-slate-700">
+          From <span className="text-red-500">*</span>
+        </label>
 
-  <Controller
-    name="fromId"
-    control={control}
-    render={({ field }) => (
-      <DepartmentBranchSelect
-        value={field.value}
-        onChange={(departmentId: number) => {
-          field.onChange(departmentId);
-          field.onBlur();
+        <Controller
+          name="fromId"
+          control={control}
+          render={({ field }) => (
+            <DepartmentBranchSelect
+              value={field.value}
+              onChange={(departmentId: number) => {
+                field.onChange(departmentId);
+                field.onBlur();
 
-          const selectedDepartment = departments.find(
-            (department) => department.id === departmentId
-          );
+                const selectedDepartment = departments.find(
+                  (department) => department.id === departmentId
+                );
 
-          const checkerName =
-            selectedDepartment?.checker?.name ?? "";
+                const checkerName =
+                  selectedDepartment?.checker?.name ?? "";
 
-          setValue("checkedBy", checkerName, {
-            shouldValidate: true,
-            shouldDirty: true,
-            shouldTouch: true,
-          });
-        }}
-        departments={departments.filter(
-          (department) => department.isBranch === false
+                setValue("checkedBy", checkerName, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true,
+                });
+              }}
+              departments={departments.filter(
+                (department) => department.isBranch === false
+              )}
+              disabled={isDepartmentsLoading || isDepartmentsError}
+              invalid={Boolean(errors.fromId)}
+            />
+          )}
+        />
+
+        {errors.fromId && (
+          <p role="alert" className={errorClass}>
+            {errors.fromId.message}
+          </p>
         )}
-        disabled={isDepartmentsLoading || isDepartmentsError}
-        invalid={Boolean(errors.fromId)}
-      />
-    )}
-  />
 
-  {errors.fromId && (
-    <p role="alert" className={errorClass}>
-      {errors.fromId.message}
-    </p>
-  )}
+        {isDepartmentsLoading && (
+          <p className="text-xs text-slate-500">
+            Loading departments...
+          </p>
+        )}
 
-  {isDepartmentsLoading && (
-    <p className="text-xs text-slate-500">
-      Loading departments...
-    </p>
-  )}
-
-  {isDepartmentsError && (
-    <p role="alert" className={errorClass}>
-      Failed to load departments and branches.
-    </p>
-  )}
-</div>
+        {isDepartmentsError && (
+          <p role="alert" className={errorClass}>
+            Failed to load departments and branches.
+          </p>
+        )}
+      </div>
 
 
         {/* REQUEST LEVEL */}

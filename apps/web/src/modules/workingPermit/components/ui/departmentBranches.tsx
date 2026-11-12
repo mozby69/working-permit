@@ -341,7 +341,7 @@ export function DepartmentBranchSelect({
                         }
                       `}
                     >
-                      <span className="min-w-0 break-words">
+                      <span className="min-w-0 wrap-break">
                         {department.entityName}
                       </span>
 

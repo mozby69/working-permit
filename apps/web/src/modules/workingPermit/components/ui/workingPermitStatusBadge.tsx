@@ -1,28 +1,18 @@
 import type { WorkingPermitResponse } from "@repo/shared";
 
-type WorkingPermitStatus = WorkingPermitResponse["status"];
+type WorkingPermitStatus =
+  WorkingPermitResponse["approval"]["status"];
 
 interface WorkingPermitStatusBadgeProps {
   status: WorkingPermitStatus;
 }
 
 const statusStyles: Record<WorkingPermitStatus, string> = {
-  PENDING:
-    "bg-amber-100 text-amber-800 ring-amber-200",
-
-  APPROVED:
-    "bg-blue-100 text-blue-700 ring-blue-200",
-
-  REJECTED:
-    "bg-red-100 text-red-700 ring-red-200",
-
-  IN_PROGRESS:
-    "bg-indigo-100 text-indigo-700 ring-indigo-200",
-
-  COMPLETED:
-    "bg-green-100 text-green-700 ring-green-200",
-
-
+  PENDING: "bg-amber-100 text-amber-800 ring-amber-200",
+  APPROVED: "bg-blue-100 text-blue-700 ring-blue-200",
+  REJECTED: "bg-red-100 text-red-700 ring-red-200",
+  IN_PROGRESS: "bg-indigo-100 text-indigo-700 ring-indigo-200",
+  COMPLETED: "bg-green-100 text-green-700 ring-green-200",
 };
 
 const dotStyles: Record<WorkingPermitStatus, string> = {

@@ -25,6 +25,7 @@ export const addRequestSchema = z.object({
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   checkedBy: z.string().trim().min(1, "Checked by is required"),
   attachment: z.string().optional(),
+
  // status: workingPermitStatus.default("PENDING"),
   // CheckedStatus: workingPermitStatus.default("PENDING"),
   // approvedFinalApprover: workingPermitStatus.default("PENDING"),

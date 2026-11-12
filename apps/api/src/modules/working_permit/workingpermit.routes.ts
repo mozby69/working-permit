@@ -15,7 +15,7 @@ router.use(authenticate);
 router.post("/add-working-permit",authorize({ roles: ["COORDINATOR"]}),workingController.createRequestController);
 router.get("/next-reference",authenticate,workingController.getNextReferenceController);
 router.get("/department-branch-list",authenticate,workingController.getDepartmentBranchesController);
-router.get("/display-working-permit",authorize({roles:["COORDINATOR","ADMIN"]}),authenticate,workingController.getWorkingPermitController);
+router.get("/display-working-permit",authorize({roles:["COORDINATOR","ADMIN","CHECKER"]}),authenticate,workingController.getWorkingPermitController);
 router.get("/worker-list",authenticate,authorize({ roles: ["COORDINATOR", "ADMIN"] }),workingController.getWorkerListController);
 
 

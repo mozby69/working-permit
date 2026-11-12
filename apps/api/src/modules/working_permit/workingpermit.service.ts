@@ -4,25 +4,25 @@ import { QueryParams } from "../../../../../packages/shared/src/types/query.type
 
 
 
-
-export async function createRequestService(params: AddRequestInput,id: number) {
-  return workingRepo.addRequestRepo({
-    //id,
-    //referenceNumber: params.referenceNumber,
-
-    fromId: params.fromId,
-    requestLevel: params.requestLevel,
-    date: params.date,
-    requestFor: params.requestFor,
-    branchDepartmentId: params.branchDepartmentId,
-    requestedBy: params.requestedBy,
-    checkedBy: params.checkedBy,
-    attachment: params.attachment,
-    requestToId: params.requestToId,
-  //  status: "PENDING",
-  });
+export async function createRequestService(
+  params: AddRequestInput,
+  userId: number
+) {
+  return workingRepo.addRequestRepo(
+    {
+      fromId: params.fromId,
+      requestLevel: params.requestLevel,
+      date: params.date,
+      requestFor: params.requestFor,
+      branchDepartmentId: params.branchDepartmentId,
+      requestedBy: params.requestedBy,
+      checkedBy: params.checkedBy,
+      attachment: params.attachment,
+      requestToId: params.requestToId,
+    },
+    userId
+  );
 }
-
 
 
 export async function getNextReferenceService() {
@@ -34,7 +34,7 @@ export async function getDepartmentBranchesService() {
 }
 
 
-export async function getWorkingPermitService(params: QueryParams) {
+export async function getWorkingPermitService(params: workingRepo.QueryParamWP) {
   const result = await workingRepo.displayWorkingPermit(params);
 
   const normalized = result.data.map((permit) => {
@@ -53,18 +53,18 @@ export async function getWorkingPermitService(params: QueryParams) {
       attachment: permit.attachment,
 
       fromDepartment: {
-        entityName: permit.fromDepartment.entity_name,
+        entityName: permit.fromDepartment.entityName,
       },
 
       branchDepartment: {
-        entityName: permit.branchDepartment.entity_name,
+        entityName: permit.branchDepartment.entityName,
       },
 
       approval: {
         status: approval?.status ?? "PENDING",
-        checkedStatus: approval?.CheckedStatus ?? "PENDING",
-        firstApproverStatus: approval?.FirstApproverStatus ?? "PENDING",
-        finalApproverStatus: approval?.FinalApproverStatus ?? "PENDING",  
+        checkedStatus: approval?.checkedStatus ?? "PENDING",
+        firstApproverStatus: approval?.firstApproverStatus ?? "PENDING",
+        finalApproverStatus: approval?.finalApproverStatus ?? "PENDING",  
       },
 
      requestToWorker: {
