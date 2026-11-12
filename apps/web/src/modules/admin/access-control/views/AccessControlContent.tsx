@@ -9,6 +9,7 @@ import {
   Plus,
   ChevronRight,
   Settings2,
+  Building2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -22,6 +23,7 @@ import type {
   Tab,
   AccessControlContentProps,
 } from "../types/access-control.types";
+import { BranchDepartmentManagement } from "../components/branch/BranchManagement";
 
 export function AccessControlContent({
   users,
@@ -61,6 +63,12 @@ export function AccessControlContent({
       label: "Permissions",
       icon: KeyRound,
       description: "Control role-based access",
+    },
+    {
+      id: "branch",
+      label: "Branch & Department Management",
+      icon: Building2,
+      description: "Manage organizational branches and departments.",
     },
   ] as const;
 
@@ -213,6 +221,14 @@ export function AccessControlContent({
                   permissions={permissions}
                   onChange={onPermissionChange}
                 />
+              </div>
+            </PermissionGuard>
+          )}
+
+               {tab === "branch" && (
+            <PermissionGuard permissions={["ADMIN_MANAGE"]}>
+              <div className="overflow-x-auto">
+                <BranchDepartmentManagement />
               </div>
             </PermissionGuard>
           )}

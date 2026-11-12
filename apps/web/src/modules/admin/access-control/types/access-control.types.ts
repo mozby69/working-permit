@@ -9,7 +9,7 @@ export type UserFormProps = {
     onUpdate?: (data: UpdateUserSchema) => void;
 };
 
-export type Tab = "users" | "roles" | "permissions";
+export type Tab = "users" | "roles" | "permissions" | "branch";
 
 export type AccessControlContentProps = {
     users: User[];

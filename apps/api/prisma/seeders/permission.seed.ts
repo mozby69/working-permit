@@ -7,7 +7,7 @@ export async function seedPermissions() {
             name: "Manage Users",
         },
         {
-            code: "ADMIN_MANAGE",
+            code: "ADMIN_MANAGE", 
             name: "Manage Admin",
         },
         {

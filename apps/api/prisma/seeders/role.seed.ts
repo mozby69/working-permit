@@ -9,6 +9,27 @@ export async function seedRoles() {
                 "ADMIN_MANAGE",
             ],
         },
+        {
+            name: "USER",
+            permissions: [
+                "ADD_WORKING_PERMIT",
+                "VIEW_WORKING_PERMIT",
+            ],
+        },
+         {
+            name: "COORDINATOR",
+            permissions: [
+                "ADD_WORKING_PERMIT",
+                "VIEW_WORKING_PERMIT",
+            ],
+        },
+         {
+            name: "CHECKER ",
+            permissions: [
+                "ADD_WORKING_PERMIT",
+                "VIEW_WORKING_PERMIT",
+            ],
+        },
     ];
 
     for (const role of roles) {
