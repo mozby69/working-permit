@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, CheckerApprovalResponse, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -126,4 +126,17 @@ export async function getWorkerListService(): Promise<Worker[]> {
     firstApprover: worker.firstApproverUser,
     finalApprover: worker.finalApproverUser,
   }));
+}
+
+
+
+
+export async function approveCheckerService(
+  workingPermitId: string
+): Promise<CheckerApprovalResponse> {
+  const response = await api.patch<CheckerApprovalResponse>(
+    `/working-permit/${workingPermitId}/checker-approve`
+  );
+
+  return response.data;
 }

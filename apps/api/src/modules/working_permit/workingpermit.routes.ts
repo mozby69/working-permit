@@ -17,7 +17,7 @@ router.get("/next-reference",authenticate,workingController.getNextReferenceCont
 router.get("/department-branch-list",authenticate,workingController.getDepartmentBranchesController);
 router.get("/display-working-permit",authorize({roles:["COORDINATOR","ADMIN","CHECKER"]}),authenticate,workingController.getWorkingPermitController);
 router.get("/worker-list",authenticate,authorize({ roles: ["COORDINATOR", "ADMIN"] }),workingController.getWorkerListController);
-
+router.patch( "/:id/checker-approve",authenticate,authorize({ roles: ["CHECKER"]}),workingController.approveWorkingPermitByCheckerController);
 
 
 export default router; 

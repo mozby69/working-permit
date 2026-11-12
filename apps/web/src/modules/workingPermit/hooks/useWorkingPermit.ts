@@ -63,3 +63,21 @@ export function useWorkerList() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+
+
+
+export function useApproveChecker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (workingPermitId: string) =>
+      serviceWorkingPermit.approveCheckerService(workingPermitId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["working-permits"],
+      });
+    },
+  });
+}

@@ -103,3 +103,19 @@ export async function getWorkingPermitService(params: workingRepo.QueryParamWP) 
 export async function getWorkerListService() {
   return workingRepo.getWorkerRepo();
 }
+
+
+
+
+
+
+
+export async function approveWorkingPermitByCheckerService(
+  workingPermitId: string,
+  userId: number
+) {
+  return workingRepo.approveWorkingPermitByCheckerRepo(
+    workingPermitId,
+    userId
+  );
+}

@@ -42,3 +42,17 @@ export type QueryParams = {
   limit: number;
   search?: string;
 };
+
+
+
+
+
+export type CheckerApprovalResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    workingPermitId: string;
+    sequence: number;
+    checkedStatus: "APPROVED";
+  };
+};

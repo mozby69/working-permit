@@ -3,6 +3,7 @@ import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
 import { sendSuccess } from '@/lib/http/response';
+import z from 'zod';
 
 
 export async function createRequestController(
@@ -159,6 +160,64 @@ export async function getWorkerListController(req: Request,res: Response,next: N
 
     sendSuccess(res, workers);
   } catch (error) {
+    next(error);
+  }
+}
+
+
+
+
+
+
+const approveWorkingPermitParamsSchema = z.object({
+  id: z.uuid(),
+});
+
+export async function approveWorkingPermitByCheckerController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const parsed = approveWorkingPermitParamsSchema.safeParse(
+      req.params
+    );
+
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Working Permit ID",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const result =
+      await workingPermitService.approveWorkingPermitByCheckerService(
+        parsed.data.id,
+        userId
+      );
+
+    res.status(200).json({
+      success: true,
+      message: "Working Permit approved by Checker successfully",
+      data: result,
+    });
+  } catch (error: unknown) {
     next(error);
   }
 }

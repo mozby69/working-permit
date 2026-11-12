@@ -447,3 +447,108 @@ export async function getWorkerRepo() {
     },
   });
 }
+
+
+
+
+export async function approveWorkingPermitByCheckerRepo(
+  workingPermitId: string,
+  userId: number
+) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Verify the permit is assigned to this Checker
+    const permit = await tx.workingPermit.findFirst({
+      where: {
+        id: workingPermitId,
+        sequence: 1,
+
+        fromDepartment: {
+          is: {
+            checkerId: userId,
+          },
+        },
+
+        ApprovalTable: {
+          some: {
+            status: "PENDING",
+            checkedStatus: "PENDING",
+          },
+        },
+      },
+
+      select: {
+        id: true,
+        ApprovalTable: {
+          where: {
+            status: "PENDING",
+            checkedStatus: "PENDING",
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!permit) {
+      throw new Error(
+        "Working Permit is not assigned to you or is no longer pending."
+      );
+    }
+
+    if (permit.ApprovalTable.length !== 1) {
+      throw new Error(
+        "Expected exactly one pending approval record."
+      );
+    }
+
+    // 2. Claim this stage atomically to prevent duplicate approvals
+    const advanced = await tx.workingPermit.updateMany({
+      where: {
+        id: workingPermitId,
+        sequence: 1,
+        fromDepartment: {
+          is: {
+            checkerId: userId,
+          },
+        },
+      },
+      data: {
+        sequence: 2,
+      },
+    });
+
+    if (advanced.count !== 1) {
+      throw new Error(
+        "This Working Permit has already been processed."
+      );
+    }
+
+    // 3. Approve the Checker stage
+    const approval = await tx.approvalTable.updateMany({
+      where: {
+        id: permit.ApprovalTable[0].id,
+        workingPermitId,
+        status: "PENDING",
+        checkedStatus: "PENDING",
+      },
+
+      data: {
+        checkedStatus: "APPROVED",
+        checkedStatusAt: new Date(),
+      },
+    });
+
+    if (approval.count !== 1) {
+      throw new Error(
+        "Checker approval could not be updated."
+      );
+    }
+
+    return {
+      workingPermitId,
+      sequence: 2,
+      checkedStatus: "APPROVED" as const,
+    };
+  });
+}
