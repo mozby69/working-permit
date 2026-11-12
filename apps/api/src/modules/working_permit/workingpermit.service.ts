@@ -19,7 +19,7 @@ export async function createRequestService(params: AddRequestInput,id: number) {
     checkedBy: params.checkedBy,
     attachment: params.attachment,
     requestToId: params.requestToId,
-    status: "PENDING",
+  //  status: "PENDING",
   });
 }
 
@@ -37,37 +37,62 @@ export async function getDepartmentBranchesService() {
 export async function getWorkingPermitService(params: QueryParams) {
   const result = await workingRepo.displayWorkingPermit(params);
 
-  const normalized = result.data.map((permit) => ({
-    id: permit.id,
-    referenceNumber: permit.referenceNumber,
-    requestToId: permit.requestToId,
-    requestTo: permit.WorkerList.worker_name,
-    requestLevel: permit.requestLevel,
-    date: permit.date.toISOString(),
-    requestFor: permit.requestFor,
-    requestedBy: permit.requestedBy,
-    checkedBy: permit.checkedBy,
-    attachment: permit.attachment,
-    status: permit.status,
-    CheckedStatus: permit.CheckedStatus,
-    approvedFinalApprover: permit.approvedFinalApprover,
-    approvedFirstApprover: permit.approvedFirstApprover,
+  const normalized = result.data.map((permit) => {
+    const approval = permit.ApprovalTable[0];
 
-    fromDepartment: {
-      entityName: permit.fromDepartment.entity_name,
-    },
+    return {
+      id: permit.id,
+      referenceNumber: permit.referenceNumber,
+      requestToId: permit.requestToId,
+      requestTo: permit.WorkerList.worker_name,
+      requestLevel: permit.requestLevel,
+      date: permit.date.toISOString(),
+      requestFor: permit.requestFor,
+      requestedBy: permit.requestedBy,
+      checkedBy: permit.checkedBy,
+      attachment: permit.attachment,
 
-    branchDepartment: {
-      entityName: permit.branchDepartment.entity_name,
-    },
+      fromDepartment: {
+        entityName: permit.fromDepartment.entity_name,
+      },
 
-    requestToWorker: {
-      id: permit.WorkerList.id,
-      workerName: permit.WorkerList.worker_name,
-      approvedBy: permit.WorkerList.approved_by,
-      finalApprovedBy: permit.WorkerList.final_approved_by,
-    },
-  }));
+      branchDepartment: {
+        entityName: permit.branchDepartment.entity_name,
+      },
+
+      approval: {
+        status: approval?.status ?? "PENDING",
+        checkedStatus: approval?.CheckedStatus ?? "PENDING",
+        firstApproverStatus: approval?.FirstApproverStatus ?? "PENDING",
+        finalApproverStatus: approval?.FinalApproverStatus ?? "PENDING",  
+      },
+
+     requestToWorker: {
+          id: permit.WorkerList.id,
+          workerName: permit.WorkerList.worker_name,
+
+          firstApproverUserId:
+            permit.WorkerList.firstApproverUserId,
+
+          finalApproverUserId:
+            permit.WorkerList.finalApproverUserId,
+
+          firstApprover: permit.WorkerList.firstApproverUser
+            ? {
+                id: permit.WorkerList.firstApproverUser.id,
+                name: permit.WorkerList.firstApproverUser.name,
+              }
+            : null,
+
+          finalApprover: permit.WorkerList.finalApproverUser
+            ? {
+                id: permit.WorkerList.finalApproverUser.id,
+                name: permit.WorkerList.finalApproverUser.name,
+              }
+            : null,
+        },
+    };
+  });
 
   return {
     data: normalized,

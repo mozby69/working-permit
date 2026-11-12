@@ -10,6 +10,7 @@ import { TableColumn } from "@/components/common/Table";
 import { formatCurrency, WorkingPermitResponse } from "@repo/shared";
 import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
+import TableRowActions from "@/components/common/TableAction/DropdownAction";
 
 
 export default function WorkingPermitView(){
@@ -89,31 +90,50 @@ export default function WorkingPermitView(){
           key: "CheckedStatus",
           header: "Checked Status",
           render: (row) => (
-                <WorkingPermitStatusBadge status={row.CheckedStatus} />
+                <WorkingPermitStatusBadge status={row.approval.checkedStatus} />
           ),
         },
             {
           key: "approvedFirstApprover",
           header: "Approver 1",
           render: (row) => (
-             <WorkingPermitStatusBadge status={row.approvedFirstApprover} />
+             <WorkingPermitStatusBadge status={row.approval.firstApproverStatus} />
           ),
         },
         {
           key: "approvedFinalApprover",
           header: "Approver 2",
           render: (row) => (
-              <WorkingPermitStatusBadge status={row.approvedFinalApprover} />
+              <WorkingPermitStatusBadge status={row.approval.finalApproverStatus} />
           ),
         },
       {
           key: "status",
           header: "Status",
           render: (row) => (
-            <WorkingPermitStatusBadge status={row.status} />
+            <WorkingPermitStatusBadge status={row.approval.status} />
           ),
         },
-     
+
+        {
+            key: "actions",
+            header: "Actions",
+            render: (row) => (
+              <TableRowActions<WorkingPermitResponse>
+                item={row}
+                onView={(permit) => {
+                  console.log("View:", permit.referenceNumber);
+                }}
+                onEdit={(permit) => {
+                  console.log("Edit:", permit.id);
+                }}
+               
+                editLabel="Edit Request"
+    
+              />
+            ),
+          },
+              
      
       ];
 

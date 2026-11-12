@@ -105,7 +105,7 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
     requestedBy: "",
     checkedBy: "",
     attachment: "",
-    status: "PENDING",
+   // status: "PENDING",
   },
 });
 
@@ -165,7 +165,6 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
   };
 
 
-
 const selectedWorkerId = useWatch({
   control,
   name: "requestToId",
@@ -178,14 +177,15 @@ const selectedWorker = workers.find(
 const approvers = [
   {
     label: "Approver 1",
-    name: selectedWorker?.approvedBy ?? "Not assigned",
+    name: selectedWorker?.firstApprover?.name ?? "Not assigned",
+    userId: selectedWorker?.firstApproverUserId ?? null,
   },
   {
     label: "Final Approver",
-    name: selectedWorker?.finalApprovedBy ?? "Not assigned",
+    name: selectedWorker?.finalApprover?.name ?? "Not assigned",
+    userId: selectedWorker?.finalApproverUserId ?? null,
   },
 ];
-
 
 
   
@@ -242,101 +242,109 @@ return (
       </div>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-3">
-        {/* REQUEST TO */}
-        <div className="min-w-0 space-y-1.5">
+                {/* REQUEST TO */}
+              <div className="min-w-0 space-y-1.5">
           <label
-            htmlFor="requestTo"
+            htmlFor="requestToId"
             className="block text-[13px] font-medium text-slate-700"
           >
             Request To <span className="text-red-500">*</span>
           </label>
 
-        <Controller
-          name="requestToId"
-          control={control}
-          render={({ field }) => (
-            <select
-              value={field.value || ""}
-              onBlur={field.onBlur}
-              onChange={(event) => {
-                field.onChange(Number(event.target.value));
-              }}
-              disabled={isWorkersLoading || isWorkersError}
-              className={inputClass}
-            >
-              <option value="">Select recipient</option>
+          <Controller
+            name="requestToId"
+            control={control}
+            render={({ field }) => (
+              <select
+                id="requestToId"
+                name={field.name}
+                ref={field.ref}
+                value={field.value ?? ""}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  const value = event.target.value;
 
-              {workers.map((worker) => (
-                <option key={worker.id} value={worker.id}>
-                  {worker.workerName}
-                </option>
-              ))}
-            </select>
+                  field.onChange(value === "" ? undefined : Number(value));
+                }}
+                disabled={isWorkersLoading || isWorkersError}
+                className={inputClass}
+                aria-invalid={Boolean(errors.requestToId)}
+              >
+                <option value="">Select recipient</option>
+
+                {workers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {worker.workerName}
+                  </option>
+                ))}
+              </select>
+            )}
+          />
+
+          {errors.requestToId && (
+            <p className="mt-1 text-xs text-red-500">
+              {errors.requestToId.message}
+            </p>
           )}
-        />
-
-        {errors.requestToId && (
-          <p className="mt-1 text-xs text-red-500">
-            {errors.requestToId.message}
-          </p>
-        )}
         </div>
 
         {/* FROM */}
      
-      <div className="min-w-0 space-y-1.5">
-        <label className="block text-[13px] font-medium text-slate-700">
-          From <span className="text-red-500">*</span>
-        </label>
+   <div className="min-w-0 space-y-1.5">
+  <label className="block text-[13px] font-medium text-slate-700">
+    From <span className="text-red-500">*</span>
+  </label>
 
-      <Controller
-          name="fromId"
-          control={control}
-          render={({ field }) => (
-            <DepartmentBranchSelect
-              value={field.value}
-              onChange={(departmentId: number) => {
-                field.onChange(departmentId);
+  <Controller
+    name="fromId"
+    control={control}
+    render={({ field }) => (
+      <DepartmentBranchSelect
+        value={field.value}
+        onChange={(departmentId: number) => {
+          field.onChange(departmentId);
+          field.onBlur();
 
-                const selectedDepartment = departments.find(
-                  (department) => department.id === departmentId
-                );
+          const selectedDepartment = departments.find(
+            (department) => department.id === departmentId
+          );
 
-                const checkerName = selectedDepartment?.checker?.name ?? "";
+          const checkerName =
+            selectedDepartment?.checker?.name ?? "";
 
-                setValue("checkedBy", checkerName, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                  shouldTouch: true,
-                });
-              }}
-              departments={departments.filter(
-                (department) => department.isBranch === false
-              )}
-              disabled={isDepartmentsLoading || isDepartmentsError}
-              invalid={Boolean(errors.fromId)}
-            />
-          )}
-        />
-
-        {errors.fromId && (
-          <p role="alert" className={errorClass}>
-            {errors.fromId.message}
-          </p>
+          setValue("checkedBy", checkerName, {
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true,
+          });
+        }}
+        departments={departments.filter(
+          (department) => department.isBranch === false
         )}
+        disabled={isDepartmentsLoading || isDepartmentsError}
+        invalid={Boolean(errors.fromId)}
+      />
+    )}
+  />
 
-        {isDepartmentsLoading && (
-          <p className="text-xs text-slate-500">
-            Loading departments...
-          </p>
-        )}
+  {errors.fromId && (
+    <p role="alert" className={errorClass}>
+      {errors.fromId.message}
+    </p>
+  )}
 
-        {isDepartmentsError && (
-          <p role="alert" className={errorClass}>
-            Failed to load departments and branches.
-          </p>
-        )}
-      </div>
+  {isDepartmentsLoading && (
+    <p className="text-xs text-slate-500">
+      Loading departments...
+    </p>
+  )}
+
+  {isDepartmentsError && (
+    <p role="alert" className={errorClass}>
+      Failed to load departments and branches.
+    </p>
+  )}
+</div>
 
 
         {/* REQUEST LEVEL */}
@@ -644,7 +652,7 @@ return (
           type="button"
           onClick={onCancel}
           disabled={isSaving}
-          className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+          className="shadow inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
         >
           Cancel
         </button>
@@ -652,7 +660,7 @@ return (
         <button
           type="submit"
           disabled={isSaving || isReferenceLoading || isReferenceError}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 hover:cursor-pointer disabled:opacity-60"
         >
           {isSaving ? (
             <Loader2 className="h-4 w-4 animate-spin" />

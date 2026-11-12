@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { QueryParamsDatatable } from '@repo/shared';
+import { QueryParams, QueryParamsDatatable } from '@repo/shared';
 
 
 
@@ -43,7 +43,7 @@ export function useDepartmentBranches() {
 
 
 
-export function useGetWorkingPermit(params: serviceWorkingPermit.QueryParams) {
+export function useGetWorkingPermit(params: QueryParams) {
   return useQuery({
     queryKey: [
       "working-permit-display",
