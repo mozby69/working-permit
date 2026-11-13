@@ -39,6 +39,6 @@ export const navigation: NavigationItem[] = [
         title: "Working Permit",
         href: ROUTES.USER.WORKING_PERMIT,
         icon: File,
-        roles: ["COORDINATOR","CHECKER"],
+        roles: ["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER"],
     },
 ];

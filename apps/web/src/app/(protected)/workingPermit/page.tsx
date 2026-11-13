@@ -3,7 +3,7 @@ import WorkingPermitView from "@/modules/workingPermit/views/workingPermitView";
 
 export default function AccessControlPage() {
     return (
-        <RoleGuard roles={["COORDINATOR","CHECKER"]}>
+        <RoleGuard roles={["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER"]}>
             <WorkingPermitView />
         </RoleGuard>
     );

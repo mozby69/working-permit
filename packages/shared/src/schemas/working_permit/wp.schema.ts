@@ -68,7 +68,9 @@ export const workingPermitResponseSchema = z.object({
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
   attachment: z.string().nullable(),
-
+  canApproveChecker: z.boolean(),
+  canApproveFirstApprover: z.boolean(),
+  canApproveFinalApprover: z.boolean(),
 
   fromDepartment: z.object({
     entityName: z.string(),
@@ -106,3 +108,8 @@ export type WorkingPermitResponse = z.infer<
 export type WPListResponse = z.infer<
   typeof wpListResponseSchema
 >;
+
+
+export const approveWorkingPermitParamsSchema = z.object({
+  id: z.uuid(),
+});

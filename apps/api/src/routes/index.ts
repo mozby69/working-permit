@@ -4,7 +4,7 @@ import accessControlRoutes from "@/modules/admin/access-control/access-control.r
 import dashboardRoutes from "@/modules/admin/dashboard/dashboard.routes";
 import { authenticate } from '@/middleware/authenticate.middleware';
 import workingPermitRoute from "@/modules/working_permit/workingpermit.routes";
-
+import approvalRoute from "@/modules/wp_approval/approval.routes";
 
 const router = Router();
 
@@ -23,7 +23,7 @@ router.use(
 );
 
 router.use("/working-permit",authenticate,workingPermitRoute);
-
+router.use("/approval",authenticate,approvalRoute);
 
 
 export default router;

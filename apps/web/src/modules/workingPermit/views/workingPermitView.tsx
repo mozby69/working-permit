@@ -12,9 +12,11 @@ import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
 import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
+import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 
 
 export default function WorkingPermitView(){
+    useWPSocket()
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isModalOpen2, setIsModalOpen2] = useState(false);
     const [userPage, setUserPage] = useState(1);
@@ -23,7 +25,8 @@ export default function WorkingPermitView(){
     const debouncedSearch = useDebounce(userSearch, 500);
     //const userModal = useDisclosure();
 
-
+const [selectedPermit, setSelectedPermit] =
+  useState<WorkingPermitResponse | null>(null);
 
       // const openModal = () => {
       //   userModal.open();
@@ -126,26 +129,25 @@ export default function WorkingPermitView(){
           ),
         },
 
-        {
-            key: "actions",
-            header: "Actions",
-            render: (row) => (
-              <TableRowActions<WorkingPermitResponse>
-                item={row}
-                viewLabel="View Request"
-                onView={(permit) => { 
-                  setIsModalOpen2(true);
-                }}
-                onEdit={(permit) => {
-                  console.log("Edit:", permit.id);
-                }}
-               
-                editLabel="Edit Request"
-    
-              />
-            ),
-          },
-              
+       {
+          key: "actions",
+          header: "Actions",
+          render: (row) => (
+            <TableRowActions<WorkingPermitResponse>
+              item={row}
+              viewLabel="View Request"
+              onView={(permit) => {
+                setSelectedPermit(permit);
+                setIsModalOpen2(true);
+              }}
+              onEdit={(permit) => {
+                console.log("Edit:", permit.id);
+              }}
+              editLabel="Edit Request"
+            />
+          ),
+        },
+                      
      
       ];
 
@@ -257,21 +259,26 @@ export default function WorkingPermitView(){
     </Modal>
 
 
-
-     <Modal
-        isOpen={isModalOpen2}
-        onClose={() => setIsModalOpen2(false)}
-        title="View Request"
+      <Modal
+        isOpen={isModalOpen2 && selectedPermit !== null}
+        onClose={() => {
+          setIsModalOpen2(false);
+          setSelectedPermit(null);
+        }}
+        title="Working Permit Details"
         size="lg"
-        >
-
-        <ViewWorkingPermit
-          
-        />
-    </Modal>
-
-
-    
+      >
+        {selectedPermit && (
+          <ViewWorkingPermit
+            permit={selectedPermit}
+            onCancel={() => {
+              setIsModalOpen2(false);
+              setSelectedPermit(null);
+            }}
+            //canApprove={selectedPermit.canApproveChecker}
+          />
+        )}
+      </Modal>
 
   </div>
     );

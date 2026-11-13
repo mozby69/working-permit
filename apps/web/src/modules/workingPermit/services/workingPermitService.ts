@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkerListItem, WorkerListResponse, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -48,23 +48,11 @@ export async function getDepartmentBranchesService(): Promise<DepartmentBranch[]
 
 
 
-export interface WPListResponse {
-  success: boolean;
-  data: WorkingPermitResponse[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-
-  };
-}
 
 
 
 
-export async function getWorkingPermitService(
-  params: QueryParams
-): Promise<WPListResponse> {
+export async function getWorkingPermitService(params: QueryParams): Promise<WPListResponse> {
   const response = await api.get<unknown>(
     "/working-permit/display-working-permit",
     {
@@ -77,41 +65,9 @@ export async function getWorkingPermitService(
 
 
 
-type ApproverUser = {
-  id: number;
-  name: string;
-  username: string;
-  isActive: boolean;
-};
 
-type WorkerApi = {
-  id: number;
-  worker_name: string;
 
-  firstApproverUserId: number | null;
-  finalApproverUserId: number | null;
-
-  firstApproverUser: ApproverUser | null;
-  finalApproverUser: ApproverUser | null;
-};
-
-type WorkerListResponse = {
-  success: boolean;
-  data: WorkerApi[];
-};
-
-export type Worker = {
-  id: number;
-  workerName: string;
-
-  firstApproverUserId: number | null;
-  finalApproverUserId: number | null;
-
-  firstApprover: ApproverUser | null;
-  finalApprover: ApproverUser | null;
-};
-
-export async function getWorkerListService(): Promise<Worker[]> {
+export async function getWorkerListService(): Promise<WorkerListItem[]> {
   const response = await api.get<WorkerListResponse>(
     "/working-permit/worker-list"
   );
@@ -119,11 +75,31 @@ export async function getWorkerListService(): Promise<Worker[]> {
   return response.data.data.map((worker) => ({
     id: worker.id,
     workerName: worker.worker_name,
-
     firstApproverUserId: worker.firstApproverUserId,
     finalApproverUserId: worker.finalApproverUserId,
-
     firstApprover: worker.firstApproverUser,
     finalApprover: worker.finalApproverUser,
   }));
+}
+
+
+// export async function approveCheckerService(workingPermitId: string): Promise<CheckerApprovalResponse> {
+//   const response = await api.patch<CheckerApprovalResponse>(
+//     `/working-permit/${workingPermitId}/checker-approve`
+//   );
+
+//   return response.data;
+// }
+
+export async function approveWorkingPermitService(
+  workingPermitId: string,
+  stage: ApprovalStage
+): Promise<ApprovalResponse> {
+  const endpoint = approvalEndpoints[stage];
+
+  const response = await api.patch<ApprovalResponse>(
+    `/approval/${encodeURIComponent(workingPermitId)}/${endpoint}`
+  );
+
+  return response.data;
 }

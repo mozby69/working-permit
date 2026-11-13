@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { QueryParams } from '@repo/shared';
+import { ApproveWorkingPermitInput, QueryParams } from '@repo/shared';
 
 
 
@@ -61,5 +61,50 @@ export function useWorkerList() {
     queryKey: ["worker-list"],
     queryFn: serviceWorkingPermit.getWorkerListService,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// export function useApproveChecker() {
+//   const queryClient = useQueryClient();
+
+//   return useMutation({
+//     mutationFn: (workingPermitId: string) =>
+//       serviceWorkingPermit.approveCheckerService(workingPermitId),
+
+//     onSuccess: async () => {
+//       await queryClient.invalidateQueries({
+//         queryKey: ["working-permits"],
+//       });
+//     },
+//   });
+// }
+
+
+export function useApproveWorkingPermit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workingPermitId,
+      stage,
+    }: ApproveWorkingPermitInput) =>
+      serviceWorkingPermit.approveWorkingPermitService(workingPermitId, stage),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["working-permits"],
+      });
+    },
   });
 }

@@ -74,6 +74,10 @@ export function AuthProvider({
                 router.replace("/workingPermit");
                 return;
             }
+              if (roles.includes("FINAL_APPROVER")) {
+                router.replace("/workingPermit");
+                return;
+            }
 
             router.replace("/");
         },

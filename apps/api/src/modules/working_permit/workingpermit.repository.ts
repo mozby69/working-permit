@@ -3,7 +3,8 @@ import { getDate } from "@/utils/dateFormatter";
 import { AddRequestInput } from "@repo/shared";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { Prisma } from "../../../generated/prisma/client";
-
+import { QueryParamWP } from "./workingpermit.types";
+import { WorkingPermitStatus } from "../../../generated/prisma/client";
 
 
 export async function addRequestRepo(data: AddRequestInput, userId: number) {
@@ -109,10 +110,10 @@ export async function addRequestRepo(data: AddRequestInput, userId: number) {
 
             ApprovalTable: {
               create: {
-                status: "PENDING",
-                checkedStatus: "PENDING",
-                firstApproverStatus: "PENDING",
-                finalApproverStatus: "PENDING",
+                status: WorkingPermitStatus.PENDING,
+                checkedStatus: WorkingPermitStatus.PENDING,
+                firstApproverStatus: WorkingPermitStatus.PENDING,
+                finalApproverStatus: WorkingPermitStatus.PENDING,
 
                 statusAt: null,
                 checkedStatusAt: null,
@@ -172,13 +173,7 @@ export async function getDepartmentBranchesRepo() {
 
 
 
-export type QueryParamWP = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  userId: number;
-  roles: string[];
-};
+
 
 export async function displayWorkingPermit(params: QueryParamWP) {
   const {
@@ -188,6 +183,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     userId,
     roles = [],
   } = params;
+
 
 
   if (
@@ -216,6 +212,9 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   const isAdmin = roles.includes("ADMIN");
   const isCoordinator = roles.includes("COORDINATOR");
   const isChecker = roles.includes("CHECKER");
+  const isFirstApprover = roles.includes("FIRST_APPROVER");
+  const isFinalApprover = roles.includes("FINAL_APPROVER");
+
 
   if (isCoordinator) {
     visibilityFilters.push({
@@ -225,26 +224,42 @@ export async function displayWorkingPermit(params: QueryParamWP) {
 
   if (isChecker) {
     visibilityFilters.push({
-      sequence: 1,
-
       fromDepartment: {
         is: {
           checkerId: userId,
         },
       },
+    });
+  }
+
+  if (isFirstApprover) {
+    visibilityFilters.push({
+      WorkerList: {
+        is: {
+          firstApproverUserId: userId,
+        },
+      },
 
       ApprovalTable: {
         some: {
-          status: "PENDING",
-          checkedStatus: "PENDING",
+          checkedStatus: WorkingPermitStatus.APPROVED,
         },
       },
     });
   }
 
-  // -------------------------------------------
-  // 4. Build Prisma WHERE
-  // -------------------------------------------
+
+   if (isFinalApprover) {
+    visibilityFilters.push({
+     
+      ApprovalTable: {
+        some: {
+          firstApproverStatus: WorkingPermitStatus.APPROVED,
+        },
+      },
+    });
+  }
+
 
   const where: Prisma.WorkingPermitWhereInput = {};
 
@@ -259,9 +274,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     }
   }
 
-  // -------------------------------------------
-  // 5. Apply search without overriding roles
-  // -------------------------------------------
+
 
   const term = search?.trim();
 
@@ -394,10 +407,6 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     }),
   ]);
 
-  // -------------------------------------------
-  // 7. Return data with pagination
-  // -------------------------------------------
-
   return {
     data: wp_data,
 
@@ -447,3 +456,111 @@ export async function getWorkerRepo() {
     },
   });
 }
+
+
+
+
+
+
+
+// export async function approveWorkingPermitByCheckerRepo(
+//   workingPermitId: string,
+//   userId: number
+// ) {
+//   return prisma.$transaction(async (tx) => {
+
+//     const permit = await tx.workingPermit.findFirst({
+//       where: {
+//         id: workingPermitId,
+//         sequence: 1,
+
+//         fromDepartment: {
+//           is: {
+//             checkerId: userId,
+//           },
+//         },
+
+//         ApprovalTable: {
+//           some: {
+//             status: WorkingPermitStatus.PENDING,
+//             checkedStatus: WorkingPermitStatus.PENDING,
+//           },
+//         },
+//       },
+
+//       select: {
+//         id: true,
+//         ApprovalTable: {
+//           where: {
+//             status: WorkingPermitStatus.PENDING,
+//             checkedStatus: WorkingPermitStatus.PENDING,
+//           },
+//           select: {
+//             id: true,
+//           },
+//         },
+//       },
+//     });
+
+//     if (!permit) {
+//       throw new Error(
+//         "Working Permit is not assigned to you or is no longer pending."
+//       );
+//     }
+
+//     if (permit.ApprovalTable.length !== 1) {
+//       throw new Error(
+//         "Expected exactly one pending approval record."
+//       );
+//     }
+
+   
+//     const advanced = await tx.workingPermit.updateMany({
+//       where: {
+//         id: workingPermitId,
+//         sequence: 1,
+//         fromDepartment: {
+//           is: {
+//             checkerId: userId,
+//           },
+//         },
+//       },
+//       data: {
+//         sequence: 2,
+//       },
+//     });
+
+//     if (advanced.count !== 1) {
+//       throw new Error(
+//         "This Working Permit has already been processed."
+//       );
+//     }
+
+
+//     const approval = await tx.approvalTable.updateMany({
+//       where: {
+//         id: permit.ApprovalTable[0].id,
+//         workingPermitId,
+//         status: WorkingPermitStatus.PENDING,
+//         checkedStatus: WorkingPermitStatus.PENDING,
+//       },
+
+//       data: {
+//         checkedStatus: WorkingPermitStatus.APPROVED,
+//         checkedStatusAt: new Date(),
+//       },
+//     });
+
+//     if (approval.count !== 1) {
+//       throw new Error(
+//         "Checker approval could not be updated."
+//       );
+//     }
+
+//     return {
+//       workingPermitId,
+//       sequence: 2,
+//       checkedStatus: "APPROVED" as const,
+//     };
+//   });
+// }
