@@ -6,34 +6,45 @@ import {
     BadgeCheck,
   Building2,
   CalendarDays,
+  CheckCheck,
   ClipboardList,
+  File,
   FileText,
   Hash,
-  Layers3,
+  ImageIcon,
+  Inbox,
+  Loader2,
   Paperclip,
-  Save,
+
   UserRound,
   UsersRound,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
 import { DetailField, SectionHeading } from "../../helper/wp.helper";
-import { useApproveWorkingPermit } from "../../hooks/useWorkingPermit";
+import { useApproveWorkingPermit, useCompleteWorkingPermit, useReceiveWorkingPermit } from "../../hooks/useWorkingPermit";
 
 
 interface ViewWorkingPermitProps {
   permit: WorkingPermitResponse;
   onCancel: () => void;
-//   canApprove: boolean;
 }
 
 
 
-export default function ViewWorkingPermit({
-  permit,
-  onCancel,
-//   canApprove,
-}: ViewWorkingPermitProps) {
+export default function ViewWorkingPermit({permit,onCancel}: ViewWorkingPermitProps) {
+
+  const {
+  mutate: receivePermit,
+  isPending: isReceiving,
+} = useReceiveWorkingPermit();
+
+const {
+  mutate: completePermit,
+  isPending: isCompleting,
+} = useCompleteWorkingPermit();
+
+
 
   const formattedDate = new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
@@ -85,10 +96,60 @@ export default function ViewWorkingPermit({
   const finalApprover =
     permit.requestToWorker.finalApprover;
 
+
+
+const isProcessing =
+  isSaving || isReceiving || isCompleting;
+
+
+  const handleReceive = () => {
+  if (!permit.canReceiveTroubleshooter || isProcessing) {
+    return;
+  }
+
+  receivePermit(
+    { workingPermitId: permit.id },
+    {
+      onSuccess: () => {
+        toast.success("Working Permit received successfully!");
+        onCancel();
+      },
+      onError: (error) => {
+        toast.error(
+          error.message || "Failed to receive Working Permit."
+        );
+      },
+    }
+  );
+};
+
+const handleComplete = () => {
+  if (!permit.canCompleteTroubleshooter || isProcessing) {
+    return;
+  }
+
+  completePermit(
+    { workingPermitId: permit.id },
+    {
+      onSuccess: () => {
+        toast.success("Working Permit completed successfully!");
+        onCancel();
+      },
+      onError: (error) => {
+        toast.error(
+          error.message || "Failed to complete Working Permit."
+        );
+      },
+    }
+  );
+};
+
+
+
   return (
     <div className="space-y-6 pb-2">
       {/* Reference header */}
-      <div className="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-white p-5 sm:p-6">
+      <div className="rounded-xl border border-indigo-100 bg-linear-to-r from-indigo-50 via-white to-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
@@ -160,7 +221,7 @@ export default function ViewWorkingPermit({
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+            <p className="whitespace-pre-wrap wrap-break text-sm leading-7 text-slate-700">
               {permit.requestFor}
             </p>
           </div>
@@ -226,7 +287,7 @@ export default function ViewWorkingPermit({
                 <UserRound size={17} />
               </div>
               <div className="min-w-0">
-                <p className="break-words text-sm font-semibold text-slate-800">
+                <p className="wrap-break text-sm font-semibold text-slate-800">
                   {firstApprover?.name ?? "Not assigned"}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -245,7 +306,7 @@ export default function ViewWorkingPermit({
                 <UserRound size={17} />
               </div>
               <div className="min-w-0">
-                <p className="break-words text-sm font-semibold text-slate-800">
+                <p className="wrap-break text-sm font-semibold text-slate-800">
                   {finalApprover?.name ?? "Not assigned"}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -258,68 +319,162 @@ export default function ViewWorkingPermit({
       </section>
 
       {/* Attachment */}
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-        <SectionHeading
-          number="04"
-          title="Attachment"
-          description="Supporting document associated with the request."
-        />
+     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+  <SectionHeading
+    number="04"
+    title="Supporting Documents"
+    description="Files and documents attached to this working permit request."
+  />
 
-        <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm">
-            <Paperclip size={18} />
-          </div>
+  {permit.attachments.length > 0 ? (
+    <div className="space-y-3">
+      {permit.attachments.map((file) => {
+        const fileSize =
+          file.fileSize >= 1024 * 1024
+            ? `${(file.fileSize / (1024 * 1024)).toFixed(2)} MB`
+            : `${(file.fileSize / 1024).toFixed(1)} KB`;
 
-          <div className="min-w-0">
-            <p className="break-all text-sm font-medium text-slate-700">
-              {permit.attachment || "No attachment provided"}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Supporting file
-            </p>
-          </div>
-        </div>
-      </section>
+        const isImage = file.mimeType.startsWith("image/");
+        const isPdf = file.mimeType === "application/pdf";
 
-
-
-        <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <div />
-
-            <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <div />
-
-            <div className="flex items-center justify-end gap-3">
-                <button
-                type="button"
-                onClick={onCancel}
-                disabled={isSaving}
-                className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
-                >
-                Close
-                </button>
-
-                {approvalStage !== null && (
-                <button
-                    type="button"
-                    onClick={handleApprove}
-                    disabled={isSaving}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                    <BadgeCheck className="h-4 w-4" />
-
-                    {isSaving
-                    ? "Approving..."
-                    : approvalStage === "CHECKER"
-                        ? "Approve as Checker"
-                        : approvalStage === "FIRST_APPROVER"
-                        ? "Approve as First Approver"
-                        : "Approve as Final Approver"}
-                </button>
+        return (
+          <div
+            key={file.id}
+            className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                {isImage ? (
+                  <ImageIcon
+                   className="h-5 w-5 text-blue-600" />
+                ) : isPdf ? (
+                  <FileText className="h-5 w-5 text-red-500" />
+                ) : (
+                  <File className="h-5 w-5 text-slate-500" />
                 )}
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-800">
+                  {file.originalName}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  {fileSize} •{" "}
+                  {isImage
+                    ? "Image"
+                    : isPdf
+                      ? "PDF Document"
+                      : "Document"}
+                </p>
+              </div>
             </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                {file.originalName.split(".").pop()?.toUpperCase() ?? "FILE"}
+              </span>
+
+              {/* Add a secure View/Download action here */}
             </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+        <Paperclip className="h-5 w-5 text-slate-400" />
+      </div>
+
+      <p className="text-sm font-medium text-slate-700">
+        No attachments available
+      </p>
+
+      <p className="mt-1 text-xs text-slate-500">
+        No supporting documents were uploaded for this request.
+      </p>
+    </div>
+  )}
+</section>
+
+
+
+     <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div />
+
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {/* CLOSE */}
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+          >
+            Close
+          </button>
+
+          {/* CHECKER / FIRST APPROVER / FINAL APPROVER */}
+          {approvalStage !== null && (
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={isProcessing}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <BadgeCheck className="h-4 w-4" />
+              )}
+
+              {isSaving
+                ? "Approving..."
+                : approvalStage === "CHECKER"
+                  ? "Approve as Checker"
+                  : approvalStage === "FIRST_APPROVER"
+                    ? "Approve as First Approver"
+                    : "Approve as Final Approver"}
+            </button>
+          )}
+
+          {/* TROUBLESHOOTER - RECEIVE */}
+          {permit.canReceiveTroubleshooter && (
+            <button
+              type="button"
+              onClick={handleReceive}
+              disabled={isProcessing}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isReceiving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Inbox className="h-4 w-4" />
+              )}
+
+              {isReceiving ? "Receiving..." : "Receive Request"}
+            </button>
+          )}
+
+          {/* TROUBLESHOOTER - COMPLETE */}
+          {permit.canCompleteTroubleshooter && (
+            <button
+              type="button"
+              onClick={handleComplete}
+              disabled={isProcessing}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCompleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCheck className="h-4 w-4" />
+              )}
+
+              {isCompleting ? "Completing..." : "Mark as Completed"}
+            </button>
+          )}
         </div>
+      </div>
 
     </div>
   );

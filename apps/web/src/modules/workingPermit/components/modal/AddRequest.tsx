@@ -56,6 +56,7 @@ const errorClass =
 
 export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
 
+
   const {
   data: workers = [],
   isLoading: isWorkersLoading,
@@ -96,7 +97,6 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
     resolver: zodResolver(addRequestSchema),
 
   defaultValues: {
-    //referenceNumber: referenceNo,
     requestToId: 0,
     fromId: 0,
     requestLevel: "LEVEL_1",
@@ -105,9 +105,12 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
     requestedBy: "",
     checkedBy: "",
     attachment: "",
-   // status: "PENDING",
+
   },
 });
+
+
+
 
 
 
@@ -122,47 +125,84 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
   const isSaving = isSubmitting || createMutation.isPending;
 
 
-  const submitForm = async (values: AddRequestSchema) => {
-    setSubmitError(null);
+const submitForm = async (values: AddRequestSchema) => {
+  setSubmitError(null);
 
-    if (files.length > 0) {
-      setSubmitError(
-        "File uploads are not configured yet. Remove attachments before submitting."
-      );
-      return;
-    }
+  try {
+    await createMutation.mutateAsync({
+      ...values,
+      attachments: files,
+    });
 
-    try {
+    reset();
+    setFiles([]);
 
-      await createMutation.mutateAsync(values);
-      reset();
-      setFiles([]);
-      toast.success("Working Permit created successfully!");
-      onCancel();
+ 
 
-    } catch (error: unknown) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create working permit request."
-      );
-    }
-  };
-
-  const handleFileChange = (selected: FileList | null) => {
-    if (!selected) return;
-
-    setFiles((previous) => [
-      ...previous,
-      ...Array.from(selected),
-    ]);
-  };
-
-  const removeFile = (index: number) => {
-    setFiles((previous) =>
-      previous.filter((_, i) => i !== index)
+    toast.success("Working Permit created successfully!");
+    onCancel();
+  } catch (error: unknown) {
+    setSubmitError(
+      error instanceof Error
+        ? error.message
+        : "Failed to create working permit request."
     );
-  };
+  }
+};
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
+const handleFileChange = (fileList: FileList | null) => {
+  if (!fileList?.length) return;
+
+  const selectedFiles = Array.from(fileList);
+
+  const invalidFile = selectedFiles.find(
+    (file) => !ALLOWED_TYPES.includes(file.type)
+  );
+
+  if (invalidFile) {
+    toast.error(`Unsupported file type: ${invalidFile.name}`);
+    return;
+  }
+
+  const oversizedFile = selectedFiles.find(
+    (file) => file.size > MAX_FILE_SIZE
+  );
+
+  if (oversizedFile) {
+    toast.error(`${oversizedFile.name} exceeds the 10 MB limit.`);
+    return;
+  }
+
+  const newFiles = selectedFiles.filter(
+    (file) =>
+      !files.some(
+        (existing) =>
+          existing.name === file.name &&
+          existing.size === file.size &&
+          existing.lastModified === file.lastModified
+      )
+  );
+
+  if (files.length + newFiles.length > MAX_FILES) {
+    toast.error(`You can upload a maximum of ${MAX_FILES} files.`);
+    return;
+  }
+
+  setFiles((previous) => [...previous, ...newFiles]);
+  setSubmitError(null);
+};
+ 
 
 
 const selectedWorkerId = useWatch({
@@ -606,7 +646,7 @@ return (
 
               <button
                 type="button"
-                onClick={() => removeFile(index)}
+                // onClick={() => removeFile(index)}
                 disabled={isSaving}
                 aria-label={`Remove ${file.name}`}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"

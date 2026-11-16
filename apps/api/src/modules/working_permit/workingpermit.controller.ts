@@ -5,6 +5,8 @@ import type { NextFunction, Request, Response } from "express";
 import { sendSuccess } from '@/lib/http/response';
 import { emitUserCreated } from '@/socket/emitters/user.emitter';
 import { emitWPCreated, emitWPUpdated } from '@/socket/emitters/wp.emitter';
+import fs from "node:fs/promises";
+import { UploadedAttachment } from './workingpermit.types';
 
 
 export async function createRequestController(
@@ -12,8 +14,28 @@ export async function createRequestController(
   res: Response,
   next: NextFunction
 ) {
+
+
+  const uploadedFiles: Express.Multer.File[] = Array.isArray(req.files)
+    ? req.files
+    : [];
+
+  const cleanupUploads = async () => {
+    await Promise.all(
+      uploadedFiles.map(async (file) => {
+        try {
+          await fs.unlink(file.path);
+        } catch (error: unknown) {
+          console.error(
+            "Failed to clean up uploaded attachment:",
+            error
+          );
+        }
+      })
+    );
+  };
+
   try {
-  
     const userId = req.user?.id;
 
     if (
@@ -21,16 +43,28 @@ export async function createRequestController(
       !Number.isSafeInteger(userId) ||
       userId <= 0
     ) {
+      await cleanupUploads();
+
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
       });
     }
 
-    // 2. Validate request body
-    const parsed = addRequestSchema.safeParse(req.body);
+    // Multipart form fields arrive as strings.
+    const parsed = addRequestSchema.safeParse({
+      ...req.body,
+      requestToId: Number(req.body.requestToId),
+      fromId: Number(req.body.fromId),
+      branchDepartmentId: Number(req.body.branchDepartmentId),
+
+      // Do not accept client-supplied stored filenames.
+      attachment: undefined,
+    });
 
     if (!parsed.success) {
+      await cleanupUploads();
+
       return res.status(400).json({
         success: false,
         message: "Invalid working permit request",
@@ -38,24 +72,41 @@ export async function createRequestController(
       });
     }
 
-  
-    const result = await workingPermitService.createRequestService(parsed.data,userId);
+    const attachments: UploadedAttachment[] = uploadedFiles.map(
+      (file) => ({
+        originalName: file.originalname,
+        storedName: file.filename,
+        mimeType: file.mimetype,
+        fileSize: file.size,
+      })
+    );
 
-    emitWPCreated({
-        id: result.id,
-      });
+    const result =
+      await workingPermitService.createRequestService(
+        parsed.data,
+        userId,
+        attachments
+      );
 
+    // The database transaction has succeeded.
+    // Event errors should not trigger deletion of saved files.
+    try {
+      emitWPCreated({ id: result.id });
+    } catch (eventError: unknown) {
+      console.error("Failed to emit Working Permit event:", eventError);
+    }
 
-  
     return res.status(201).json({
       success: true,
       message: "Working permit request created successfully",
       data: result,
     });
   } catch (error: unknown) {
+    await cleanupUploads();
     next(error);
   }
 }
+
 
 
 export async function getNextReferenceController(req: Request,res: Response) {

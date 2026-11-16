@@ -85,8 +85,8 @@ const [selectedPermit, setSelectedPermit] =
           key: "requestLevel",
           header: "Level",
           render: (row) => (
-            <span className="capitalize">
-              {row.requestLevel}
+            <span className="inline-block whitespace-nowrap capitalize">
+              {row.requestLevel.replaceAll("_", " ")}
             </span>
           ),
         },
@@ -108,19 +108,34 @@ const [selectedPermit, setSelectedPermit] =
           ),
         },
             {
-          key: "approvedFirstApprover",
+          key: "firstApproverStatus",
           header: "Approver 1",
           render: (row) => (
              <WorkingPermitStatusBadge status={row.approval.firstApproverStatus} />
           ),
         },
-        {
-          key: "approvedFinalApprover",
-          header: "Approver 2",
-          render: (row) => (
-              <WorkingPermitStatusBadge status={row.approval.finalApproverStatus} />
-          ),
+       {
+        key: "finalApproverStatus",
+        header: "Approver 2",
+        render: (row) => {
+         if (row.requestLevel === "LEVEL_1") {
+          return (
+            <span
+              title="Final approval is not required for Level 1"
+              className="inline-flex h-7 w-23 items-center justify-center rounded-full border border-slate-400 bg-slate-100 text-[11px] font-semibold text-slate-500"
+            >
+              N/A
+            </span>
+          );
+        }
+
+          return (
+            <WorkingPermitStatusBadge
+              status={row.approval.finalApproverStatus}
+            />
+          );
         },
+      },
       {
           key: "status",
           header: "Status",

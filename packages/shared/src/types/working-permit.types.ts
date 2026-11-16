@@ -1,4 +1,4 @@
-import { WorkingPermitResponse } from "../schemas";
+import { AddRequestInput, AddRequestSchema, WorkingPermitResponse } from "../schemas";
 
 export type DepartmentBranch = {
   id: number;
@@ -133,3 +133,31 @@ export interface ApproveWorkingPermitInput {
   workingPermitId: string;
   stage: ApprovalStage;
 }
+
+
+
+export type TroubleshooterStatus =
+  | "IN_PROGRESS"
+  | "COMPLETED";
+
+export interface TroubleshooterActionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    workingPermitId: string;
+    sequence: number;
+    receivedById: number;
+    status: TroubleshooterStatus;
+  };
+}
+
+export interface TroubleshooterMutationInput {
+  workingPermitId: string;
+}
+
+export type CreateWorkingPermitPayload = Omit<
+  AddRequestSchema,
+  "attachment"
+> & {
+  attachments: File[];
+};

@@ -8,6 +8,8 @@ import {
   approveCheckerService,
   approveFirstApproverService,
   approveFinalApproverService,
+  receiveWorkingPermitService,
+  completeWorkingPermitService,
 } from "./approval.service.js";
 
 import { emitWPUpdated } from "@/socket/emitters/wp.emitter.js"; 
@@ -82,3 +84,118 @@ export const approveFirstApproverController =
 // Sequence 3 → 4
 export const approveFinalApproverController =
   createApprovalController(approveFinalApproverService);
+
+
+
+
+
+
+
+
+
+
+
+
+export async function receiveWorkingPermitController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = req.user?.id;
+    const workingPermitId = req.params.id;
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
+    if (
+      typeof workingPermitId !== "string" ||
+      !workingPermitId.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Working Permit ID is required.",
+      });
+    }
+
+    const result = await receiveWorkingPermitService(
+      workingPermitId,
+      userId
+    );
+
+      emitWPUpdated({
+        id: result.workingPermitId,
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Working Permit received successfully.",
+      data: result,
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+}
+
+
+
+
+
+
+
+export async function completeWorkingPermitController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = req.user?.id;
+    const workingPermitId = req.params.id;
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
+    if (
+      typeof workingPermitId !== "string" ||
+      !workingPermitId.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Working Permit ID is required.",
+      });
+    }
+
+    const result = await completeWorkingPermitService(
+      workingPermitId,
+      userId
+    );
+
+       emitWPUpdated({
+        id: result.workingPermitId,
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Working Permit completed successfully.",
+      data: result,
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+}

@@ -1,19 +1,42 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkerListItem, WorkerListResponse, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
 
 
-export async function addWorkingPermitService(payload: AddRequestInput) {
+export async function addWorkingPermitService(
+  payload: CreateWorkingPermitPayload
+) {
+  const formData = new FormData();
+
+  formData.append("requestToId", String(payload.requestToId));
+  formData.append("fromId", String(payload.fromId));
+  formData.append(
+    "branchDepartmentId",
+    String(payload.branchDepartmentId)
+  );
+
+  formData.append("requestLevel", payload.requestLevel);
+  formData.append("requestFor", payload.requestFor);
+  formData.append("requestedBy", payload.requestedBy);
+
+  if (payload.checkedBy) {
+    formData.append("checkedBy", payload.checkedBy);
+  }
+
+  // Append multiple attachments
+  for (const file of payload.attachments) {
+    formData.append("attachments", file);
+  }
+
   const response = await api.post(
     "/working-permit/add-working-permit",
-    payload
+    formData
   );
 
   return response.data.data;
 }
-
 
 
 
@@ -83,13 +106,7 @@ export async function getWorkerListService(): Promise<WorkerListItem[]> {
 }
 
 
-// export async function approveCheckerService(workingPermitId: string): Promise<CheckerApprovalResponse> {
-//   const response = await api.patch<CheckerApprovalResponse>(
-//     `/working-permit/${workingPermitId}/checker-approve`
-//   );
 
-//   return response.data;
-// }
 
 export async function approveWorkingPermitService(
   workingPermitId: string,
@@ -103,3 +120,32 @@ export async function approveWorkingPermitService(
 
   return response.data;
 }
+
+
+
+
+export const troubleshooterService = {
+  // RECEIVE WORKING PERMIT
+  async receiveWorkingPermit(
+    workingPermitId: string
+  ): Promise<TroubleshooterActionResponse> {
+    const response =
+      await api.patch<TroubleshooterActionResponse>(
+        `/approval/${encodeURIComponent(workingPermitId)}/receive`
+      );
+
+    return response.data;
+  },
+
+  // COMPLETE WORKING PERMIT
+  async completeWorkingPermit(
+    workingPermitId: string
+  ): Promise<TroubleshooterActionResponse> {
+    const response =
+      await api.patch<TroubleshooterActionResponse>(
+        `/approval/${encodeURIComponent(workingPermitId)}/complete`
+      );
+
+    return response.data;
+  },
+};

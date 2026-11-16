@@ -1,26 +1,27 @@
 import type { ApprovalStage } from "@repo/shared";
 
+
+type ApprovalStageConfig = {
+  sequence: number;
+  role: string;
+};
+
 export const APPROVAL_STAGES = {
   CHECKER: {
     sequence: 1,
-    nextSequence: 2,
     role: "CHECKER",
   },
+
   FIRST_APPROVER: {
     sequence: 2,
-    nextSequence: 3,
-    role: "APPROVER",
+    role: "FIRST_APPROVER",
   },
+
   FINAL_APPROVER: {
     sequence: 3,
-    nextSequence: 4,
-    role: "APPROVER",
+    role: "FINAL_APPROVER",
   },
 } as const satisfies Record<
   ApprovalStage,
-  {
-    sequence: number;
-    nextSequence: number;
-    role: string;
-  }
+  ApprovalStageConfig
 >;

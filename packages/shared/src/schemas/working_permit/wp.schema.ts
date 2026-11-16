@@ -15,7 +15,7 @@ export const workingPermitStatus = z.enum([
 ]);
 
 export const addRequestSchema = z.object({
- // referenceNumber: z.string().trim().min(1, "Reference number is required"),
+
   requestToId: z.number().int().positive("Please select a request recipient"),
   fromId: z.number().int().positive("Please select a department or branch"),
   requestLevel: levelEnum,
@@ -24,12 +24,8 @@ export const addRequestSchema = z.object({
   branchDepartmentId:z.number().int().positive("Please select a department or branch"),
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   checkedBy: z.string().trim().min(1, "Checked by is required"),
-  attachment: z.string().optional(),
+  attachment: z.string().max(500).optional(),
 
- // status: workingPermitStatus.default("PENDING"),
-  // CheckedStatus: workingPermitStatus.default("PENDING"),
-  // approvedFinalApprover: workingPermitStatus.default("PENDING"),
-  // approvedFirstApprover: workingPermitStatus.default("PENDING"),
 });
 
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
@@ -38,6 +34,21 @@ export type AddRequestInput = z.input<typeof addRequestSchema>;
 
 
 //***************************************** */
+
+
+export const workingPermitAttachmentSchema = z.object({
+  id: z.string(),
+  workingPermitId: z.string(),
+  originalName: z.string(),
+  storedName: z.string(),
+  mimeType: z.string(),
+  fileSize: z.number(),
+  createdAt: z.string(),
+});
+
+export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSchema>;
+
+
 
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
@@ -67,10 +78,12 @@ export const workingPermitResponseSchema = z.object({
   requestFor: z.string(),
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
-  attachment: z.string().nullable(),
+  attachments: z.array(workingPermitAttachmentSchema),
   canApproveChecker: z.boolean(),
   canApproveFirstApprover: z.boolean(),
   canApproveFinalApprover: z.boolean(),
+  canReceiveTroubleshooter: z.boolean(),
+  canCompleteTroubleshooter: z.boolean(),
 
   fromDepartment: z.object({
     entityName: z.string(),
@@ -85,6 +98,9 @@ export const workingPermitResponseSchema = z.object({
     checkedStatus: workingPermitStatus,
     firstApproverStatus: workingPermitStatus,
     finalApproverStatus: workingPermitStatus,
+    receivedById: z.number().int().nullable(),
+    receivedAt: z.string().nullable(),
+    statusAt: z.string().nullable(),
   }),
 });
 

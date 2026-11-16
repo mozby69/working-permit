@@ -3,11 +3,11 @@ import { getDate } from "@/utils/dateFormatter";
 import { AddRequestInput } from "@repo/shared";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { Prisma } from "../../../generated/prisma/client";
-import { QueryParamWP } from "./workingpermit.types";
+import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
 
 
-export async function addRequestRepo(data: AddRequestInput, userId: number) {
+export async function addRequestRepo(data: AddRequestInput, userId: number,attachments: UploadedAttachment[]) {
   return prisma.$transaction(async (tx) => {
 
     const fromDepartment = await tx.departmentBranches.findFirst({
@@ -105,7 +105,14 @@ export async function addRequestRepo(data: AddRequestInput, userId: number) {
             requestFor: data.requestFor,
             requestedBy: data.requestedBy,
             checkedBy: data.checkedBy ?? null,
-            attachment: data.attachment ?? null,
+            attachments: {
+              create: attachments.map((file) => ({
+                originalName: file.originalName,
+                storedName: file.storedName,
+                mimeType: file.mimeType,
+                fileSize: file.fileSize,
+              })),
+            },
 
 
             ApprovalTable: {
@@ -174,7 +181,6 @@ export async function getDepartmentBranchesRepo() {
 
 
 
-
 export async function displayWorkingPermit(params: QueryParamWP) {
   const {
     page = 1,
@@ -184,27 +190,18 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     roles = [],
   } = params;
 
-
-
-  if (
-    !Number.isSafeInteger(userId) ||
-    userId <= 0
-  ) {
-    throw new Error(
-      "Authenticated user ID is required"
-    );
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    throw new Error("Authenticated user ID is required");
   }
 
-
   const currentPage =
-    Number.isSafeInteger(page) && page > 0
-      ? page
-      : 1;
+    Number.isSafeInteger(page) && page > 0 ? page : 1;
 
   const pageLimit =
     Number.isSafeInteger(limit) && limit > 0
       ? Math.min(limit, 100)
       : 10;
+
 
 
   const visibilityFilters: Prisma.WorkingPermitWhereInput[] = [];
@@ -214,7 +211,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   const isChecker = roles.includes("CHECKER");
   const isFirstApprover = roles.includes("FIRST_APPROVER");
   const isFinalApprover = roles.includes("FINAL_APPROVER");
-
+  const isTroubleshooter = roles.includes("TROUBLESHOOTER");
 
   if (isCoordinator) {
     visibilityFilters.push({
@@ -231,6 +228,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
       },
     });
   }
+
 
   if (isFirstApprover) {
     visibilityFilters.push({
@@ -249,11 +247,19 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   }
 
 
-   if (isFinalApprover) {
+  if (isFinalApprover) {
     visibilityFilters.push({
-     
+      requestLevel: "LEVEL_2",
+
+      WorkerList: {
+        is: {
+          finalApproverUserId: userId,
+        },
+      },
+
       ApprovalTable: {
         some: {
+          checkedStatus: WorkingPermitStatus.APPROVED,
           firstApproverStatus: WorkingPermitStatus.APPROVED,
         },
       },
@@ -261,60 +267,88 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   }
 
 
-  const where: Prisma.WorkingPermitWhereInput = {};
+  if (isTroubleshooter) {
+    visibilityFilters.push({
 
-  if (!isAdmin) {
-    if (visibilityFilters.length === 0) {
-      // No permitted role: return no records
-      where.id = {
-        in: [],
-      };
-    } else {
-      where.OR = visibilityFilters;
-    }
-  }
-
-
-
-  const term = search?.trim();
-
-  if (term) {
-    const searchFilter: Prisma.WorkingPermitWhereInput = {
-      OR: [
-        {
-          referenceNumber: {
-            contains: term,
+      WorkerList: {
+        is: {
+          troubleshooters: {
+            some: {
+              id: userId,
+              isActive: true,
+            },
           },
         },
+      },
+
+      OR: [
+
         {
-          WorkerList: {
-            is: {
-              worker_name: {
-                contains: term,
-              },
+          requestLevel: "LEVEL_1",
+          sequence: 3,
+
+          ApprovalTable: {
+            some: {
+              checkedStatus: WorkingPermitStatus.APPROVED,
+              firstApproverStatus: WorkingPermitStatus.APPROVED,
+            },
+          },
+        },
+
+
+        {
+          requestLevel: "LEVEL_2",
+          sequence: 4,
+
+          ApprovalTable: {
+            some: {
+              checkedStatus: WorkingPermitStatus.APPROVED,
+              firstApproverStatus: WorkingPermitStatus.APPROVED,
+              finalApproverStatus: WorkingPermitStatus.APPROVED,
             },
           },
         },
       ],
-    };
-
-    // AND ensures both visibility and search match.
-    const visibilityWhere: Prisma.WorkingPermitWhereInput = {
-      ...where,
-    };
-
-    delete where.OR;
-    delete where.id;
-
-    where.AND = [
-      visibilityWhere,
-      searchFilter,
-    ];
+    });
   }
 
-  // -------------------------------------------
-  // 6. Fetch Working Permits and total count
-  // -------------------------------------------
+
+  const visibilityWhere: Prisma.WorkingPermitWhereInput =
+    isAdmin
+      ? {}
+      : visibilityFilters.length > 0
+        ? { OR: visibilityFilters }
+        : { id: { in: [] } };
+
+  const term = search?.trim();
+
+  const searchWhere: Prisma.WorkingPermitWhereInput =
+    term
+      ? {
+          OR: [
+            {
+              referenceNumber: {
+                contains: term,
+              },
+            },
+            {
+              WorkerList: {
+                is: {
+                  worker_name: {
+                    contains: term,
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {};
+
+  const where: Prisma.WorkingPermitWhereInput = {
+    AND: [visibilityWhere, searchWhere],
+  };
+
+
 
   const [wp_data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({
@@ -330,8 +364,23 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         requestFor: true,
         requestedBy: true,
         checkedBy: true,
-        attachment: true,
         createdById: true,
+        
+        attachments: {
+        select: {
+          id: true,
+          workingPermitId: true,
+          originalName: true,
+          storedName: true,
+          mimeType: true,
+          fileSize: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+   
 
         WorkerList: {
           select: {
@@ -339,6 +388,16 @@ export async function displayWorkingPermit(params: QueryParamWP) {
             worker_name: true,
             firstApproverUserId: true,
             finalApproverUserId: true,
+
+            troubleshooters: {
+              where: {
+                id: userId,
+                isActive: true,
+              },
+              select: {
+                id: true,
+              },
+            },
 
             firstApproverUser: {
               select: {
@@ -357,6 +416,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
                 isActive: true,
               },
             },
+            
           },
         },
 
@@ -374,12 +434,18 @@ export async function displayWorkingPermit(params: QueryParamWP) {
           },
         },
 
-        ApprovalTable: {
+      ApprovalTable: {
           select: {
+            id: true,
+
             status: true,
             checkedStatus: true,
-            finalApproverStatus: true,
             firstApproverStatus: true,
+            finalApproverStatus: true,
+
+            receivedById: true,
+            receivedAt: true,
+
             statusAt: true,
             checkedStatusAt: true,
             firstApproverApprovedAt: true,

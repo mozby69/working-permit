@@ -1,27 +1,19 @@
 import { AddRequestInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
-import { QueryParamWP } from "./workingpermit.types";
+import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 
 
 
 export async function createRequestService(
   params: AddRequestInput,
-  userId: number
+  userId: number,
+  attachments: UploadedAttachment[]
 ) {
   return workingRepo.addRequestRepo(
-    {
-      fromId: params.fromId,
-      requestLevel: params.requestLevel,
-      date: params.date,
-      requestFor: params.requestFor,
-      branchDepartmentId: params.branchDepartmentId,
-      requestedBy: params.requestedBy,
-      checkedBy: params.checkedBy,
-      attachment: params.attachment,
-      requestToId: params.requestToId,
-    },
-    userId
+    params,
+    userId,
+    attachments
   );
 }
 
@@ -44,6 +36,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
     const isChecker = params.roles.includes("CHECKER");
     const isFirstApprover = params.roles.includes("FIRST_APPROVER");
     const isFinalApprover = params.roles.includes("FINAL_APPROVER");
+    const isTroubleshooter = params.roles.includes("TROUBLESHOOTER");
 
     // SEQUENCE 1: CHECKER
     const canApproveChecker =
@@ -72,6 +65,42 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       approval?.firstApproverStatus === "APPROVED" &&
       approval?.finalApproverStatus === "PENDING";
 
+
+      const isTroubleshooterDepartment =
+      permit.WorkerList.troubleshooters.some(
+        (user) => user.id === params.userId
+      );
+
+    const isTroubleshooterSequence =
+      (permit.requestLevel === "LEVEL_1" &&
+        permit.sequence === 3) ||
+      (permit.requestLevel === "LEVEL_2" &&
+        permit.sequence === 4);
+
+    const requiredApprovalsCompleted =
+      approval?.checkedStatus === "APPROVED" &&
+      approval?.firstApproverStatus === "APPROVED" &&
+      (
+        permit.requestLevel === "LEVEL_1" ||
+        approval?.finalApproverStatus === "APPROVED"
+      );
+
+    const canReceiveTroubleshooter =
+      isTroubleshooter &&
+      isTroubleshooterDepartment &&
+      isTroubleshooterSequence &&
+      requiredApprovalsCompleted &&
+      approval?.status === "PENDING" &&
+      approval?.receivedById === null;
+
+    const canCompleteTroubleshooter =
+      isTroubleshooter &&
+      isTroubleshooterDepartment &&
+      isTroubleshooterSequence &&
+      requiredApprovalsCompleted &&
+      approval?.status === "IN_PROGRESS" &&
+      approval?.receivedById === params.userId;
+
     return {
       id: permit.id,
       referenceNumber: permit.referenceNumber,
@@ -82,11 +111,23 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       requestFor: permit.requestFor,
       requestedBy: permit.requestedBy,
       checkedBy: permit.checkedBy,
-      attachment: permit.attachment,
+       attachments: permit.attachments.map((file) => ({
+          id: file.id,
+          workingPermitId: file.workingPermitId,
+          originalName: file.originalName,
+          storedName: file.storedName,
+          mimeType: file.mimeType,
+          fileSize: file.fileSize,
+          createdAt: file.createdAt.toISOString(),
+        })),
+
+
 
       canApproveChecker,
       canApproveFirstApprover,
       canApproveFinalApprover,
+      canReceiveTroubleshooter,
+      canCompleteTroubleshooter,
 
       fromDepartment: {
         entityName: permit.fromDepartment.entityName ?? "",
@@ -103,6 +144,10 @@ export async function getWorkingPermitService(params: QueryParamWP) {
           approval?.firstApproverStatus ?? "PENDING",
         finalApproverStatus:
           approval?.finalApproverStatus ?? "PENDING",
+
+        receivedById: approval?.receivedById ?? null,
+        receivedAt: approval?.receivedAt?.toISOString() ?? null,
+        statusAt: approval?.statusAt?.toISOString() ?? null,
       },
 
       requestToWorker: {
@@ -137,6 +182,13 @@ export async function getWorkingPermitService(params: QueryParamWP) {
     pagination: result.pagination,
   };
 }
+
+
+
+
+
+
+
 
 export async function getWorkerListService() {
   return workingRepo.getWorkerRepo();

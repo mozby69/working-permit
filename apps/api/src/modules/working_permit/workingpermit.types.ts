@@ -9,3 +9,10 @@ export type QueryParamWP = {
 };
 
 
+
+export type UploadedAttachment = {
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  fileSize: number;
+};

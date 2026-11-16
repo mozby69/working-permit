@@ -31,4 +31,24 @@ router.patch(
 );
 
 
+
+router.patch(
+  "/:id/receive",
+  authenticate,
+  authorize({
+    roles: ["TROUBLESHOOTER"],
+  }),
+  approvalController.receiveWorkingPermitController
+);
+
+router.patch(
+  "/:id/complete",
+  authenticate,
+  authorize({
+    roles: ["TROUBLESHOOTER"],
+  }),
+  approvalController.completeWorkingPermitController
+);
+
+
 export default router; 

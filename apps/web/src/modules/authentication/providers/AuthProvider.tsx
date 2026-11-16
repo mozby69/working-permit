@@ -78,6 +78,10 @@ export function AuthProvider({
                 router.replace("/workingPermit");
                 return;
             }
+            if (roles.includes("TROUBLESHOOTER")) {
+                router.replace("/workingPermit");
+                return;
+            }
 
             router.replace("/");
         },

@@ -21,3 +21,10 @@ export type ApprovalService = (
   stage: string;
   status: "APPROVED";
 }>;
+
+export type TroubleshooterResult = {
+  workingPermitId: string;
+  sequence: number;
+  receivedById: number;
+  status: "IN_PROGRESS" | "COMPLETED";
+};

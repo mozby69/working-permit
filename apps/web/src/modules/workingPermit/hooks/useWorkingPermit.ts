@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { ApproveWorkingPermitInput, QueryParams } from '@repo/shared';
+import { ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, TroubleshooterActionResponse, TroubleshooterMutationInput } from '@repo/shared';
 
 
 
@@ -11,15 +11,17 @@ export function useCreateWorkingPermit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: serviceWorkingPermit.addWorkingPermitService,
+    mutationFn: (
+      payload: CreateWorkingPermitPayload
+    ) => serviceWorkingPermit.addWorkingPermitService(payload),
+
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["working-permit-display"],
       });
-      
     },
   });
-};
+}
 
 export function useNextWorkingPermitReference(enabled = true) {
   return useQuery({
@@ -100,6 +102,53 @@ export function useApproveWorkingPermit() {
       stage,
     }: ApproveWorkingPermitInput) =>
       serviceWorkingPermit.approveWorkingPermitService(workingPermitId, stage),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["working-permits"],
+      });
+    },
+  });
+}
+
+
+
+
+
+export function useReceiveWorkingPermit() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    TroubleshooterActionResponse,
+    Error,
+    TroubleshooterMutationInput
+  >({
+    mutationFn: ({ workingPermitId }) =>
+      serviceWorkingPermit.troubleshooterService.receiveWorkingPermit(
+        workingPermitId
+      ),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["working-permits"],
+      });
+    },
+  });
+}
+
+
+export function useCompleteWorkingPermit() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    TroubleshooterActionResponse,
+    Error,
+    TroubleshooterMutationInput
+  >({
+    mutationFn: ({ workingPermitId }) =>
+       serviceWorkingPermit.troubleshooterService.completeWorkingPermit(
+        workingPermitId
+      ),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
