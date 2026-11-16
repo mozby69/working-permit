@@ -170,7 +170,7 @@ const [selectedPermit, setSelectedPermit] =
 
 
     return(
-      <div className="w-full min-w-0 space-y-6 p-2">
+      <div className="w-full min-w-0 space-y-8 px-8 py-2">
 
 
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -13,15 +13,20 @@ export function registerSocketHandlers(io: AppSocketServer) {
     io.use(authenticateSocket);
 
     io.on("connection", (socket) => {
-        console.log("Socket connected:", socket.id);
-        console.log("Authenticated user:", socket.data.user);
+    const userId = socket.data.user.id;
 
-        notificationHandler(io, socket);
-        chatHandler(io, socket);
+    socket.join(`user:${userId}`);
 
-        socket.on("disconnect", () => {
-            console.log("Disconnected");
-        });
+    console.log(
+        `User ${userId} connected to notification room`
+    );
+
+    notificationHandler(io, socket);
+    chatHandler(io, socket);
+
+    socket.on("disconnect", () => {
+        console.log(`User ${userId} disconnected`);
+    });
     });
 }
 
@@ -33,3 +38,5 @@ export function getIO(): AppSocketServer {
 
     return ioInstance;
 }
+
+

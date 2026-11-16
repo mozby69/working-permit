@@ -5,6 +5,8 @@ import dashboardRoutes from "@/modules/admin/dashboard/dashboard.routes";
 import { authenticate } from '@/middleware/authenticate.middleware';
 import workingPermitRoute from "@/modules/working_permit/workingpermit.routes";
 import approvalRoute from "@/modules/wp_approval/approval.routes";
+import notificationRoutes from "@/modules/notification/notification.route";
+
 
 const router = Router();
 
@@ -24,6 +26,6 @@ router.use(
 
 router.use("/working-permit",authenticate,workingPermitRoute);
 router.use("/approval",authenticate,approvalRoute);
-
+router.use("/notifications",authenticate,notificationRoutes);
 
 export default router;
