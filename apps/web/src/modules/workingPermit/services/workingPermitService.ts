@@ -1,19 +1,42 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, WorkingPermitResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
 
 
-export async function addWorkingPermitService(payload: AddRequestInput) {
+export async function addWorkingPermitService(
+  payload: CreateWorkingPermitPayload
+) {
+  const formData = new FormData();
+
+  formData.append("requestToId", String(payload.requestToId));
+  formData.append("fromId", String(payload.fromId));
+  formData.append(
+    "branchDepartmentId",
+    String(payload.branchDepartmentId)
+  );
+
+  formData.append("requestLevel", payload.requestLevel);
+  formData.append("requestFor", payload.requestFor);
+  formData.append("requestedBy", payload.requestedBy);
+
+  if (payload.checkedBy) {
+    formData.append("checkedBy", payload.checkedBy);
+  }
+
+  // Append multiple attachments
+  for (const file of payload.attachments) {
+    formData.append("attachments", file);
+  }
+
   const response = await api.post(
     "/working-permit/add-working-permit",
-    payload
+    formData
   );
 
   return response.data.data;
 }
-
 
 
 
@@ -48,23 +71,11 @@ export async function getDepartmentBranchesService(): Promise<DepartmentBranch[]
 
 
 
-export interface WPListResponse {
-  success: boolean;
-  data: WorkingPermitResponse[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-
-  };
-}
 
 
 
 
-export async function getWorkingPermitService(
-  params: QueryParams
-): Promise<WPListResponse> {
+export async function getWorkingPermitService(params: QueryParams): Promise<WPListResponse> {
   const response = await api.get<unknown>(
     "/working-permit/display-working-permit",
     {
@@ -77,41 +88,9 @@ export async function getWorkingPermitService(
 
 
 
-type ApproverUser = {
-  id: number;
-  name: string;
-  username: string;
-  isActive: boolean;
-};
 
-type WorkerApi = {
-  id: number;
-  worker_name: string;
 
-  firstApproverUserId: number | null;
-  finalApproverUserId: number | null;
-
-  firstApproverUser: ApproverUser | null;
-  finalApproverUser: ApproverUser | null;
-};
-
-type WorkerListResponse = {
-  success: boolean;
-  data: WorkerApi[];
-};
-
-export type Worker = {
-  id: number;
-  workerName: string;
-
-  firstApproverUserId: number | null;
-  finalApproverUserId: number | null;
-
-  firstApprover: ApproverUser | null;
-  finalApprover: ApproverUser | null;
-};
-
-export async function getWorkerListService(): Promise<Worker[]> {
+export async function getWorkerListService(): Promise<WorkerListItem[]> {
   const response = await api.get<WorkerListResponse>(
     "/working-permit/worker-list"
   );
@@ -119,11 +98,94 @@ export async function getWorkerListService(): Promise<Worker[]> {
   return response.data.data.map((worker) => ({
     id: worker.id,
     workerName: worker.worker_name,
-
     firstApproverUserId: worker.firstApproverUserId,
     finalApproverUserId: worker.finalApproverUserId,
-
     firstApprover: worker.firstApproverUser,
     finalApprover: worker.finalApproverUser,
   }));
+}
+
+
+
+
+export async function approveWorkingPermitService(
+  workingPermitId: string,
+  stage: ApprovalStage
+): Promise<ApprovalResponse> {
+  const endpoint = approvalEndpoints[stage];
+
+  const response = await api.patch<ApprovalResponse>(
+    `/approval/${encodeURIComponent(workingPermitId)}/${endpoint}`
+  );
+
+  return response.data;
+}
+
+
+
+
+export const troubleshooterService = {
+
+  async receiveWorkingPermit(
+    workingPermitId: string
+  ): Promise<TroubleshooterActionResponse> {
+    const response =
+      await api.patch<TroubleshooterActionResponse>(
+        `/approval/${encodeURIComponent(workingPermitId)}/receive`
+      );
+
+    return response.data;
+  },
+
+
+  async completeWorkingPermit(
+    workingPermitId: string
+  ): Promise<TroubleshooterActionResponse> {
+    const response =
+      await api.patch<TroubleshooterActionResponse>(
+        `/approval/${encodeURIComponent(workingPermitId)}/complete`
+      );
+
+    return response.data;
+  },
+};
+
+
+
+
+
+
+export async function getWorkingPermitAttachment(
+  permitId: string,
+  attachmentId: string
+): Promise<Blob> {
+  const response = await api.get<Blob>(
+    `/working-permit/${encodeURIComponent(permitId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+}
+
+
+export async function updateWorkingPermitService(
+  id: string,
+  payload: CreateWorkingPermitPayload
+): Promise<{ id: string }> {
+  const formData = new FormData();
+  formData.append("requestToId", String(payload.requestToId));
+  formData.append("fromId", String(payload.fromId));
+  formData.append("branchDepartmentId", String(payload.branchDepartmentId));
+  formData.append("requestLevel", payload.requestLevel);
+  formData.append("requestFor", payload.requestFor);
+  formData.append("requestedBy", payload.requestedBy);
+  formData.append("checkedBy", payload.checkedBy ?? "");
+  for (const file of payload.attachments) formData.append("attachments", file);
+  const response = await api.patch<{ success: boolean; data: { id: string } }>(
+    `/working-permit/${encodeURIComponent(id)}`,
+    formData
+  );
+  return response.data.data;
 }

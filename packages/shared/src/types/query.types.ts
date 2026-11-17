@@ -4,4 +4,5 @@ export interface QueryParams {
     search?: string;
     sort?: string;
     userId?: number;
+    roles?: string[];
 }

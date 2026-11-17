@@ -2,30 +2,31 @@
 import Modal from "@/components/common/ModalHeader";
 import { FilesIcon, Plus } from "lucide-react";
 import ModalAddRequest from "../components/modal/AddRequest";
-import { useDisclosure } from "@/hooks/useDisclosure";
+// import { useDisclosure } from "@/hooks/useDisclosure";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState } from "react";
 import { useGetWorkingPermit } from "../hooks/useWorkingPermit";
 import { TableColumn } from "@/components/common/Table";
-import { formatCurrency, WorkingPermitResponse } from "@repo/shared";
+import {  WorkingPermitResponse } from "@repo/shared";
 import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
+import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
+import { useWPSocket } from "../hooks/useWorkingPermitSocket";
+import EditWorkingPermit from "../components/modal/EditWorkingPermit";
 
 
 export default function WorkingPermitView(){
+    useWPSocket()
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isModalOpen2, setIsModalOpen2] = useState(false);
     const [userPage, setUserPage] = useState(1);
-    const [userLimit, setUserLimit] = useState(10);
+    const [userLimit] = useState(10);
     const [userSearch, setUserSearch] = useState("");
     const debouncedSearch = useDebounce(userSearch, 500);
-    const userModal = useDisclosure();
+    const [editingPermit, setEditingPermit] = useState<WorkingPermitResponse | null>(null);
+    const [selectedPermit, setSelectedPermit] = useState<WorkingPermitResponse | null>(null);
 
-
-
-      const openModal = () => {
-        userModal.open();
-      }
 
 
       const {
@@ -80,8 +81,17 @@ export default function WorkingPermitView(){
           key: "requestLevel",
           header: "Level",
           render: (row) => (
+            <span className="inline-block whitespace-nowrap capitalize">
+              {row.requestLevel.replaceAll("_", " ")}
+            </span>
+          ),
+        },
+         {
+          key: "fromDepartment",
+          header: "From",
+          render: (row) => (
             <span className="capitalize">
-              {row.requestLevel}
+              {row.fromDepartment.entityName}
             </span>
           ),
         },
@@ -94,19 +104,34 @@ export default function WorkingPermitView(){
           ),
         },
             {
-          key: "approvedFirstApprover",
+          key: "firstApproverStatus",
           header: "Approver 1",
           render: (row) => (
              <WorkingPermitStatusBadge status={row.approval.firstApproverStatus} />
           ),
         },
-        {
-          key: "approvedFinalApprover",
-          header: "Approver 2",
-          render: (row) => (
-              <WorkingPermitStatusBadge status={row.approval.finalApproverStatus} />
-          ),
+       {
+        key: "finalApproverStatus",
+        header: "Approver 2",
+        render: (row) => {
+         if (row.requestLevel === "LEVEL_1") {
+          return (
+            <span
+              title="Final approval is not required for Level 1"
+              className="inline-flex h-7 w-23 items-center justify-center rounded-full border border-slate-400 bg-slate-100 text-[11px] font-semibold text-slate-500"
+            >
+              N/A
+            </span>
+          );
+        }
+
+          return (
+            <WorkingPermitStatusBadge
+              status={row.approval.finalApproverStatus}
+            />
+          );
         },
+      },
       {
           key: "status",
           header: "Status",
@@ -115,25 +140,27 @@ export default function WorkingPermitView(){
           ),
         },
 
-        {
-            key: "actions",
-            header: "Actions",
-            render: (row) => (
-              <TableRowActions<WorkingPermitResponse>
-                item={row}
-                onView={(permit) => {
-                  console.log("View:", permit.referenceNumber);
-                }}
-                onEdit={(permit) => {
-                  console.log("Edit:", permit.id);
-                }}
-               
-                editLabel="Edit Request"
-    
-              />
-            ),
-          },
-              
+       {
+          key: "actions",
+          header: "Actions",
+          render: (row) => (
+            <TableRowActions<WorkingPermitResponse>
+              item={row}
+              viewLabel="View Request"
+              onView={(permit) => {
+                setSelectedPermit(permit);
+                setIsModalOpen2(true);
+              }}
+              onEdit={
+                row.canEdit
+                  ? (permit) => setEditingPermit(permit)
+                  : undefined
+              }
+              editLabel="Edit Request"
+            />
+          ),
+        },
+                      
      
       ];
 
@@ -141,7 +168,7 @@ export default function WorkingPermitView(){
 
 
     return(
-      <div className="w-full min-w-0 space-y-6 p-2">
+      <div className="w-full min-w-0 space-y-6 px-8 py-2">
 
 
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -245,8 +272,47 @@ export default function WorkingPermitView(){
     </Modal>
 
 
+      <Modal
+        isOpen={isModalOpen2 && selectedPermit !== null}
+        onClose={() => {
+          setIsModalOpen2(false);
+          setSelectedPermit(null);
+        }}
+        title="Working Permit Details"
+        size="lg"
+      >
+        {selectedPermit && (
+          <ViewWorkingPermit
+            permit={selectedPermit}
+            onCancel={() => {
+              setIsModalOpen2(false);
+              setSelectedPermit(null);
+            }}
+            //canApprove={selectedPermit.canApproveChecker}
+          />
+        )}
+      </Modal>
 
-    
+
+
+      <Modal
+          isOpen={editingPermit !== null}
+          onClose={() => setEditingPermit(null)}
+          title={
+            editingPermit
+              ? `Edit Working Permit - ${editingPermit.referenceNumber}`
+              : "Edit Working Permit"
+          }
+          size="lg"
+        >
+          {editingPermit && (
+            <EditWorkingPermit
+              key={editingPermit.id}
+              permit={editingPermit}
+              onCancel={() => setEditingPermit(null)}
+            />
+          )}
+        </Modal>
 
   </div>
     );

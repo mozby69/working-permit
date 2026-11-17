@@ -7,6 +7,7 @@ import workingPermitRoute from "@/modules/working_permit/workingpermit.routes";
 import branchRoutes from "@/modules/admin/branch/branch.route";
 import workingRoute from "@/modules/admin/working/working.route";
 
+import approvalRoute from "@/modules/wp_approval/approval.routes";
 
 const router = Router();
 
@@ -29,7 +30,7 @@ router.use("/admin/", branchRoutes);
 router.use("/admin/", workingRoute);
 
 router.use("/working-permit",authenticate,workingPermitRoute);
-
+router.use("/approval",authenticate,approvalRoute);
 
 
 export default router;
