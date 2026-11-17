@@ -113,7 +113,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       id: permit.id,
       referenceNumber: permit.referenceNumber,
       requestToId: permit.requestToId,
-      requestTo: permit.WorkerList.worker_name,
+      requestTo: permit.WorkerList.workerName,
       requestLevel: permit.requestLevel,
       date: permit.date.toISOString(),
       requestFor: permit.requestFor,
@@ -162,7 +162,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
 
       requestToWorker: {
         id: permit.WorkerList.id,
-        workerName: permit.WorkerList.worker_name,
+        workerName: permit.WorkerList.workerName,
 
         firstApproverUserId:
           permit.WorkerList.firstApproverUserId,

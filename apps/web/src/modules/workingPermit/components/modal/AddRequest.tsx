@@ -64,6 +64,8 @@ export default function ModalAddRequest({onCancel}: ModalAddRequestProps) {
 } = useWorkerList();
 
 
+console.log("worker: ", workers)
+
   const {
       data: nextReference,
       isLoading: isReferenceLoading,
@@ -314,7 +316,7 @@ return (
 
                 {workers.map((worker) => (
                   <option key={worker.id} value={worker.id}>
-                    {worker.workerName}
+                    {worker.workerName} 
                   </option>
                 ))}
               </select>

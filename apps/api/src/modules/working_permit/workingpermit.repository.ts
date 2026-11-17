@@ -385,7 +385,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         WorkerList: {
           select: {
             id: true,
-            worker_name: true,
+            workerName: true,
             firstApproverUserId: true,
             finalApproverUserId: true,
 

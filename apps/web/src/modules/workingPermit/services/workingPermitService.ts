@@ -97,7 +97,7 @@ export async function getWorkerListService(): Promise<WorkerListItem[]> {
 
   return response.data.data.map((worker) => ({
     id: worker.id,
-    workerName: worker.worker_name,
+    workerName: worker.workerName,
     firstApproverUserId: worker.firstApproverUserId,
     finalApproverUserId: worker.finalApproverUserId,
     firstApprover: worker.firstApproverUser,

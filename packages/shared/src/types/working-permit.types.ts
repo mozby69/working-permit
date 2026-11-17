@@ -11,7 +11,7 @@ export type DepartmentBranch = {
     username: string;
     isActive: boolean;
   } | null;
-  createdAt: string;
+  createdAt?: string ;
 };
 
 
@@ -68,7 +68,7 @@ export type ApproverUser = {
 
 export type WorkerApi = {
   id: number;
-  worker_name: string;
+  workerName: string;
 
   firstApproverUserId: number | null;
   finalApproverUserId: number | null;
