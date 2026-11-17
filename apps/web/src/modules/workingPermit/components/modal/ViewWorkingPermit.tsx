@@ -60,14 +60,16 @@ const {
         isPending: isSaving,
         } = useApproveWorkingPermit();
 
+
         const approvalStage: ApprovalStage | null =
-        permit.canApproveChecker
+          permit.canApproveChecker
             ? "CHECKER"
-            : permit.canApproveFirstApprover
-            ? "FIRST_APPROVER"
             : permit.canApproveFinalApprover
-                ? "FINAL_APPROVER"
+              ? "FINAL_APPROVER"
+              : permit.canApproveFirstApprover
+                ? "FIRST_APPROVER"
                 : null;
+
 
         const handleApprove = () => {
         if (!approvalStage || isSaving) return;
@@ -146,7 +148,27 @@ const handleComplete = () => {
 };
 
 
-
+const approverOrder =
+  permit.requestLevel === "LEVEL_2"
+    ? [
+        {
+          label: "First Approver",
+          name: firstApprover?.name ?? "Not assigned",
+          description: "Approval stage 2",
+        },
+        {
+          label: "Final Approver",
+          name: finalApprover?.name ?? "Not assigned",
+          description: "Approval stage 3",
+        },
+      ]
+    : [
+        {
+          label: "Final Approver",
+          name: finalApprover?.name ?? "Not assigned",
+          description: "Approval stage 2",
+        },
+      ];
   return (
     <div className="space-y-6 pb-2">
       {/* Reference header */}
@@ -278,45 +300,34 @@ const handleComplete = () => {
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 p-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+        {approverOrder.map((approver) => (
+          <div
+            key={approver.label}
+            className="rounded-lg border border-slate-200 p-4"
+          >
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              First Approver
+              {approver.label}
             </p>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                <UserRound size={17} />
-              </div>
-              <div className="min-w-0">
-                <p className="wrap-break text-sm font-semibold text-slate-800">
-                  {firstApprover?.name ?? "Not assigned"}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Primary approver
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="rounded-lg border border-slate-200 p-4">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Final Approver
-            </p>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
                 <UserRound size={17} />
               </div>
+
               <div className="min-w-0">
-                <p className="wrap-break text-sm font-semibold text-slate-800">
-                  {finalApprover?.name ?? "Not assigned"}
+                <p className="text-sm font-semibold text-slate-800">
+                  {approver.name}
                 </p>
+
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Final authorization
+                  {approver.description}
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        ))}
+      </div>
       </section>
 
       {/* Attachment */}

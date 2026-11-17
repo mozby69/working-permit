@@ -230,41 +230,65 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   }
 
 
-  if (isFirstApprover) {
-    visibilityFilters.push({
-      WorkerList: {
-        is: {
-          firstApproverUserId: userId,
+if (isFirstApprover) {
+  visibilityFilters.push({
+    requestLevel: "LEVEL_2",
+    sequence: 2,
+
+    WorkerList: {
+      is: {
+        firstApproverUserId: userId,
+      },
+    },
+
+    ApprovalTable: {
+      some: {
+        status: WorkingPermitStatus.PENDING,
+        checkedStatus: WorkingPermitStatus.APPROVED,
+        firstApproverStatus: WorkingPermitStatus.PENDING,
+      },
+    },
+  });
+}
+
+if (isFinalApprover) {
+  visibilityFilters.push({
+    WorkerList: {
+      is: {
+        finalApproverUserId: userId,
+      },
+    },
+
+    OR: [
+
+      {
+        requestLevel: "LEVEL_1",
+       // sequence: 3,
+        ApprovalTable: {
+          some: {
+            status: WorkingPermitStatus.PENDING,
+            checkedStatus: WorkingPermitStatus.APPROVED,
+
+          },
         },
       },
 
-      ApprovalTable: {
-        some: {
-          checkedStatus: WorkingPermitStatus.APPROVED,
+
+      {
+        requestLevel: "LEVEL_2",
+       // sequence: 3,
+
+        ApprovalTable: {
+          some: {
+            status: WorkingPermitStatus.PENDING,
+            checkedStatus: WorkingPermitStatus.APPROVED,
+
+          },
         },
       },
-    });
-  }
-
-
-  if (isFinalApprover) {
-    visibilityFilters.push({
-      requestLevel: "LEVEL_2",
-
-      WorkerList: {
-        is: {
-          finalApproverUserId: userId,
-        },
-      },
-
-      ApprovalTable: {
-        some: {
-          checkedStatus: WorkingPermitStatus.APPROVED,
-          firstApproverStatus: WorkingPermitStatus.APPROVED,
-        },
-      },
-    });
-  }
+    ],
+  });
+}
 
 
   if (isTroubleshooter) {

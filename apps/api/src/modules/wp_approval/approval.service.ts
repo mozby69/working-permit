@@ -1,8 +1,17 @@
-import { ApprovalResult } from "@repo/shared";
-import { approveWorkingPermitRepo, completeWorkingPermitRepo, receiveWorkingPermitRepo } from "./approval.repository"; 
 
+import type { ApprovalResult } from "@repo/shared";
 
+import {
+  approveWorkingPermitRepo,
+  receiveWorkingPermitRepo,
+  completeWorkingPermitRepo,
+} from "./approval.repository.js";
 
+// ==================================================
+// CHECKER APPROVAL
+// LEVEL 1: 1 -> 2 (FIRST APPROVER)
+// LEVEL 2: 1 -> 2 (FINAL APPROVER)
+// ==================================================
 
 export async function approveCheckerService(
   workingPermitId: string,
@@ -15,26 +24,10 @@ export async function approveCheckerService(
   );
 }
 
-// -------------------------------------------
-// FIRST APPROVER
-// Sequence 2 -> 3
-// -------------------------------------------
-
-export async function approveFirstApproverService(
-  workingPermitId: string,
-  userId: number
-): Promise<ApprovalResult> {
-  return approveWorkingPermitRepo(
-    workingPermitId,
-    userId,
-    "FIRST_APPROVER"
-  );
-}
-
-// -------------------------------------------
+// ==================================================
 // FINAL APPROVER
-// Sequence 3 -> 4 (LEVEL_2 only)
-// -------------------------------------------
+// LEVEL 2 ONLY: 2 -> 3 (FIRST APPROVER)
+// ==================================================
 
 export async function approveFinalApproverService(
   workingPermitId: string,
@@ -47,15 +40,26 @@ export async function approveFinalApproverService(
   );
 }
 
+// ==================================================
+// FIRST APPROVER
+// LEVEL 1: 2 -> 3 (TROUBLESHOOTER)
+// LEVEL 2: 3 -> 4 (TROUBLESHOOTER)
+// ==================================================
 
+export async function approveFirstApproverService(
+  workingPermitId: string,
+  userId: number
+): Promise<ApprovalResult> {
+  return approveWorkingPermitRepo(
+    workingPermitId,
+    userId,
+    "FIRST_APPROVER"
+  );
+}
 
-
-
-
-
-
-
-
+// ==================================================
+// TROUBLESHOOTER - RECEIVE
+// ==================================================
 
 export async function receiveWorkingPermitService(
   workingPermitId: string,
@@ -66,6 +70,10 @@ export async function receiveWorkingPermitService(
     userId
   );
 }
+
+// ==================================================
+// TROUBLESHOOTER - COMPLETE
+// ==================================================
 
 export async function completeWorkingPermitService(
   workingPermitId: string,

@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
+import { ApprovalResponse, ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
 
 
 
@@ -96,22 +96,24 @@ export function useWorkerList() {
 export function useApproveWorkingPermit() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({
-      workingPermitId,
-      stage,
-    }: ApproveWorkingPermitInput) =>
-      serviceWorkingPermit.approveWorkingPermitService(workingPermitId, stage),
+  return useMutation<
+    ApprovalResponse,
+    Error,
+    ApproveWorkingPermitInput
+  >({
+    mutationFn: ({ workingPermitId, stage }) =>
+      serviceWorkingPermit.approveWorkingPermitService(
+        workingPermitId,
+        stage
+      ),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["working-permits"],
+        queryKey: ["working-permit-display"],
       });
     },
   });
 }
-
-
 
 
 
