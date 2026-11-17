@@ -12,7 +12,7 @@ import {
 
 import { navigation } from "@/config/navigation.config";
 import { useAuth } from "@/modules/authentication/hooks/useAuth";
-import { useSidebar } from "./Sidebar-Content"; 
+import { useSidebar } from "./Sidebar-Content";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -73,9 +73,9 @@ export default function Sidebar() {
         <div
           className="
             fixed inset-0 z-40
-            bg-slate-950/40
-            backdrop-blur-[2px]
-            transition-opacity
+            bg-[#090D2D]/60
+            backdrop-blur-sm
+            transition-opacity duration-300
             lg:hidden
           "
           onClick={closeMobile}
@@ -91,13 +91,19 @@ export default function Sidebar() {
         className={`
           fixed inset-y-0 left-0 z-50
           flex h-dvh flex-col
-          border-r border-[#E2E8F0]
-          bg-[#EEF2F7]
-          shadow-[2px_0_12px_rgba(15,23,42,0.025)]
+
+          w-60
+          bg-[#171B4B]
+
+          border-r border-[#343967]
+
+          shadow-[4px_0_24px_rgba(15,23,42,0.12)]
+
           transition-[width,transform]
           duration-300 ease-in-out
-          w-56
-          ${collapsed ? "lg:w-18" : "lg:w-56"}
+
+          ${collapsed ? "lg:w-[76px]" : "lg:w-60"}
+
           ${
             mobileOpen
               ? "translate-x-0"
@@ -111,40 +117,71 @@ export default function Sidebar() {
 
         <div
           className={`
-            flex h-20.5 shrink-0 items-center
-            border-b border-[#E2E8F0]
-            ${collapsed ? "lg:justify-center lg:px-2" : "px-4"}
+            relative flex h-[82px] shrink-0
+            items-center
+            border-b border-[#343967]
+
+            ${
+              collapsed
+                ? "lg:justify-center lg:px-2"
+                : "px-5"
+            }
           `}
         >
+          {/* LOGO */}
+
           <div
             className="
               flex h-10 w-10 shrink-0
               items-center justify-center
+
               rounded-xl
-              bg-[#171B4B]
+
+              bg-gradient-to-br
+              from-[#6366F1]
+              to-[#3730A3]
+
               text-white
-              shadow-sm
-              ring-1 ring-white/10
+
+              shadow-lg
+              shadow-indigo-950/30
+
+              ring-1 ring-white/15
             "
           >
             <Layers3
-              size={19}
+              size={20}
               strokeWidth={1.8}
             />
           </div>
 
+          {/* BRAND NAME */}
+
           <div
             className={`
               ml-3 min-w-0 overflow-hidden
+              transition-opacity duration-200
+
               ${collapsed ? "lg:hidden" : ""}
             `}
           >
-            <h2 className="text-[15px] font-bold tracking-[0.02em] text-[#171B35]">
-              WPR
+            <h2 className="
+              text-[16px]
+              font-bold
+              tracking-wide
+              text-white
+            ">
+              WPMS
             </h2>
 
-            <p className="mt-0.5 whitespace-nowrap text-[10px] font-medium text-slate-500">
-              Working Permit
+            <p className="
+              mt-0.5
+              whitespace-nowrap
+              text-[11px]
+              font-medium
+              text-[#A5ACCC]
+            ">
+              Working Permit System
             </p>
           </div>
 
@@ -156,10 +193,10 @@ export default function Sidebar() {
             aria-label="Close sidebar"
             className="
               ml-auto rounded-lg p-2
-              text-slate-500
-              transition-colors
-              hover:bg-indigo-100
-              hover:text-indigo-700
+              text-[#A5ACCC]
+              transition-colors duration-200
+              hover:bg-white/10
+              hover:text-white
               lg:hidden
             "
           >
@@ -174,14 +211,39 @@ export default function Sidebar() {
         <nav
           aria-label="Main navigation"
           className={`
-            flex-1 space-y-1.5
+            flex-1
+            space-y-1.5
             overflow-y-auto
-            pt-5 pb-4
+
+            pt-6 pb-4
+
             scrollbar-thin
-            scrollbar-thumb-slate-200
-            ${collapsed ? "lg:px-2" : "px-3"}
+            scrollbar-thumb-[#414779]
+
+            ${
+              collapsed
+                ? "lg:px-2"
+                : "px-3.5"
+            }
           `}
         >
+          {/* MENU LABEL */}
+
+          <p
+            className={`
+              mb-3 px-3
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.16em]
+              text-[#8189B5]
+
+              ${collapsed ? "lg:hidden" : ""}
+            `}
+          >
+            Main Menu
+          </p>
+
           {menu.map((item) => {
             const Icon = item.icon;
 
@@ -200,13 +262,20 @@ export default function Sidebar() {
                 aria-current={active ? "page" : undefined}
                 className={`
                   group relative
-                  flex h-10.5 items-center gap-3
+
+                  flex h-11
+                  items-center gap-3
+
                   rounded-xl px-3
-                  text-[13px] font-medium
+
+                  text-[13px]
+                  font-medium
+
                   transition-all duration-200
+
                   focus-visible:outline-2
                   focus-visible:outline-offset-2
-                  focus-visible:outline-indigo-500
+                  focus-visible:outline-indigo-400
 
                   ${
                     collapsed
@@ -217,16 +286,17 @@ export default function Sidebar() {
                   ${
                     active
                       ? `
-                        bg-[#E0E7FF]
-                        text-[#3730A3]
-                        shadow-[inset_0_0_0_1px_#C7D2FE]
+                        bg-[#3730A3]
+                        text-white
                         font-semibold
+
+                        shadow-[inset_0_0_0_1px_rgba(165,180,252,0.18)]
                       `
                       : `
-                        text-[#475569]
-                        hover:bg-white/80
-                        hover:text-[#4338CA]
-                        hover:shadow-sm
+                        text-[#B5BBD5]
+
+                        hover:bg-[#292E65]
+                        hover:text-white
                       `
                   }
                 `}
@@ -236,9 +306,18 @@ export default function Sidebar() {
                 {active && (
                   <span
                     className="
-                      absolute left-0 top-2 bottom-2
-                      w-[3px] rounded-r-full
-                      bg-[#4F46E5]
+                      absolute
+                      left-0
+                      top-2.5
+                      bottom-2.5
+
+                      w-[3px]
+
+                      rounded-r-full
+
+                      bg-[#A5B4FC]
+
+                      shadow-[0_0_10px_rgba(165,180,252,0.5)]
                     "
                   />
                 )}
@@ -246,16 +325,19 @@ export default function Sidebar() {
                 {/* ICON */}
 
                 <Icon
-                  size={18}
-                  strokeWidth={active ? 2 : 1.8}
+                  size={19}
+                  strokeWidth={active ? 2.1 : 1.8}
                   className={`
                     shrink-0
-                    transition-colors duration-200
+                    transition-all duration-200
 
                     ${
                       active
-                        ? "text-[#4F46E5]"
-                        : "text-slate-500 group-hover:text-indigo-600"
+                        ? "text-white"
+                        : `
+                          text-[#929ABB]
+                          group-hover:text-[#C7D2FE]
+                        `
                     }
                   `}
                 />
@@ -264,8 +346,15 @@ export default function Sidebar() {
 
                 <span
                   className={`
-                    flex-1 truncate whitespace-nowrap
-                    ${collapsed ? "lg:hidden" : ""}
+                    flex-1
+                    truncate
+                    whitespace-nowrap
+
+                    ${
+                      collapsed
+                        ? "lg:hidden"
+                        : ""
+                    }
                   `}
                 >
                   {item.title}
@@ -275,10 +364,16 @@ export default function Sidebar() {
 
                 {active && (
                   <ChevronRight
-                    size={15}
+                    size={16}
                     className={`
-                      shrink-0 text-indigo-500
-                      ${collapsed ? "lg:hidden" : ""}
+                      shrink-0
+                      text-[#C7D2FE]
+
+                      ${
+                        collapsed
+                          ? "lg:hidden"
+                          : ""
+                      }
                     `}
                   />
                 )}
@@ -293,57 +388,92 @@ export default function Sidebar() {
 
         <div
           className={`
-            shrink-0 pb-4
-            ${collapsed ? "lg:px-2" : "px-3"}
+            shrink-0
+            pb-4
+
+            ${
+              collapsed
+                ? "lg:px-2"
+                : "px-3.5"
+            }
           `}
         >
-          {/* ==================================
-              WORKSPACE CARD
-          ================================== */}
+          {/* WORKSPACE CARD */}
 
           <div
             className={`
-              mb-4 overflow-hidden
+              mb-4
+
+              overflow-hidden
               rounded-2xl
-              border border-[#E2E8F0]
-              bg-white/80
+
+              border border-[#343967]
+
+              bg-gradient-to-br
+              from-[#252B60]
+              to-[#202550]
+
               p-3.5
-              shadow-[0_2px_8px_rgba(15,23,42,0.025)]
-              ${collapsed ? "lg:hidden" : ""}
+
+              shadow-lg
+              shadow-[#090D2D]/10
+
+              ${
+                collapsed
+                  ? "lg:hidden"
+                  : ""
+              }
             `}
           >
             <div
               className="
-                mb-3 flex h-8 w-8
+                mb-3 flex h-9 w-9
                 items-center justify-center
+
                 rounded-xl
-                bg-indigo-50
-                text-indigo-600
+
+                bg-indigo-400/15
+                text-[#A5B4FC]
+
+                ring-1 ring-indigo-300/10
               "
             >
-              <Layers3 size={16} />
+              <Layers3 size={18} />
             </div>
 
-            <p className="text-[12px] font-semibold text-slate-900">
+            <p className="
+              text-[12px]
+              font-semibold
+              text-white
+            ">
               Workspace overview
             </p>
 
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-              Manage your workspace and access controls.
+            <p className="
+              mt-1.5
+              text-[11px]
+              leading-relaxed
+              text-[#A5ACCC]
+            ">
+              Manage your requests and approval workflows.
             </p>
           </div>
 
-          {/* ==================================
-              PROFILE
-          ================================== */}
+          {/* PROFILE SECTION */}
 
-          <div className="border-t border-[#DCE3ED] pt-3">
+          <div className="
+            border-t border-[#343967]
+            pt-3
+          ">
             <div
               className={`
                 flex items-center gap-3
-                rounded-xl px-2 py-2.5
-                transition-colors
-                hover:bg-white/60
+
+                rounded-xl
+                px-2 py-2.5
+
+                transition-colors duration-200
+                hover:bg-white/5
 
                 ${
                   collapsed
@@ -359,12 +489,19 @@ export default function Sidebar() {
                 className="
                   flex h-9 w-9 shrink-0
                   items-center justify-center
+
                   rounded-full
-                  bg-[#E0E7FF]
+
+                  bg-gradient-to-br
+                  from-indigo-400
+                  to-indigo-700
+
                   text-[11px]
                   font-bold
-                  text-[#4338CA]
-                  ring-2 ring-white
+                  text-white
+
+                  ring-2
+                  ring-[#414779]
                 "
               >
                 {initials}
@@ -375,22 +512,36 @@ export default function Sidebar() {
               <div
                 className={`
                   min-w-0 flex-1
-                  ${collapsed ? "lg:hidden" : ""}
+
+                  ${
+                    collapsed
+                      ? "lg:hidden"
+                      : ""
+                  }
                 `}
               >
-                <p className="truncate text-[12px] font-semibold text-slate-900">
+                <p className="
+                  truncate
+                  text-[12px]
+                  font-semibold
+                  text-white
+                ">
                   {user?.name ?? "User"}
                 </p>
 
-                <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                <p className="
+                  mt-0.5
+                  truncate
+                  text-[10px]
+                  font-medium
+                  text-[#A5ACCC]
+                ">
                   {user?.username ?? "Account"}
                 </p>
               </div>
             </div>
 
-            {/* ==================================
-                SIGN OUT
-            ================================== */}
+            {/* SIGN OUT */}
 
             <button
               type="button"
@@ -399,16 +550,26 @@ export default function Sidebar() {
               aria-label="Sign out"
               className={`
                 group mt-1
-                flex w-full items-center gap-3
-                rounded-xl px-3 py-2.5
-                text-[12px] font-medium
-                text-slate-500
+
+                flex w-full
+                items-center gap-3
+
+                rounded-xl
+                px-3 py-2.5
+
+                text-[12px]
+                font-medium
+
+                text-[#A5ACCC]
+
                 transition-all duration-200
-                hover:bg-red-50
-                hover:text-red-600
+
+                hover:bg-red-500/10
+                hover:text-red-400
+
                 focus-visible:outline-2
                 focus-visible:outline-offset-2
-                focus-visible:outline-red-500
+                focus-visible:outline-red-400
 
                 ${
                   collapsed
@@ -421,14 +582,16 @@ export default function Sidebar() {
                 size={17}
                 className="
                   shrink-0
-                  transition-colors
-                  group-hover:text-red-500
+                  transition-transform duration-200
+                  group-hover:-translate-x-0.5
                 "
               />
 
               <span
                 className={
-                  collapsed ? "lg:hidden" : ""
+                  collapsed
+                    ? "lg:hidden"
+                    : ""
                 }
               >
                 Sign out

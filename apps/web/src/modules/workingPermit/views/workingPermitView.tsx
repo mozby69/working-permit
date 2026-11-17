@@ -13,6 +13,7 @@ import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
 import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
 import { useWPSocket } from "../hooks/useWorkingPermitSocket";
+import EditWorkingPermit from "../components/modal/EditWorkingPermit";
 
 
 export default function WorkingPermitView(){
@@ -23,14 +24,9 @@ export default function WorkingPermitView(){
     const [userLimit] = useState(10);
     const [userSearch, setUserSearch] = useState("");
     const debouncedSearch = useDebounce(userSearch, 500);
-    //const userModal = useDisclosure();
+    const [editingPermit, setEditingPermit] = useState<WorkingPermitResponse | null>(null);
+    const [selectedPermit, setSelectedPermit] = useState<WorkingPermitResponse | null>(null);
 
-const [selectedPermit, setSelectedPermit] =
-  useState<WorkingPermitResponse | null>(null);
-
-      // const openModal = () => {
-      //   userModal.open();
-      // }
 
 
       const {
@@ -155,9 +151,11 @@ const [selectedPermit, setSelectedPermit] =
                 setSelectedPermit(permit);
                 setIsModalOpen2(true);
               }}
-              onEdit={(permit) => {
-                console.log("Edit:", permit.id);
-              }}
+              onEdit={
+                row.canEdit
+                  ? (permit) => setEditingPermit(permit)
+                  : undefined
+              }
               editLabel="Edit Request"
             />
           ),
@@ -170,7 +168,7 @@ const [selectedPermit, setSelectedPermit] =
 
 
     return(
-      <div className="w-full min-w-0 space-y-6 p-2">
+      <div className="w-full min-w-0 space-y-6 px-8 py-2">
 
 
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -294,6 +292,27 @@ const [selectedPermit, setSelectedPermit] =
           />
         )}
       </Modal>
+
+
+
+      <Modal
+          isOpen={editingPermit !== null}
+          onClose={() => setEditingPermit(null)}
+          title={
+            editingPermit
+              ? `Edit Working Permit - ${editingPermit.referenceNumber}`
+              : "Edit Working Permit"
+          }
+          size="lg"
+        >
+          {editingPermit && (
+            <EditWorkingPermit
+              key={editingPermit.id}
+              permit={editingPermit}
+              onCancel={() => setEditingPermit(null)}
+            />
+          )}
+        </Modal>
 
   </div>
     );

@@ -125,7 +125,7 @@ export async function approveWorkingPermitService(
 
 
 export const troubleshooterService = {
-  // RECEIVE WORKING PERMIT
+
   async receiveWorkingPermit(
     workingPermitId: string
   ): Promise<TroubleshooterActionResponse> {
@@ -137,7 +137,7 @@ export const troubleshooterService = {
     return response.data;
   },
 
-  // COMPLETE WORKING PERMIT
+
   async completeWorkingPermit(
     workingPermitId: string
   ): Promise<TroubleshooterActionResponse> {
@@ -149,3 +149,43 @@ export const troubleshooterService = {
     return response.data;
   },
 };
+
+
+
+
+
+
+export async function getWorkingPermitAttachment(
+  permitId: string,
+  attachmentId: string
+): Promise<Blob> {
+  const response = await api.get<Blob>(
+    `/working-permit/${encodeURIComponent(permitId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+}
+
+
+export async function updateWorkingPermitService(
+  id: string,
+  payload: CreateWorkingPermitPayload
+): Promise<{ id: string }> {
+  const formData = new FormData();
+  formData.append("requestToId", String(payload.requestToId));
+  formData.append("fromId", String(payload.fromId));
+  formData.append("branchDepartmentId", String(payload.branchDepartmentId));
+  formData.append("requestLevel", payload.requestLevel);
+  formData.append("requestFor", payload.requestFor);
+  formData.append("requestedBy", payload.requestedBy);
+  formData.append("checkedBy", payload.checkedBy ?? "");
+  for (const file of payload.attachments) formData.append("attachments", file);
+  const response = await api.patch<{ success: boolean; data: { id: string } }>(
+    `/working-permit/${encodeURIComponent(id)}`,
+    formData
+  );
+  return response.data.data;
+}

@@ -16,3 +16,9 @@ export type UploadedAttachment = {
   mimeType: string;
   fileSize: number;
 };
+
+
+export type AttachmentParams = {
+  permitId: string;
+  attachmentId: string;
+};

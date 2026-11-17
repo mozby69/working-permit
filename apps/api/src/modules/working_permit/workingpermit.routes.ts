@@ -22,7 +22,26 @@ router.get("/next-reference",authenticate,workingController.getNextReferenceCont
 router.get("/department-branch-list",authenticate,workingController.getDepartmentBranchesController);
 router.get("/display-working-permit",authorize({roles:["COORDINATOR","ADMIN","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"]}),authenticate,workingController.getWorkingPermitController);
 router.get("/worker-list",authenticate,authorize({ roles: ["COORDINATOR", "ADMIN","CHECKER"] }),workingController.getWorkerListController);
-//router.patch("/:id/checker-approve",authenticate,authorize({ roles: ["CHECKER"]}),workingController.approveWorkingPermitByCheckerController);
+router.get(
+  "/:permitId/attachments/:attachmentId",
+  authorize({
+    roles: [
+      "ADMIN",
+      "COORDINATOR",
+      "CHECKER",
+      "FIRST_APPROVER",
+      "FINAL_APPROVER",
+      "TROUBLESHOOTER",
+    ],
+  }),
+  workingController.viewAttachmentController
+);
+router.patch(
+  "/:id",
+  authenticate,
+  uploadWorkingPermitAttachment.array("attachments", 5),
+  workingController.updateWorkingPermitController
+);
 
 
 export default router; 

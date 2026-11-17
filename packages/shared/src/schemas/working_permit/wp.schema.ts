@@ -27,7 +27,16 @@ export const addRequestSchema = z.object({
   attachment: z.string().max(500).optional(),
 
 });
-
+export const updateWorkingPermitSchema = addRequestSchema.pick({
+    requestToId: true,
+    fromId: true, 
+    requestLevel: true,
+    requestFor: true,
+    branchDepartmentId: true, 
+    requestedBy: true, 
+    checkedBy: true
+   });
+export type UpdateWorkingPermitInput = z.infer<typeof updateWorkingPermitSchema>;
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
 export type AddRequestInput = z.input<typeof addRequestSchema>;
 
@@ -55,7 +64,9 @@ export const workingPermitResponseSchema = z.object({
   referenceNumber: z.string(),
   requestToId: z.number(),
   requestTo: z.string(),
-
+  // fromId: z.number(),
+  // branchDepartmentId: z.number(),
+  canEdit: z.boolean(),
   requestToWorker: z.object({
     id: z.number(),
     workerName: z.string(),
@@ -86,10 +97,12 @@ export const workingPermitResponseSchema = z.object({
   canCompleteTroubleshooter: z.boolean(),
 
   fromDepartment: z.object({
+    id: z.number(),
     entityName: z.string(),
   }),
 
   branchDepartment: z.object({
+    id: z.number(),
     entityName: z.string(),
   }),
 

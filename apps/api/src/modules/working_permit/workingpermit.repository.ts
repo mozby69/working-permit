@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database/prisma";
 import { getDate } from "@/utils/dateFormatter";
-import { AddRequestInput } from "@repo/shared";
+import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -430,6 +430,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
 
         branchDepartment: {
           select: {
+            id:true,
             entityName: true,
           },
         },
@@ -529,104 +530,70 @@ export async function getWorkerRepo() {
 
 
 
-// export async function approveWorkingPermitByCheckerRepo(
-//   workingPermitId: string,
-//   userId: number
-// ) {
-//   return prisma.$transaction(async (tx) => {
-
-//     const permit = await tx.workingPermit.findFirst({
-//       where: {
-//         id: workingPermitId,
-//         sequence: 1,
-
-//         fromDepartment: {
-//           is: {
-//             checkerId: userId,
-//           },
-//         },
-
-//         ApprovalTable: {
-//           some: {
-//             status: WorkingPermitStatus.PENDING,
-//             checkedStatus: WorkingPermitStatus.PENDING,
-//           },
-//         },
-//       },
-
-//       select: {
-//         id: true,
-//         ApprovalTable: {
-//           where: {
-//             status: WorkingPermitStatus.PENDING,
-//             checkedStatus: WorkingPermitStatus.PENDING,
-//           },
-//           select: {
-//             id: true,
-//           },
-//         },
-//       },
-//     });
-
-//     if (!permit) {
-//       throw new Error(
-//         "Working Permit is not assigned to you or is no longer pending."
-//       );
-//     }
-
-//     if (permit.ApprovalTable.length !== 1) {
-//       throw new Error(
-//         "Expected exactly one pending approval record."
-//       );
-//     }
-
-   
-//     const advanced = await tx.workingPermit.updateMany({
-//       where: {
-//         id: workingPermitId,
-//         sequence: 1,
-//         fromDepartment: {
-//           is: {
-//             checkerId: userId,
-//           },
-//         },
-//       },
-//       data: {
-//         sequence: 2,
-//       },
-//     });
-
-//     if (advanced.count !== 1) {
-//       throw new Error(
-//         "This Working Permit has already been processed."
-//       );
-//     }
 
 
-//     const approval = await tx.approvalTable.updateMany({
-//       where: {
-//         id: permit.ApprovalTable[0].id,
-//         workingPermitId,
-//         status: WorkingPermitStatus.PENDING,
-//         checkedStatus: WorkingPermitStatus.PENDING,
-//       },
+export async function findAttachmentRepo(
+  permitId: string,
+  attachmentId: string
+) {
+  return prisma.workingPermitAttachment.findFirst({
+    where: {
+      id: attachmentId,
+      workingPermitId: permitId,
+    },
+  });
+}
 
-//       data: {
-//         checkedStatus: WorkingPermitStatus.APPROVED,
-//         checkedStatusAt: new Date(),
-//       },
-//     });
 
-//     if (approval.count !== 1) {
-//       throw new Error(
-//         "Checker approval could not be updated."
-//       );
-//     }
 
-//     return {
-//       workingPermitId,
-//       sequence: 2,
-//       checkedStatus: "APPROVED" as const,
-//     };
-//   });
-// }
+export async function updateWorkingPermitRepo(id: string, userId: number, data: UpdateWorkingPermitInput, attachments: UploadedAttachment[]) {
+  return prisma.$transaction(async (tx) => {
+    const permit = await tx.workingPermit.findUnique({
+      where: { id },
+      select: { createdById: true, attachments: { select: { id: true } } },
+    });
+    if (!permit) return { outcome: "NOT_FOUND" as const };
+    if (permit.createdById !== userId) return { outcome: "FORBIDDEN" as const };
+    if (permit.attachments.length + attachments.length > 5) return { outcome: "TOO_MANY_FILES" as const };
+
+    const department = await tx.departmentBranches.findFirst({
+      where: { id: data.fromId, isBranch: false },
+      select: { checker: { select: { name: true } } },
+    });
+    const branch = await tx.departmentBranches.findUnique({ where: { id: data.branchDepartmentId }, select: { id: true } });
+    const worker = await tx.workerList.findUnique({ where: { id: data.requestToId }, select: { id: true } });
+    if (!department?.checker?.name || !branch || !worker) return { outcome: "INVALID_SELECTION" as const };
+
+    // Checked in the database update, not merely in the web action menu.
+    // The approval workflow advances sequence 1 -> 2 transactionally.
+    const changed = await tx.workingPermit.updateMany({
+      where: {
+        id,
+        createdById: userId,
+        sequence: 1,
+        ApprovalTable: { some: { status: WorkingPermitStatus.PENDING, checkedStatus: WorkingPermitStatus.PENDING } },
+      },
+      data: {
+        requestToId: data.requestToId,
+        fromId: data.fromId,
+        branchDepartmentId: data.branchDepartmentId,
+        requestLevel: data.requestLevel,
+        requestFor: data.requestFor,
+        requestedBy: data.requestedBy,
+        checkedBy: department.checker.name,
+      },
+    });
+    if (changed.count !== 1) return { outcome: "LOCKED" as const };
+
+    if (attachments.length > 0) await tx.workingPermitAttachment.createMany({
+      data: attachments.map(file => ({
+        workingPermitId: id,
+        originalName: file.originalName,
+        storedName: file.storedName,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+      })),
+    });
+    return { outcome: "UPDATED" as const, id };
+  });
+}

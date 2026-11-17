@@ -161,3 +161,22 @@ export type CreateWorkingPermitPayload = Omit<
 > & {
   attachments: File[];
 };
+
+
+
+export type Attachment = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+export type Props = {
+  permitId: string;
+  attachment: Attachment;
+};
+
+export type UpdateWorkingPermitParams = {
+  id: string;
+  payload: CreateWorkingPermitPayload;
+};

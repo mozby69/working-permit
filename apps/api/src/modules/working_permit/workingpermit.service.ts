@@ -1,4 +1,4 @@
-import { AddRequestInput } from "@repo/shared";
+import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -37,6 +37,14 @@ export async function getWorkingPermitService(params: QueryParamWP) {
     const isFirstApprover = params.roles.includes("FIRST_APPROVER");
     const isFinalApprover = params.roles.includes("FINAL_APPROVER");
     const isTroubleshooter = params.roles.includes("TROUBLESHOOTER");
+
+    
+
+    const canEdit =
+      permit.createdById === params.userId &&
+      permit.sequence === 1 &&
+      approval?.status === "PENDING" &&
+      approval?.checkedStatus === "PENDING";
 
     // SEQUENCE 1: CHECKER
     const canApproveChecker =
@@ -122,7 +130,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
         })),
 
 
-
+      canEdit,
       canApproveChecker,
       canApproveFirstApprover,
       canApproveFinalApprover,
@@ -130,10 +138,12 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       canCompleteTroubleshooter,
 
       fromDepartment: {
+        id: permit.fromDepartment.id,
         entityName: permit.fromDepartment.entityName ?? "",
       },
 
       branchDepartment: {
+         id: permit.branchDepartment.id,
         entityName: permit.branchDepartment.entityName ?? "",
       },
 
@@ -195,15 +205,8 @@ export async function getWorkerListService() {
 }
 
 
+export async function updateWorkingPermitService(id: string, userId: number, data: UpdateWorkingPermitInput, attachments: UploadedAttachment[]) {
+  return workingRepo.updateWorkingPermitRepo(id, userId, data, attachments);
+}
 
 
-
-// export async function approveWorkingPermitByCheckerService(
-//   workingPermitId: string,
-//   userId: number
-// ) {
-//   return workingRepo.approveWorkingPermitByCheckerRepo(
-//     workingPermitId,
-//     userId
-//   );
-// }

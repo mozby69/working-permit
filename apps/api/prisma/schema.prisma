@@ -118,9 +118,8 @@ model WorkingPermit {
   requestFor       String     @map("request_for") @db.Text
   requestedBy      String     @map("requested_by") @db.VarChar(100)
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
-  // attachment       String?    @db.VarChar(500)
-
   sequence         Int        @default(1)
+  remarks          String?    @db.VarChar(100)
 
   fromId Int @map("from_id")
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])

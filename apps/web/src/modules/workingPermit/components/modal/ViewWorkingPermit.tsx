@@ -23,6 +23,7 @@ import {
 import toast from "react-hot-toast";
 import { DetailField, SectionHeading } from "../../helper/wp.helper";
 import { useApproveWorkingPermit, useCompleteWorkingPermit, useReceiveWorkingPermit } from "../../hooks/useWorkingPermit";
+import AttachmentPreview from "../ui/attachmentPreview";
 
 
 interface ViewWorkingPermitProps {
@@ -319,85 +320,35 @@ const handleComplete = () => {
       </section>
 
       {/* Attachment */}
-     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+<section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
   <SectionHeading
     number="04"
     title="Supporting Documents"
-    description="Files and documents attached to this working permit request."
+    description="Click an image to view it in full size."
   />
 
   {permit.attachments.length > 0 ? (
-    <div className="space-y-3">
-      {permit.attachments.map((file) => {
-        const fileSize =
-          file.fileSize >= 1024 * 1024
-            ? `${(file.fileSize / (1024 * 1024)).toFixed(2)} MB`
-            : `${(file.fileSize / 1024).toFixed(1)} KB`;
-
-        const isImage = file.mimeType.startsWith("image/");
-        const isPdf = file.mimeType === "application/pdf";
-
-        return (
-          <div
-            key={file.id}
-            className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/30"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white">
-                {isImage ? (
-                  <ImageIcon
-                   className="h-5 w-5 text-blue-600" />
-                ) : isPdf ? (
-                  <FileText className="h-5 w-5 text-red-500" />
-                ) : (
-                  <File className="h-5 w-5 text-slate-500" />
-                )}
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-800">
-                  {file.originalName}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  {fileSize} •{" "}
-                  {isImage
-                    ? "Image"
-                    : isPdf
-                      ? "PDF Document"
-                      : "Document"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                {file.originalName.split(".").pop()?.toUpperCase() ?? "FILE"}
-              </span>
-
-              {/* Add a secure View/Download action here */}
-            </div>
-          </div>
-        );
-      })}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {permit.attachments.map((attachment) => (
+        <AttachmentPreview
+          key={attachment.id}
+          permitId={permit.id}
+          attachment={attachment}
+        />
+      ))}
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
-        <Paperclip className="h-5 w-5 text-slate-400" />
-      </div>
-
+    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+      <ImageIcon className="mx-auto mb-3 h-7 w-7 text-slate-400" />
       <p className="text-sm font-medium text-slate-700">
         No attachments available
       </p>
-
       <p className="mt-1 text-xs text-slate-500">
         No supporting documents were uploaded for this request.
       </p>
     </div>
   )}
 </section>
-
 
 
      <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
