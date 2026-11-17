@@ -16,6 +16,7 @@ SET w.`received_by_id` = a.`received_by_id`,
     w.`received_at` = a.`received_at`;
 
 ALTER TABLE `approval_table`
+  ADD INDEX `approval_table_working_permit_id_idx` (`working_permit_id`),
   DROP INDEX `approval_table_working_permit_id_key`,
   ADD COLUMN `sequence` INTEGER NOT NULL DEFAULT 1,
   ADD COLUMN `role` VARCHAR(40) NOT NULL DEFAULT 'CHECKER';
@@ -68,5 +69,4 @@ ALTER TABLE `working_permit`
   DROP COLUMN `sequence`;
 
 ALTER TABLE `approval_table`
-  ADD CONSTRAINT `approval_table_working_permit_id_sequence_key` UNIQUE (`working_permit_id`, `sequence`),
-  ADD INDEX `approval_table_working_permit_id_idx` (`working_permit_id`);
+  ADD CONSTRAINT `approval_table_working_permit_id_sequence_key` UNIQUE (`working_permit_id`, `sequence`);
