@@ -166,7 +166,7 @@ model DepartmentBranches {
 
 model WorkerList{
     id          Int               @id @default(autoincrement()) @map("id")
-    worker_name String            @db.VarChar(100)
+    workerName String            @db.VarChar(100) @map("worker_name")
     firstApproverUserId Int? @map("first_approver_user_id")
     finalApproverUserId Int? @map("final_approver_user_id")
     firstApproverUser User? @relation("FirstApprover", fields: [firstApproverUserId], references: [id])

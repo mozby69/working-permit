@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings2,
   Building2,
+  ClipboardList,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
@@ -24,6 +25,7 @@ import type {
   AccessControlContentProps,
 } from "../types/access-control.types";
 import { BranchDepartmentManagement } from "../components/branch/BranchManagement";
+import WorkingManagement from "../components/working/WorkingManagement";
 
 export function AccessControlContent({
   users,
@@ -69,6 +71,12 @@ export function AccessControlContent({
       label: "Branch & Department Management",
       icon: Building2,
       description: "Manage organizational branches and departments.",
+    },
+    {
+      id: "working",
+      label: "Work Permit Types",
+      icon: ClipboardList,
+      description: "Manage work permit types and their assigned approvers.",
     },
   ] as const;
 
@@ -225,10 +233,18 @@ export function AccessControlContent({
             </PermissionGuard>
           )}
 
-               {tab === "branch" && (
+          {tab === "branch" && (
             <PermissionGuard permissions={["ADMIN_MANAGE"]}>
               <div className="overflow-x-auto">
                 <BranchDepartmentManagement />
+              </div>
+            </PermissionGuard>
+          )}
+
+             {tab === "working" && (
+            <PermissionGuard permissions={["ADMIN_MANAGE"]}>
+              <div className="overflow-x-auto">
+                <WorkingManagement />
               </div>
             </PermissionGuard>
           )}

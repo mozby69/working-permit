@@ -184,7 +184,7 @@ export async function displayWorkingPermit(params: QueryParams) {
       {
         WorkerList: {
           is: {
-            worker_name: {
+            workerName: {
               contains: term,
             },
           },
@@ -293,7 +293,7 @@ export async function getWorkerRepo() {
   return prisma.workerList.findMany({
     select: {
       id: true,
-      worker_name: true,
+      workerName: true,
 
       firstApproverUserId: true,
       finalApproverUserId: true,
@@ -318,7 +318,7 @@ export async function getWorkerRepo() {
     },
 
     orderBy: {
-      worker_name: "asc",
+      workerName: "asc",
     },
   });
 }

@@ -35,11 +35,16 @@ export function UserTable({
             header: "Email",
             render: (user) => user.email ?? "-",
         },
-        {
+       
+            {
             key: "roles",
             header: "Roles",
-            render: (user) => user.roles.join(", "),
-        },
+            render: (user) =>
+                user.roles?.length
+                ? user.roles.map((role) => role.name).join(", ")
+                : "No role assigned",
+            },
+
         {
             key: "status",
             header: "Status",
@@ -109,13 +114,7 @@ export function UserTable({
                     hidden: (user) => user.isActive,
                     onClick: handleActivate,
                 },
-                {
-                    key: "print",
-                    label: "Print",
-                    icon: <Printer size={14} />,
-                    permission: "ADMIN_MANAGE",
-                    onClick: handlePrint,
-                },
+              
             ]}
         />
     );

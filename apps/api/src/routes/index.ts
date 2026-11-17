@@ -5,6 +5,7 @@ import dashboardRoutes from "@/modules/admin/dashboard/dashboard.routes";
 import { authenticate } from '@/middleware/authenticate.middleware';
 import workingPermitRoute from "@/modules/working_permit/workingpermit.routes";
 import branchRoutes from "@/modules/admin/branch/branch.route";
+import workingRoute from "@/modules/admin/working/working.route";
 
 
 const router = Router();
@@ -23,7 +24,9 @@ router.use(
     dashboardRoutes
 );
 
-router.use("/admin/", branchRoutes)
+router.use("/admin/", branchRoutes);
+
+router.use("/admin/", workingRoute);
 
 router.use("/working-permit",authenticate,workingPermitRoute);
 
