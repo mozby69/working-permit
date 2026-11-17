@@ -387,13 +387,19 @@ export async function receiveWorkingPermitRepo(
 
     const level = approval.workingPermit.requestLevel;
 
-    const approvalsComplete =
-      approval.checkedStatus ===
-        WorkingPermitStatus.APPROVED &&
-      approval.firstApproverStatus ===
-        WorkingPermitStatus.APPROVED &&
-      (
-        level === RequestLevel.LEVEL_1 ||
+   const approvalsComplete =
+  level === RequestLevel.LEVEL_1
+    ? (
+        approval.checkedStatus ===
+          WorkingPermitStatus.APPROVED &&
+        approval.finalApproverStatus ===
+          WorkingPermitStatus.APPROVED
+      )
+    : (
+        approval.checkedStatus ===
+          WorkingPermitStatus.APPROVED &&
+        approval.firstApproverStatus ===
+          WorkingPermitStatus.APPROVED &&
         approval.finalApproverStatus ===
           WorkingPermitStatus.APPROVED
       );
@@ -416,10 +422,15 @@ export async function receiveWorkingPermitRepo(
 
         status: WorkingPermitStatus.PENDING,
         receivedById: null,
-
         checkedStatus: WorkingPermitStatus.APPROVED,
-        firstApproverStatus:
-          WorkingPermitStatus.APPROVED,
+        finalApproverStatus: WorkingPermitStatus.APPROVED,
+
+        ...(level === RequestLevel.LEVEL_2
+          ? {
+              firstApproverStatus:
+                WorkingPermitStatus.APPROVED,
+            }
+          : {}),
 
         ...(level === RequestLevel.LEVEL_2
           ? {

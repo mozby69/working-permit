@@ -46,7 +46,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       approval?.status === "PENDING" &&
       approval?.checkedStatus === "PENDING";
 
-    // SEQUENCE 1: CHECKER
+
     const canApproveChecker =
       isChecker &&
       permit.sequence === 1 &&
@@ -54,35 +54,34 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       approval?.status === "PENDING" &&
       approval?.checkedStatus === "PENDING";
 
-    const canApproveFirstApprover =
-    isFirstApprover &&
-    permit.requestLevel === "LEVEL_2" &&
-    permit.sequence === 2 &&
-    permit.WorkerList.firstApproverUserId === params.userId &&
-    approval?.status === "PENDING" &&
-    approval?.checkedStatus === "APPROVED" &&
-    approval?.firstApproverStatus === "PENDING";
-
-   const canApproveFinalApprover =
-  isFinalApprover &&
-  permit.WorkerList.finalApproverUserId === params.userId &&
-  approval?.status === "PENDING" &&
-  approval?.checkedStatus === "APPROVED" &&
-  approval?.finalApproverStatus === "PENDING" &&
-  (
-    // LEVEL 1: Final Approver at sequence 2
-    (
-      permit.requestLevel === "LEVEL_1" &&
-      permit.sequence === 2
-    ) ||
-
-    // LEVEL 2: Final Approver at sequence 3
-    (
+      const canApproveFirstApprover =
+      isFirstApprover &&
       permit.requestLevel === "LEVEL_2" &&
-      permit.sequence === 3 &&
-      approval?.firstApproverStatus === "APPROVED"
-    )
-  );
+      permit.sequence === 2 &&
+      permit.WorkerList.firstApproverUserId === params.userId &&
+      approval?.status === "PENDING" &&
+      approval?.checkedStatus === "APPROVED" &&
+      approval?.firstApproverStatus === "PENDING";
+
+
+      const canApproveFinalApprover =
+        isFinalApprover &&
+        permit.WorkerList.finalApproverUserId === params.userId &&
+        approval?.status === "PENDING" &&
+        approval?.checkedStatus === "APPROVED" &&
+        approval?.finalApproverStatus === "PENDING" &&
+        (
+          (
+            permit.requestLevel === "LEVEL_1" &&
+            permit.sequence === 2 &&
+            approval?.firstApproverStatus === "PENDING"
+          ) ||
+          (
+            permit.requestLevel === "LEVEL_2" &&
+            permit.sequence === 3 &&
+            approval?.firstApproverStatus === "APPROVED"
+          )
+        );
 
 
       const isTroubleshooterDepartment =
@@ -91,18 +90,27 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       );
 
     const isTroubleshooterSequence =
-      (permit.requestLevel === "LEVEL_1" &&
-        permit.sequence === 3) ||
-      (permit.requestLevel === "LEVEL_2" &&
-        permit.sequence === 4);
+      permit.requestLevel === "LEVEL_1"
+        ? permit.sequence === 3
+        : permit.requestLevel === "LEVEL_2"
+          ? permit.sequence === 4
+          : false;
 
     const requiredApprovalsCompleted =
-      approval?.checkedStatus === "APPROVED" &&
-      approval?.firstApproverStatus === "APPROVED" &&
-      (
-        permit.requestLevel === "LEVEL_1" ||
-        approval?.finalApproverStatus === "APPROVED"
-      );
+     permit.requestLevel === "LEVEL_1"
+      ? (
+
+          approval?.checkedStatus === "APPROVED" &&
+          approval?.finalApproverStatus === "APPROVED"
+        )
+      : permit.requestLevel === "LEVEL_2"
+        ? (
+  
+            approval?.checkedStatus === "APPROVED" &&
+            approval?.firstApproverStatus === "APPROVED" &&
+            approval?.finalApproverStatus === "APPROVED"
+          )
+        : false;
 
     const canReceiveTroubleshooter =
       isTroubleshooter &&

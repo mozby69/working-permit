@@ -121,7 +121,6 @@ export async function addRequestRepo(data: AddRequestInput, userId: number,attac
                 checkedStatus: WorkingPermitStatus.PENDING,
                 firstApproverStatus: WorkingPermitStatus.PENDING,
                 finalApproverStatus: WorkingPermitStatus.PENDING,
-
                 statusAt: null,
                 checkedStatusAt: null,
                 firstApproverApprovedAt: null,
@@ -230,66 +229,61 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   }
 
 
-if (isFirstApprover) {
-  visibilityFilters.push({
-    requestLevel: "LEVEL_2",
-    sequence: 2,
+  if (isFirstApprover) {
+    visibilityFilters.push({
+      requestLevel: "LEVEL_2",
+      //sequence: 2,
 
-    WorkerList: {
-      is: {
-        firstApproverUserId: userId,
-      },
-    },
-
-    ApprovalTable: {
-      some: {
-        status: WorkingPermitStatus.PENDING,
-        checkedStatus: WorkingPermitStatus.APPROVED,
-        firstApproverStatus: WorkingPermitStatus.PENDING,
-      },
-    },
-  });
-}
-
-if (isFinalApprover) {
-  visibilityFilters.push({
-    WorkerList: {
-      is: {
-        finalApproverUserId: userId,
-      },
-    },
-
-    OR: [
-
-      {
-        requestLevel: "LEVEL_1",
-       // sequence: 3,
-        ApprovalTable: {
-          some: {
-            status: WorkingPermitStatus.PENDING,
-            checkedStatus: WorkingPermitStatus.APPROVED,
-
-          },
+      WorkerList: {
+        is: {
+          firstApproverUserId: userId,
         },
       },
 
-
-      {
-        requestLevel: "LEVEL_2",
-       // sequence: 3,
-
-        ApprovalTable: {
-          some: {
-            status: WorkingPermitStatus.PENDING,
-            checkedStatus: WorkingPermitStatus.APPROVED,
-
-          },
+      ApprovalTable: {
+        some: {
+        // status: WorkingPermitStatus.PENDING,
+          checkedStatus: WorkingPermitStatus.APPROVED,
+        
         },
       },
-    ],
-  });
-}
+    });
+  }
 
+  if (isFinalApprover) {
+    visibilityFilters.push({
+      WorkerList: {
+        is: {
+          finalApproverUserId: userId,
+        },
+      },
+
+      OR: [
+
+        {
+          requestLevel: "LEVEL_1",
+          ApprovalTable: {
+            some: {
+              // status: WorkingPermitStatus.PENDING,
+              checkedStatus: WorkingPermitStatus.APPROVED,
+            },
+          },
+        },
+
+  
+        {
+          requestLevel: "LEVEL_2",
+          ApprovalTable: {
+            some: {
+              //status: WorkingPermitStatus.PENDING,
+              checkedStatus: WorkingPermitStatus.APPROVED,
+              firstApproverStatus: WorkingPermitStatus.APPROVED,
+            },
+          },
+        },
+      ],
+    });
+  }
 
   if (isTroubleshooter) {
     visibilityFilters.push({
@@ -314,7 +308,7 @@ if (isFinalApprover) {
           ApprovalTable: {
             some: {
               checkedStatus: WorkingPermitStatus.APPROVED,
-              firstApproverStatus: WorkingPermitStatus.APPROVED,
+              finalApproverStatus: WorkingPermitStatus.APPROVED,
             },
           },
         },
