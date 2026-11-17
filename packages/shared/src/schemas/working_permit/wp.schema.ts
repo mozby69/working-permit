@@ -59,6 +59,16 @@ export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSche
 
 
 
+export const workingPermitStageSchema = z.object({
+  id: z.string(),
+  sequence: z.number().int().positive(),
+  role: z.enum(["CHECKER", "FIRST_APPROVER", "FINAL_APPROVER", "TROUBLESHOOTER"]),
+  status: workingPermitStatus,
+  statusAt: z.string().nullable(),
+});
+
+export type WorkingPermitStage = z.infer<typeof workingPermitStageSchema>;
+
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
   referenceNumber: z.string(),
@@ -90,6 +100,7 @@ export const workingPermitResponseSchema = z.object({
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
   attachments: z.array(workingPermitAttachmentSchema),
+  approvals: z.array(workingPermitStageSchema),
   canApproveChecker: z.boolean(),
   canApproveFirstApprover: z.boolean(),
   canApproveFinalApprover: z.boolean(),
