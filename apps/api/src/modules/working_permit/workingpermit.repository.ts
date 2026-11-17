@@ -177,7 +177,16 @@ export async function getDepartmentBranchesRepo() {
 
 
 export async function displayWorkingPermit(params: QueryParamWP) {
-  const { page = 1, limit = 10, search, userId, roles = [] } = params;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      requestToId,
+      date,
+      userId,
+      roles = [],
+    } = params;
+
   if (!Number.isSafeInteger(userId) || userId <= 0) {
     throw new Error("Authenticated user ID is required");
   }
@@ -238,7 +247,25 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         ],
       }
     : {};
-  const where: Prisma.WorkingPermitWhereInput = { AND: [visibilityWhere, searchWhere] };
+    
+  // const where: Prisma.WorkingPermitWhereInput = { AND: [visibilityWhere, searchWhere] };
+      const filterWhere: Prisma.WorkingPermitWhereInput = {
+      ...(requestToId !== undefined && {
+        requestToId,
+      }),
+
+      ...(date && {
+        date: new Date(`${date}T00:00:00.000Z`),
+      }),
+    };
+
+    const where: Prisma.WorkingPermitWhereInput = {
+      AND: [
+        visibilityWhere,
+        searchWhere,
+        filterWhere,
+      ],
+    };
 
   const [wp_data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({

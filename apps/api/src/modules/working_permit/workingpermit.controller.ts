@@ -180,10 +180,7 @@ export async function getWorkingPermitController(
       return;
     }
 
-    const userId = user.id;
-    const roles = user.roles;
-
-    if (!Array.isArray(roles)) {
+    if (!Array.isArray(user.roles)) {
       res.status(403).json({
         success: false,
         message: "User roles are unavailable",
@@ -191,12 +188,96 @@ export async function getWorkingPermitController(
       return;
     }
 
-    const result = await workingPermitService.getWorkingPermitService({
-        page: Math.max(1, Number(req.query.page) || 1),
-        limit: Math.min(100, Math.max(1, Number(req.query.limit) || 10)),
-        search: typeof req.query.search === "string"
-            ? req.query.search.trim()
-            : undefined,userId,roles});
+    // Pagination
+    const page = Math.max(
+      1,
+      Number(req.query.page) || 1
+    );
+
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(req.query.limit) || 10)
+    );
+
+    // Search
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
+
+    // Worker filter
+    const rawRequestToId = req.query.requestToId;
+
+    let requestToId: number | undefined;
+
+    if (rawRequestToId !== undefined) {
+      if (
+        typeof rawRequestToId !== "string" ||
+        !/^[1-9]\d*$/.test(rawRequestToId)
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request recipient",
+        });
+        return;
+      }
+
+      requestToId = Number(rawRequestToId);
+
+      if (!Number.isSafeInteger(requestToId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request recipient",
+        });
+        return;
+      }
+    }
+
+    // Date filter
+    const rawDate = req.query.date;
+
+    let date: string | undefined;
+
+    if (rawDate !== undefined) {
+      if (
+        typeof rawDate !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use YYYY-MM-DD.",
+        });
+        return;
+      }
+
+      const parsedDate = new Date(
+        `${rawDate}T00:00:00.000Z`
+      );
+
+      if (
+        Number.isNaN(parsedDate.getTime()) ||
+        parsedDate.toISOString().slice(0, 10) !== rawDate
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid date",
+        });
+        return;
+      }
+
+      date = rawDate;
+    }
+
+    const result =
+      await workingPermitService.getWorkingPermitService({
+        page,
+        limit,
+        search,
+        requestToId,
+        date,
+        userId: user.id,
+        roles: user.roles,
+      });
 
     sendSuccess(res, result.data, {
       pagination: result.pagination,
@@ -205,6 +286,10 @@ export async function getWorkingPermitController(
     next(error);
   }
 }
+
+
+
+
 
 export async function getWorkerListController(req: Request,res: Response,next: NextFunction): Promise<void> {
   try {

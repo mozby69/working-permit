@@ -33,6 +33,8 @@ export type QueryParams = {
   page: number;
   limit: number;
   search?: string;
+  requestToId?: number;
+  date?: string; 
 };
 
 export interface WPListResponse {
