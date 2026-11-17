@@ -93,6 +93,9 @@ export type WorkerListItem = {
   finalApprover: ApproverUser | null;
 };
 
+// A normalized database approval row as returned by the Working Permit API.
+export type WorkingPermitApprovalRow = WorkingPermitResponse["approvals"][number];
+
 export type WorkingPermitSocketPayload = {
   id: string;
 };
