@@ -232,7 +232,7 @@ const approverOrder =
 
           <DetailField
             label="Status"
-            value={permit.approval.status}
+            value={permit.status}
             icon={<BadgeCheck size={15} />}
           />
         </div>
@@ -328,6 +328,44 @@ const approverOrder =
           </div>
         ))}
       </div>
+      </section>
+
+      {/* Assigned approval steps */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <SectionHeading
+          number="04"
+          title="Approval History"
+          description="Assigned approvers and their approval dates."
+        />
+        <div className="space-y-3">
+          {permit.approvals.map((step) => (
+            <div key={step.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                  {step.sequence}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {step.role.replaceAll("_", " ")}
+                  </p>
+                  <p className="text-xs text-slate-600">{step.approverName}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {step.approvedAt
+                      ? new Intl.DateTimeFormat("en-PH", {
+                          timeZone: "Asia/Manila",
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(new Date(step.approvedAt))
+                      : "Awaiting approval"}
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                {step.approvedAt ? "APPROVED" : "PENDING"}
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Attachment */}
