@@ -11,7 +11,8 @@ export const workingPermitStatus = z.enum([
   "APPROVED",
   "REJECTED",
   "COMPLETED",
-  "IN_PROGRESS"
+  "IN_PROGRESS",
+  "CANCELLED"
 ]);
 
 export const addRequestSchema = z.object({
@@ -45,6 +46,34 @@ export type AddRequestInput = z.input<typeof addRequestSchema>;
 //***************************************** */
 
 
+
+
+export const addWorkingPermitRemarkSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .min(1, "Remark description is required")
+    .max(2000, "Maximum 2000 characters"),
+});
+
+export type AddWorkingPermitRemarkInput = z.infer<typeof addWorkingPermitRemarkSchema>;
+
+export const workingPermitRemarkSchema = z.object({
+  id: z.number(),
+  description: z.string(),
+  createdAt: z.string(),
+
+  createdBy: z.object({
+    id: z.number(),
+    name: z.string(),
+  }),
+});
+
+export type WorkingPermitRemark = z.infer<typeof workingPermitRemarkSchema>;
+
+
+
+
 export const workingPermitAttachmentSchema = z.object({
   id: z.string(),
   workingPermitId: z.string(),
@@ -59,20 +88,30 @@ export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSche
 
 
 
+export const permitApprovalSchema = z.object({
+  id: z.string(),
+  sequence: z.number().int().positive(),
+  role: z.enum(["CHECKER", "FIRST_APPROVER", "FINAL_APPROVER"]),
+  approverId: z.number().int().positive(),
+  approverName: z.string(),
+  approvedAt: z.string().nullable(),
+  status: workingPermitStatus,
+});
+export type PermitApproval = z.infer<typeof permitApprovalSchema>;
+
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
   referenceNumber: z.string(),
   requestToId: z.number(),
   requestTo: z.string(),
-  // fromId: z.number(),
-  // branchDepartmentId: z.number(),
   canEdit: z.boolean(),
+  remarksList: z.array(workingPermitRemarkSchema),
   requestToWorker: z.object({
-    id: z.number(),
-    workerName: z.string(),
+  id: z.number(),
+  workerName: z.string(),
 
-    firstApproverUserId: z.number().nullable(),
-    finalApproverUserId: z.number().nullable(),
+  firstApproverUserId: z.number().nullable(),
+  finalApproverUserId: z.number().nullable(),
 
     firstApprover: z.object({
       id: z.number(),
@@ -89,13 +128,19 @@ export const workingPermitResponseSchema = z.object({
   requestFor: z.string(),
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
+  status: workingPermitStatus,
+  statusAt: z.string().nullable(),
+  receivedById: z.number().int().nullable(),
+  receivedAt: z.string().nullable(),
+  approvals: z.array(permitApprovalSchema),
   attachments: z.array(workingPermitAttachmentSchema),
   canApproveChecker: z.boolean(),
   canApproveFirstApprover: z.boolean(),
   canApproveFinalApprover: z.boolean(),
   canReceiveTroubleshooter: z.boolean(),
   canCompleteTroubleshooter: z.boolean(),
-
+  //remarkEntries: z.array(workingPermitRemarkSchema),
+  canAddRemarks: z.boolean(),
   fromDepartment: z.object({
     id: z.number(),
     entityName: z.string(),
@@ -142,3 +187,6 @@ export type WPListResponse = z.infer<
 export const approveWorkingPermitParamsSchema = z.object({
   id: z.uuid(),
 });
+
+
+

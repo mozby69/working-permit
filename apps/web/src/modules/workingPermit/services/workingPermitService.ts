@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -187,5 +187,24 @@ export async function updateWorkingPermitService(
     `/working-permit/${encodeURIComponent(id)}`,
     formData
   );
+  return response.data.data;
+}
+
+
+
+
+export async function addWorkingPermitRemarkService(
+  workingPermitId: string,
+  payload: AddWorkingPermitRemarkInput
+): Promise<WorkingPermitRemark> {
+  const response = await api.post<{
+    success: boolean;
+    message: string;
+    data: WorkingPermitRemark;
+  }>(
+    `/working-permit/${encodeURIComponent(workingPermitId)}/remarks`,
+    payload
+  );
+
   return response.data.data;
 }

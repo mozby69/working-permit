@@ -14,6 +14,7 @@ import {
   ImageIcon,
   Inbox,
   Loader2,
+  MessageSquareText,
   Paperclip,
 
   UserRound,
@@ -38,14 +39,18 @@ export default function ViewWorkingPermit({permit,onCancel}: ViewWorkingPermitPr
   const {
   mutate: receivePermit,
   isPending: isReceiving,
-} = useReceiveWorkingPermit();
+  } = useReceiveWorkingPermit();
 
-const {
-  mutate: completePermit,
-  isPending: isCompleting,
-} = useCompleteWorkingPermit();
+  const {
+    mutate: completePermit,
+    isPending: isCompleting,
+  } = useCompleteWorkingPermit();
 
 
+  const {
+    mutate: approvePermit,
+    isPending: isSaving,
+    } = useApproveWorkingPermit();
 
   const formattedDate = new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
@@ -55,52 +60,44 @@ const {
   }).format(new Date(permit.date));
 
 
-        const {
-        mutate: approvePermit,
-        isPending: isSaving,
-        } = useApproveWorkingPermit();
 
-        const approvalStage: ApprovalStage | null =
-        permit.canApproveChecker
-            ? "CHECKER"
-            : permit.canApproveFirstApprover
-            ? "FIRST_APPROVER"
-            : permit.canApproveFinalApprover
-                ? "FINAL_APPROVER"
-                : null;
+  const approvalStage: ApprovalStage | null =
+    permit.canApproveChecker
+      ? "CHECKER"
+      : permit.canApproveFinalApprover
+        ? "FINAL_APPROVER"
+        : permit.canApproveFirstApprover
+          ? "FIRST_APPROVER"
+          : null;
 
-        const handleApprove = () => {
-        if (!approvalStage || isSaving) return;
 
-        approvePermit(
-            {
-            workingPermitId: permit.id,
-            stage: approvalStage,
-            },
-            {
-            onSuccess: () => {
-                toast.success("Working Permit approved successfully!");
-                onCancel();
-            },
-            onError: () => {
-                toast.error("Failed to approve Working Permit.");
-            },
-            }
-        );
-        };
+    const handleApprove = () => {
+    if (!approvalStage || isSaving) return;
+
+    approvePermit(
+        {
+        workingPermitId: permit.id,
+        stage: approvalStage,
+        },
+        {
+        onSuccess: () => {
+            toast.success("Working Permit approved successfully!");
+            onCancel();
+        },
+        onError: () => {
+            toast.error("Failed to approve Working Permit.");
+        },
+        }
+    );
+    };
 
 
 
-  const firstApprover =
-    permit.requestToWorker.firstApprover;
+  const firstApprover = permit.requestToWorker.firstApprover;
 
-  const finalApprover =
-    permit.requestToWorker.finalApprover;
+  const finalApprover = permit.requestToWorker.finalApprover;
 
-
-
-const isProcessing =
-  isSaving || isReceiving || isCompleting;
+  const isProcessing =isSaving || isReceiving || isCompleting;
 
 
   const handleReceive = () => {
@@ -124,6 +121,9 @@ const isProcessing =
   );
 };
 
+
+
+
 const handleComplete = () => {
   if (!permit.canCompleteTroubleshooter || isProcessing) {
     return;
@@ -144,6 +144,29 @@ const handleComplete = () => {
     }
   );
 };
+
+
+const approverOrder =
+  permit.requestLevel === "LEVEL_2"
+    ? [
+        {
+          label: "First Approver",
+          name: firstApprover?.name ?? "Not assigned",
+          description: "Approval stage 2",
+        },
+        {
+          label: "Final Approver",
+          name: finalApprover?.name ?? "Not assigned",
+          description: "Approval stage 3",
+        },
+      ]
+    : [
+        {
+          label: "Final Approver",
+          name: finalApprover?.name ?? "Not assigned",
+          description: "Approval stage 2",
+        },
+      ];
 
 
 
@@ -210,7 +233,7 @@ const handleComplete = () => {
 
           <DetailField
             label="Status"
-            value={permit.approval.status}
+            value={permit.status}
             icon={<BadgeCheck size={15} />}
           />
         </div>
@@ -278,77 +301,189 @@ const handleComplete = () => {
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 p-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+        {approverOrder.map((approver) => (
+          <div
+            key={approver.label}
+            className="rounded-lg border border-slate-200 p-4"
+          >
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              First Approver
+              {approver.label}
             </p>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                <UserRound size={17} />
-              </div>
-              <div className="min-w-0">
-                <p className="wrap-break text-sm font-semibold text-slate-800">
-                  {firstApprover?.name ?? "Not assigned"}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Primary approver
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="rounded-lg border border-slate-200 p-4">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Final Approver
-            </p>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
                 <UserRound size={17} />
               </div>
+
               <div className="min-w-0">
-                <p className="wrap-break text-sm font-semibold text-slate-800">
-                  {finalApprover?.name ?? "Not assigned"}
+                <p className="text-sm font-semibold text-slate-800">
+                  {approver.name}
                 </p>
+
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Final authorization
+                  {approver.description}
                 </p>
               </div>
             </div>
           </div>
+        ))}
+      </div>
+      </section>
+
+      {/* Assigned approval steps */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <SectionHeading
+          number="04"
+          title="Approval History"
+          description="Assigned approvers and their approval dates."
+        />
+        <div className="space-y-3">
+          {permit.approvals.map((step) => (
+            <div key={step.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                  {step.sequence}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {step.role.replaceAll("_", " ")}
+                  </p>
+                  <p className="text-xs text-slate-600">{step.approverName}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {step.approvedAt
+                      ? new Intl.DateTimeFormat("en-PH", {
+                          timeZone: "Asia/Manila",
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(new Date(step.approvedAt))
+                      : "Awaiting approval"}
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                {step.approvedAt ? "APPROVED" : "PENDING"}
+              </span>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Attachment */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <SectionHeading
+          number="05"
+          title="Supporting Documents"
+          description="Click an image to view it in full size."
+        />
+
+        {permit.attachments.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {permit.attachments.map((attachment) => (
+              <AttachmentPreview
+                key={attachment.id}
+                permitId={permit.id}
+                attachment={attachment}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+            <ImageIcon className="mx-auto mb-3 h-7 w-7 text-slate-400" />
+            <p className="text-sm font-medium text-slate-700">
+              No attachments available
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              No supporting documents were uploaded for this request.
+            </p>
+          </div>
+        )}
+      </section>
+
+
+
+
+
+{/* TROUBLESHOOTER REMARKS */}
 <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
   <SectionHeading
-    number="04"
-    title="Supporting Documents"
-    description="Click an image to view it in full size."
+    number="05"
+    title="Troubleshooter Remarks"
+    description="Progress updates, explanations, and remarks history."
   />
 
-  {permit.attachments.length > 0 ? (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {permit.attachments.map((attachment) => (
-        <AttachmentPreview
-          key={attachment.id}
-          permitId={permit.id}
-          attachment={attachment}
-        />
-      ))}
+  {permit.remarksList.length > 0 ? (
+    <div className="space-y-3">
+      {permit.remarksList.map((remark, index) => {
+        const remarkDate = new Intl.DateTimeFormat("en-PH", {
+          timeZone: "Asia/Manila",
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }).format(new Date(remark.createdAt));
+
+        return (
+          <div
+            key={remark.id}
+            className="relative rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+          >
+       
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                  <MessageSquareText size={17} />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {remark.createdBy.name}
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Remark #{permit.remarksList.length - index}
+                  </p>
+                </div>
+              </div>
+
+          
+              <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
+                <CalendarDays size={13} className="text-slate-400" />
+
+                <span className="text-xs font-medium text-slate-600">
+                  {remarkDate}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-100 bg-white px-4 py-3">
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                {remark.description}
+              </p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   ) : (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-      <ImageIcon className="mx-auto mb-3 h-7 w-7 text-slate-400" />
-      <p className="text-sm font-medium text-slate-700">
-        No attachments available
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-9 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+        <MessageSquareText size={21} />
+      </div>
+
+      <p className="text-sm font-semibold text-slate-700">
+        No remarks available
       </p>
+
       <p className="mt-1 text-xs text-slate-500">
-        No supporting documents were uploaded for this request.
+        Troubleshooter progress updates will appear here.
       </p>
     </div>
   )}
 </section>
+
 
 
      <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

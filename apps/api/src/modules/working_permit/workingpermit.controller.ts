@@ -1,4 +1,4 @@
-import { addRequestSchema, approveWorkingPermitParamsSchema, updateWorkingPermitSchema } from '@repo/shared';
+import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, updateWorkingPermitSchema } from '@repo/shared';
 import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
@@ -180,10 +180,7 @@ export async function getWorkingPermitController(
       return;
     }
 
-    const userId = user.id;
-    const roles = user.roles;
-
-    if (!Array.isArray(roles)) {
+    if (!Array.isArray(user.roles)) {
       res.status(403).json({
         success: false,
         message: "User roles are unavailable",
@@ -191,12 +188,96 @@ export async function getWorkingPermitController(
       return;
     }
 
-    const result = await workingPermitService.getWorkingPermitService({
-        page: Math.max(1, Number(req.query.page) || 1),
-        limit: Math.min(100, Math.max(1, Number(req.query.limit) || 10)),
-        search: typeof req.query.search === "string"
-            ? req.query.search.trim()
-            : undefined,userId,roles});
+    // Pagination
+    const page = Math.max(
+      1,
+      Number(req.query.page) || 1
+    );
+
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(req.query.limit) || 10)
+    );
+
+    // Search
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
+
+    // Worker filter
+    const rawRequestToId = req.query.requestToId;
+
+    let requestToId: number | undefined;
+
+    if (rawRequestToId !== undefined) {
+      if (
+        typeof rawRequestToId !== "string" ||
+        !/^[1-9]\d*$/.test(rawRequestToId)
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request recipient",
+        });
+        return;
+      }
+
+      requestToId = Number(rawRequestToId);
+
+      if (!Number.isSafeInteger(requestToId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request recipient",
+        });
+        return;
+      }
+    }
+
+    // Date filter
+    const rawDate = req.query.date;
+
+    let date: string | undefined;
+
+    if (rawDate !== undefined) {
+      if (
+        typeof rawDate !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid date format. Use YYYY-MM-DD.",
+        });
+        return;
+      }
+
+      const parsedDate = new Date(
+        `${rawDate}T00:00:00.000Z`
+      );
+
+      if (
+        Number.isNaN(parsedDate.getTime()) ||
+        parsedDate.toISOString().slice(0, 10) !== rawDate
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid date",
+        });
+        return;
+      }
+
+      date = rawDate;
+    }
+
+    const result =
+      await workingPermitService.getWorkingPermitService({
+        page,
+        limit,
+        search,
+        requestToId,
+        date,
+        userId: user.id,
+        roles: user.roles,
+      });
 
     sendSuccess(res, result.data, {
       pagination: result.pagination,
@@ -205,6 +286,10 @@ export async function getWorkingPermitController(
     next(error);
   }
 }
+
+
+
+
 
 export async function getWorkerListController(req: Request,res: Response,next: NextFunction): Promise<void> {
   try {
@@ -376,6 +461,91 @@ export async function updateWorkingPermitController(req: Request, res: Response,
     });
   } catch (error: unknown) {
     await cleanup();
+    next(error);
+  }
+}
+
+
+
+
+
+
+
+export async function addWorkingPermitRemarkController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const workingPermitId = req.params.id;
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    if (
+      typeof workingPermitId !== "string" ||
+      !workingPermitId.trim()
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Working Permit ID",
+      });
+      return;
+    }
+
+    const parsed = addWorkingPermitRemarkSchema.safeParse(
+      req.body
+    );
+
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid remark",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const result =
+      await workingPermitService.addWorkingPermitRemarkService(
+        workingPermitId,
+        userId,
+        parsed.data.description
+      );
+
+    // The service returns { success: true, data: remark }
+    // rather than { outcome: "CREATED", remark }.
+
+    try {
+      emitWPUpdated({ id: workingPermitId });
+    } catch (error: unknown) {
+      console.error(
+        "Failed to emit remark event:",
+        error
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Remark added successfully",
+      data: {
+        id: result.data.id,
+        description: result.data.description,
+        createdAt: result.data.createdAt.toISOString(),
+        createdBy: result.data.createdBy,
+      },
+    });
+  } catch (error: unknown) {
     next(error);
   }
 }

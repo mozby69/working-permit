@@ -1,9 +1,13 @@
-import { ApprovalResult } from "@repo/shared";
-import { approveWorkingPermitRepo, completeWorkingPermitRepo, receiveWorkingPermitRepo } from "./approval.repository"; 
 
+import type { ApprovalResult } from "@repo/shared";
 
+import {
+  approveWorkingPermitRepo,
+  receiveWorkingPermitRepo,
+  completeWorkingPermitRepo,
+} from "./approval.repository.js";
 
-
+// Approves the assigned Checker (sequence 1 for both levels).
 export async function approveCheckerService(
   workingPermitId: string,
   userId: number
@@ -15,27 +19,7 @@ export async function approveCheckerService(
   );
 }
 
-// -------------------------------------------
-// FIRST APPROVER
-// Sequence 2 -> 3
-// -------------------------------------------
-
-export async function approveFirstApproverService(
-  workingPermitId: string,
-  userId: number
-): Promise<ApprovalResult> {
-  return approveWorkingPermitRepo(
-    workingPermitId,
-    userId,
-    "FIRST_APPROVER"
-  );
-}
-
-// -------------------------------------------
-// FINAL APPROVER
-// Sequence 3 -> 4 (LEVEL_2 only)
-// -------------------------------------------
-
+// Final approval changes WorkingPermit.status to APPROVED.
 export async function approveFinalApproverService(
   workingPermitId: string,
   userId: number
@@ -47,15 +31,21 @@ export async function approveFinalApproverService(
   );
 }
 
+// FIRST_APPROVER is only required for Level 2.
+export async function approveFirstApproverService(
+  workingPermitId: string,
+  userId: number
+): Promise<ApprovalResult> {
+  return approveWorkingPermitRepo(
+    workingPermitId,
+    userId,
+    "FIRST_APPROVER"
+  );
+}
 
-
-
-
-
-
-
-
-
+// ==================================================
+// TROUBLESHOOTER - RECEIVE
+// ==================================================
 
 export async function receiveWorkingPermitService(
   workingPermitId: string,
@@ -66,6 +56,10 @@ export async function receiveWorkingPermitService(
     userId
   );
 }
+
+// ==================================================
+// TROUBLESHOOTER - COMPLETE
+// ==================================================
 
 export async function completeWorkingPermitService(
   workingPermitId: string,

@@ -42,7 +42,8 @@ model User {
   workerListId Int? @map("worker_list_id")
 
   workerList WorkerList? @relation("UserWorkerDepartment",fields: [workerListId], references: [id],onDelete: SetNull)
-  receivedWorkingPermits ApprovalTable[] @relation("WorkingPermitReceiver")
+  receivedWorkingPermits WorkingPermit[] @relation("WorkingPermitReceiver")
+  approverAssignments ApprovalTable[] @relation("UserApprovedBy")
 
   roles UserRole[]
   departmentBranches DepartmentBranches[] @relation("DepartmentChecker")
@@ -51,6 +52,7 @@ model User {
   createdWorkingPermits WorkingPermit[] @relation("WorkingPermitCreator")
   branchAssignments UserBranchAssignment[]
 
+  workingPermitRemarks WorkingPermitRemark[] @relation("WorkingPermitRemarkAuthor")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -122,8 +124,14 @@ model WorkingPermit {
   requestFor       String     @map("request_for") @db.Text
   requestedBy      String     @map("requested_by") @db.VarChar(100)
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
-  sequence         Int        @default(1)
-  remarks          String?    @db.VarChar(100)
+  status WorkingPermitStatus @default(PENDING)
+  statusAt DateTime? @map("status_at")
+  remarksList WorkingPermitRemark[]
+
+
+  receivedById Int? @map("received_by_id")
+  receivedBy User? @relation("WorkingPermitReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  receivedAt DateTime? @map("received_at")
 
   fromId Int @map("from_id")
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
@@ -136,6 +144,7 @@ model WorkingPermit {
 
   createdById Int @map("created_by_id")
   createdBy User @relation("WorkingPermitCreator",fields: [createdById],references: [id])
+
 
 
   attachments WorkingPermitAttachment[]
@@ -206,37 +215,26 @@ model WorkerList{
 
 
 model ApprovalTable {
-  id               String     @id @default(uuid()) @db.VarChar(36)
-  indexNum Int    @unique @default(autoincrement()) @map("index_num")
+  id String @id @default(uuid()) @db.VarChar(36)
+  indexNum Int @unique @default(autoincrement()) @map("index_num")
 
-  workingPermitId String @unique @map("working_permit_id") @db.VarChar(36)
-  workingPermit WorkingPermit @relation(fields: [workingPermitId],references: [id], onDelete: Cascade)
+  workingPermitId String @map("working_permit_id") @db.VarChar(36)
+  workingPermit WorkingPermit @relation(fields: [workingPermitId], references: [id], onDelete: Cascade)
 
+  sequence Int
+  approverId Int @map("approver_id")
+  approver User @relation("UserApprovedBy", fields: [approverId], references: [id])
+  role String @db.VarChar(40)
+  approvedAt DateTime? @map("approved_at")
+  status WorkingPermitStatus @default(PENDING)
 
-  status WorkingPermitStatus  @default(PENDING)
-  checkedStatus  WorkingPermitStatus @default(PENDING)  @map("checked_status")
-  firstApproverStatus  WorkingPermitStatus@default(PENDING) @map("approver_first_status")
-  finalApproverStatus WorkingPermitStatus  @default(PENDING) @map("approver_final_status")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-  receivedById Int? @map("received_by_id")
-  receivedBy User? @relation("WorkingPermitReceiver",fields: [receivedById],references: [id],onDelete: SetNull)
-  receivedAt DateTime? @map("received_at")
-
-  statusAt                  DateTime? @map("status_at")
-  checkedStatusAt           DateTime? @map("checked_status_at")
-  firstApproverApprovedAt   DateTime? @map("first_approver_approved_at")
-  finalApproverApprovedAt   DateTime? @map("final_approver_approved_at")
-
-
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime?   @updatedAt @map("updated_at")
-
-
-
+  @@unique([workingPermitId, sequence])
+  @@index([approverId])
   @@map("approval_table")
 }
-
-
 
 model WorkingPermitAttachment {
   id String @id @default(uuid()) @db.VarChar(36)
@@ -270,4 +268,21 @@ model UserBranchAssignment {
   @@id([userId, branchId])
   @@index([branchId])
   @@map("user_branch_assignments")
+}
+
+model WorkingPermitRemark {
+  id Int @id @default(autoincrement())
+
+  workingPermitId String @map("working_permit_id") @db.VarChar(36)
+  workingPermit WorkingPermit @relation(fields: [workingPermitId],references: [id],onDelete: Cascade)
+
+  description String @db.Text
+
+  createdById Int @map("created_by_id")
+  createdBy User @relation("WorkingPermitRemarkAuthor",fields: [createdById],references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([workingPermitId, createdAt])
+  @@map("working_permit_remarks")
 }

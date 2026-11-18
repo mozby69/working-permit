@@ -21,7 +21,7 @@ router.post(
 router.get("/next-reference",authenticate,workingController.getNextReferenceController);
 router.get("/department-branch-list",authenticate,workingController.getDepartmentBranchesController);
 router.get("/display-working-permit",authorize({roles:["COORDINATOR","ADMIN","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"]}),authenticate,workingController.getWorkingPermitController);
-router.get("/worker-list",authenticate,authorize({ roles: ["COORDINATOR", "ADMIN","CHECKER"] }),workingController.getWorkerListController);
+router.get("/worker-list",authenticate,authorize({ roles: ["COORDINATOR", "ADMIN","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"] }),workingController.getWorkerListController);
 router.get(
   "/:permitId/attachments/:attachmentId",
   authorize({
@@ -41,6 +41,13 @@ router.patch(
   authenticate,
   uploadWorkingPermitAttachment.array("attachments", 5),
   workingController.updateWorkingPermitController
+);
+router.post(
+  "/:id/remarks",
+  authorize({
+    roles: ["TROUBLESHOOTER"],
+  }),
+  workingController.addWorkingPermitRemarkController
 );
 
 

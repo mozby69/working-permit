@@ -2,7 +2,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Ellipsis, Eye, Pencil, Trash2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+import {
+  Ellipsis,
+  Eye,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -12,9 +19,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/common/TableAction/DropdownMenu";
 
+// ==========================================
+// CUSTOM ACTION TYPE
+// ==========================================
+
+export interface CustomTableAction<T> {
+  key: string;
+  label: string;
+  icon?: LucideIcon;
+
+  onClick: (item: T) => void;
+
+  hidden?: boolean;
+  disabled?: boolean;
+
+  variant?: "default" | "destructive";
+}
+
+// ==========================================
+// COMPONENT PROPS
+// ==========================================
+
 interface TableRowActionsProps<T> {
   item: T;
 
+  // Default actions
   onView?: (item: T) => void;
   onEdit?: (item: T) => void;
   onDelete?: (item: T) => void;
@@ -23,20 +52,43 @@ interface TableRowActionsProps<T> {
   editLabel?: string;
   deleteLabel?: string;
 
+  // Dynamic custom actions
+  customActions?: CustomTableAction<T>[];
+
   trigger?: ReactNode;
 }
 
+// ==========================================
+// COMPONENT
+// ==========================================
+
 export default function TableRowActions<T>({
   item,
+
   onView,
   onEdit,
   onDelete,
+
   viewLabel = "View Details",
   editLabel = "Edit",
   deleteLabel = "Delete",
+
+  customActions = [],
+
   trigger,
 }: TableRowActionsProps<T>) {
-  if (!onView && !onEdit && !onDelete) {
+  const visibleCustomActions = customActions.filter(
+    (action) => !action.hidden
+  );
+
+  const hasDefaultActions = Boolean(onView || onEdit);
+  const hasCustomActions = visibleCustomActions.length > 0;
+
+  if (
+    !hasDefaultActions &&
+    !hasCustomActions &&
+    !onDelete
+  ) {
     return null;
   }
 
@@ -50,7 +102,8 @@ export default function TableRowActions<T>({
           className="
             flex h-8 w-8 items-center justify-center
             rounded-lg text-slate-500
-            transition-colors hover:bg-slate-100
+            transition-colors
+            hover:bg-slate-100
             hover:text-slate-800
           "
         >
@@ -60,26 +113,59 @@ export default function TableRowActions<T>({
 
       <DropdownMenuContent
         align="end"
-        className="w-44"
+        className="w-48"
         onClick={(event) => event.stopPropagation()}
       >
+        {/* VIEW */}
         {onView && (
-          <DropdownMenuItem onSelect={() => onView(item)}>
+          <DropdownMenuItem
+            onSelect={() => onView(item)}
+          >
             <Eye size={15} />
             {viewLabel}
           </DropdownMenuItem>
         )}
 
+        {/* EDIT */}
         {onEdit && (
-          <DropdownMenuItem onSelect={() => onEdit(item)}>
+          <DropdownMenuItem
+            onSelect={() => onEdit(item)}
+          >
             <Pencil size={15} />
             {editLabel}
           </DropdownMenuItem>
         )}
 
+        {/* CUSTOM ACTIONS */}
+        {hasCustomActions && (
+          <>
+            {hasDefaultActions && (
+              <DropdownMenuSeparator />
+            )}
+
+            {visibleCustomActions.map((action) => {
+              const Icon = action.icon;
+
+              return (
+                <DropdownMenuItem
+                  key={action.key}
+                  disabled={action.disabled}
+                  variant={action.variant ?? "default"}
+                  onSelect={() => action.onClick(item)}
+                >
+                  {Icon && <Icon size={15} />}
+
+                  {action.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </>
+        )}
+
+        {/* DELETE */}
         {onDelete && (
           <>
-            {(onView || onEdit) && (
+            {(hasDefaultActions || hasCustomActions) && (
               <DropdownMenuSeparator />
             )}
 

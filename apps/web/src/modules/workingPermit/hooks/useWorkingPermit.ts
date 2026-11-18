@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
+import { AddRemarkParams, ApprovalResponse, ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
 
 
 
@@ -52,8 +52,12 @@ export function useGetWorkingPermit(params: QueryParams) {
       params.page,
       params.limit,
       params.search,
+      params.requestToId,
+      params.date,
     ],
-    queryFn: () => serviceWorkingPermit.getWorkingPermitService(params),
+
+    queryFn: () =>
+      serviceWorkingPermit.getWorkingPermitService(params),
   });
 }
 
@@ -96,22 +100,24 @@ export function useWorkerList() {
 export function useApproveWorkingPermit() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({
-      workingPermitId,
-      stage,
-    }: ApproveWorkingPermitInput) =>
-      serviceWorkingPermit.approveWorkingPermitService(workingPermitId, stage),
+  return useMutation<
+    ApprovalResponse,
+    Error,
+    ApproveWorkingPermitInput
+  >({
+    mutationFn: ({ workingPermitId, stage }) =>
+      serviceWorkingPermit.approveWorkingPermitService(
+        workingPermitId,
+        stage
+      ),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["working-permits"],
+        queryKey: ["working-permit-display"],
       });
     },
   });
 }
-
-
 
 
 
@@ -170,6 +176,30 @@ export function useUpdateWorkingPermit() {
     }: UpdateWorkingPermitParams) => {
       return serviceWorkingPermit.updateWorkingPermitService(id, payload);
     },
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["working-permit-display"],
+      });
+    },
+  });
+}
+
+
+
+
+export function useAddWorkingPermitRemark() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workingPermitId,
+      payload,
+    }: AddRemarkParams) =>
+      serviceWorkingPermit.addWorkingPermitRemarkService(
+        workingPermitId,
+        payload
+      ),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
