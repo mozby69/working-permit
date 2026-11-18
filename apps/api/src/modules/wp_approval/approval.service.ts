@@ -7,12 +7,7 @@ import {
   completeWorkingPermitRepo,
 } from "./approval.repository.js";
 
-// ==================================================
-// CHECKER APPROVAL
-// LEVEL 1: 1 -> 2 (FIRST APPROVER)
-// LEVEL 2: 1 -> 2 (FINAL APPROVER)
-// ==================================================
-
+// Approves the assigned Checker (sequence 1 for both levels).
 export async function approveCheckerService(
   workingPermitId: string,
   userId: number
@@ -24,11 +19,7 @@ export async function approveCheckerService(
   );
 }
 
-// ==================================================
-// FINAL APPROVER
-// LEVEL 2 ONLY: 2 -> 3 (FIRST APPROVER)
-// ==================================================
-
+// Final approval changes WorkingPermit.status to APPROVED.
 export async function approveFinalApproverService(
   workingPermitId: string,
   userId: number
@@ -40,12 +31,7 @@ export async function approveFinalApproverService(
   );
 }
 
-// ==================================================
-// FIRST APPROVER
-// LEVEL 1: 2 -> 3 (TROUBLESHOOTER)
-// LEVEL 2: 3 -> 4 (TROUBLESHOOTER)
-// ==================================================
-
+// FIRST_APPROVER is only required for Level 2.
 export async function approveFirstApproverService(
   workingPermitId: string,
   userId: number
