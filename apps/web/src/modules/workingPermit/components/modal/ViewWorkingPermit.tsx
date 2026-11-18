@@ -94,7 +94,7 @@ const {
 
 
   const firstApprover =
-    permit.requestToWorker.firstApprover;
+ permit.requestToWorker.firstApprover;
 
   const finalApprover =
     permit.requestToWorker.finalApprover;
