@@ -1,27 +1,9 @@
 import type { ApprovalStage } from "@repo/shared";
+import type { RequestLevel } from "../../../generated/prisma/client.js";
 
-
-type ApprovalStageConfig = {
-  sequence: number;
-  role: string;
-};
-
-export const APPROVAL_STAGES = {
-  CHECKER: {
-    sequence: 1,
-    role: "CHECKER",
-  },
-
-  FIRST_APPROVER: {
-    sequence: 2,
-    role: "FIRST_APPROVER",
-  },
-
-  FINAL_APPROVER: {
-    sequence: 3,
-    role: "FINAL_APPROVER",
-  },
-} as const satisfies Record<
-  ApprovalStage,
-  ApprovalStageConfig
->;
+export function getApprovalSequence(level: RequestLevel, stage: ApprovalStage): number {
+  if (stage === "CHECKER") return 1;
+  if (stage === "FIRST_APPROVER" && level === "LEVEL_2") return 2;
+  if (stage === "FINAL_APPROVER") return level === "LEVEL_1" ? 2 : 3;
+  throw new Error("The requested role is not in this approval workflow.");
+}
