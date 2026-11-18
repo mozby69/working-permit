@@ -41,6 +41,7 @@ model User {
 
   workerList WorkerList? @relation("UserWorkerDepartment",fields: [workerListId], references: [id],onDelete: SetNull)
   receivedWorkingPermits WorkingPermit[] @relation("WorkingPermitReceiver")
+  approverAssignments ApprovalTable[] @relation("UserApprovedBy")
 
   roles UserRole[]
   departmentBranches DepartmentBranches[] @relation("DepartmentChecker")
@@ -119,7 +120,12 @@ model WorkingPermit {
   requestFor       String     @map("request_for") @db.Text
   requestedBy      String     @map("requested_by") @db.VarChar(100)
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
-  remarksList WorkingPermitRemark[]
+  status WorkingPermitStatus @default(PENDING)
+  statusAt DateTime? @map("status_at")
+  remarks String? @db.VarChar(100)
+  receivedById Int? @map("received_by_id")
+  receivedBy User? @relation("WorkingPermitReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  receivedAt DateTime? @map("received_at")
 
   fromId Int @map("from_id")
   fromDepartment DepartmentBranches @relation("WorkingPermitFrom",fields: [fromId],references: [id])
@@ -134,10 +140,7 @@ model WorkingPermit {
   createdBy User @relation("WorkingPermitCreator",fields: [createdById],references: [id])
 
 
-  receivedById Int? @map("received_by_id")
-  receivedBy User? @relation("WorkingPermitReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
-  receivedAt DateTime? @map("received_at")
-
+  WorkingPermitRemark WorkingPermitRemark[]
   attachments WorkingPermitAttachment[]
   ApprovalTable           ApprovalTable[] @relation()
   createdAt        DateTime   @default(now()) @map("created_at")
@@ -209,15 +212,16 @@ model ApprovalTable {
   workingPermit WorkingPermit @relation(fields: [workingPermitId], references: [id], onDelete: Cascade)
 
   sequence Int
+  approverId Int @map("approver_id")
+  approver User @relation("UserApprovedBy", fields: [approverId], references: [id])
   role String @db.VarChar(40)
-  status WorkingPermitStatus @default(PENDING)
-  statusAt DateTime? @map("status_at")
+  approvedAt DateTime? @map("approved_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@unique([workingPermitId, sequence])
-  @@index([workingPermitId])
+  @@index([approverId])
   @@map("approval_table")
 }
 

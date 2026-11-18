@@ -11,7 +11,8 @@ export const workingPermitStatus = z.enum([
   "APPROVED",
   "REJECTED",
   "COMPLETED",
-  "IN_PROGRESS"
+  "IN_PROGRESS",
+  "CANCELLED"
 ]);
 
 export const addRequestSchema = z.object({
@@ -87,6 +88,7 @@ export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSche
 
 
 
+<<<<<<< HEAD
 export const workingPermitStageSchema = z.object({
   id: z.string(),
   sequence: z.number().int().positive(),
@@ -96,6 +98,17 @@ export const workingPermitStageSchema = z.object({
 });
 
 export type WorkingPermitStage = z.infer<typeof workingPermitStageSchema>;
+=======
+export const permitApprovalSchema = z.object({
+  id: z.string(),
+  sequence: z.number().int().positive(),
+  role: z.enum(["CHECKER", "FIRST_APPROVER", "FINAL_APPROVER"]),
+  approverId: z.number().int().positive(),
+  approverName: z.string(),
+  approvedAt: z.string().nullable(),
+});
+export type PermitApproval = z.infer<typeof permitApprovalSchema>;
+>>>>>>> feat/permit-status-and-approver-assignments
 
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
@@ -126,6 +139,11 @@ export const workingPermitResponseSchema = z.object({
   requestFor: z.string(),
   requestedBy: z.string(),
   checkedBy: z.string().nullable(),
+  status: workingPermitStatus,
+  statusAt: z.string().nullable(),
+  receivedById: z.number().int().nullable(),
+  receivedAt: z.string().nullable(),
+  approvals: z.array(permitApprovalSchema),
   attachments: z.array(workingPermitAttachmentSchema),
   approvals: z.array(workingPermitStageSchema),
   canApproveChecker: z.boolean(),

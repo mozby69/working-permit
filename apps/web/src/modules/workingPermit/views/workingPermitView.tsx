@@ -113,7 +113,7 @@ export default function WorkingPermitView(){
           key: "CheckedStatus",
           header: "Checked Status",
           render: (row) => (
-                <WorkingPermitStatusBadge status={row.approvals.find((stage) => stage.role === "CHECKER")?.status ?? "PENDING"} />
+                <WorkingPermitStatusBadge status={(row.approvals.find(stage => stage.role === "CHECKER")?.approvedAt ? "APPROVED" : "PENDING")} />
           ),
         },
         {
@@ -133,7 +133,7 @@ export default function WorkingPermitView(){
 
               return (
                 <WorkingPermitStatusBadge
-                  status={row.approvals.find((stage) => stage.role === "FIRST_APPROVER")?.status ?? "PENDING"}
+                  status={(row.approvals.find(stage => stage.role === "FIRST_APPROVER")?.approvedAt ? "APPROVED" : "PENDING")}
                 />
               );
             },
@@ -142,14 +142,14 @@ export default function WorkingPermitView(){
         key: "finalApproverStatus",
         header: "Approver 2",
         render: (row) => (
-             <WorkingPermitStatusBadge status={row.approvals.find((stage) => stage.role === "FINAL_APPROVER")?.status ?? "PENDING"} />
+             <WorkingPermitStatusBadge status={(row.approvals.find(stage => stage.role === "FINAL_APPROVER")?.approvedAt ? "APPROVED" : "PENDING")} />
           ),
       },
       {
           key: "status",
           header: "Status",
           render: (row) => (
-            <WorkingPermitStatusBadge status={row.approvals.find((stage) => stage.role === "TROUBLESHOOTER")?.status ?? "PENDING"} />
+            <WorkingPermitStatusBadge status={row.status} />
           ),
         },
 
