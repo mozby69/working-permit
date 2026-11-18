@@ -5,6 +5,7 @@ import { QueryParams } from "../../../../../packages/shared/src/types/query.type
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
+import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
 
 
 export async function addRequestRepo(data: AddRequestInput, userId: number,attachments: UploadedAttachment[]) {
@@ -116,16 +117,11 @@ export async function addRequestRepo(data: AddRequestInput, userId: number,attac
 
 
             ApprovalTable: {
-              create: {
+              create: APPROVAL_WORKFLOW[data.requestLevel].map((role, index) => ({
+                sequence: index + 1,
+                role,
                 status: WorkingPermitStatus.PENDING,
-                checkedStatus: WorkingPermitStatus.PENDING,
-                firstApproverStatus: WorkingPermitStatus.PENDING,
-                finalApproverStatus: WorkingPermitStatus.PENDING,
-                statusAt: null,
-                checkedStatusAt: null,
-                firstApproverApprovedAt: null,
-                finalApproverApprovedAt: null,
-              },
+              })),
             },
           },
 
@@ -181,201 +177,102 @@ export async function getDepartmentBranchesRepo() {
 
 
 export async function displayWorkingPermit(params: QueryParamWP) {
-  const {
-    page = 1,
-    limit = 10,
-    search,
-    userId,
-    roles = [],
-  } = params;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      requestToId,
+      date,
+      userId,
+      roles = [],
+    } = params;
 
   if (!Number.isSafeInteger(userId) || userId <= 0) {
     throw new Error("Authenticated user ID is required");
   }
 
-  const currentPage =
-    Number.isSafeInteger(page) && page > 0 ? page : 1;
-
-  const pageLimit =
-    Number.isSafeInteger(limit) && limit > 0
-      ? Math.min(limit, 100)
-      : 10;
-
-
-
+  const currentPage = Number.isSafeInteger(page) && page > 0 ? page : 1;
+  const pageLimit = Number.isSafeInteger(limit) && limit > 0 ? Math.min(limit, 100) : 10;
   const visibilityFilters: Prisma.WorkingPermitWhereInput[] = [];
 
-  const isAdmin = roles.includes("ADMIN");
-  const isCoordinator = roles.includes("COORDINATOR");
-  const isChecker = roles.includes("CHECKER");
-  const isFirstApprover = roles.includes("FIRST_APPROVER");
-  const isFinalApprover = roles.includes("FINAL_APPROVER");
-  const isTroubleshooter = roles.includes("TROUBLESHOOTER");
-
-  if (isCoordinator) {
-    visibilityFilters.push({
-      createdById: userId,
-    });
+  if (roles.includes("COORDINATOR")) {
+    visibilityFilters.push({ createdById: userId });
   }
-
-  if (isChecker) {
-    visibilityFilters.push({
-      fromDepartment: {
-        is: {
-          checkerId: userId,
-        },
-      },
-    });
+  if (roles.includes("CHECKER")) {
+    visibilityFilters.push({ fromDepartment: { is: { checkerId: userId } } });
   }
-
-
-  if (isFirstApprover) {
+  if (roles.includes("FIRST_APPROVER")) {
     visibilityFilters.push({
       requestLevel: "LEVEL_2",
-      //sequence: 2,
-
-      WorkerList: {
-        is: {
-          firstApproverUserId: userId,
+      WorkerList: { is: { firstApproverUserId: userId } },
+      ApprovalTable: { some: { role: "CHECKER", status: WorkingPermitStatus.APPROVED } },
+    });
+  }
+  if (roles.includes("FINAL_APPROVER")) {
+    visibilityFilters.push({
+      WorkerList: { is: { finalApproverUserId: userId } },
+      OR: [
+        {
+          requestLevel: "LEVEL_1",
+          ApprovalTable: { some: { role: "CHECKER", status: WorkingPermitStatus.APPROVED } },
         },
+        {
+          requestLevel: "LEVEL_2",
+          ApprovalTable: { some: { role: "FIRST_APPROVER", status: WorkingPermitStatus.APPROVED } },
+        },
+      ],
+    });
+  }
+  if (roles.includes("TROUBLESHOOTER")) {
+    visibilityFilters.push({
+      WorkerList: {
+        is: { troubleshooters: { some: { id: userId, isActive: true } } },
       },
-
       ApprovalTable: {
-        some: {
-        // status: WorkingPermitStatus.PENDING,
-          checkedStatus: WorkingPermitStatus.APPROVED,
-        
-        },
+        some: { role: "FINAL_APPROVER", status: WorkingPermitStatus.APPROVED },
       },
     });
   }
-
-  if (isFinalApprover) {
-    visibilityFilters.push({
-      WorkerList: {
-        is: {
-          finalApproverUserId: userId,
-        },
-      },
-
-      OR: [
-
-        {
-          requestLevel: "LEVEL_1",
-          ApprovalTable: {
-            some: {
-              // status: WorkingPermitStatus.PENDING,
-              checkedStatus: WorkingPermitStatus.APPROVED,
-            },
-          },
-        },
-
-  
-        {
-          requestLevel: "LEVEL_2",
-          ApprovalTable: {
-            some: {
-              //status: WorkingPermitStatus.PENDING,
-              checkedStatus: WorkingPermitStatus.APPROVED,
-              firstApproverStatus: WorkingPermitStatus.APPROVED,
-            },
-          },
-        },
-      ],
-    });
-  }
-
-  if (isTroubleshooter) {
-    visibilityFilters.push({
-
-      WorkerList: {
-        is: {
-          troubleshooters: {
-            some: {
-              id: userId,
-              isActive: true,
-            },
-          },
-        },
-      },
-
-      OR: [
-
-        {
-          requestLevel: "LEVEL_1",
-          sequence: 3,
-
-          ApprovalTable: {
-            some: {
-              checkedStatus: WorkingPermitStatus.APPROVED,
-              finalApproverStatus: WorkingPermitStatus.APPROVED,
-            },
-          },
-        },
-
-
-        {
-          requestLevel: "LEVEL_2",
-          sequence: 4,
-
-          ApprovalTable: {
-            some: {
-              checkedStatus: WorkingPermitStatus.APPROVED,
-              firstApproverStatus: WorkingPermitStatus.APPROVED,
-              finalApproverStatus: WorkingPermitStatus.APPROVED,
-            },
-          },
-        },
-      ],
-    });
-  }
-
 
   const visibilityWhere: Prisma.WorkingPermitWhereInput =
-    isAdmin
-      ? {}
-      : visibilityFilters.length > 0
-        ? { OR: visibilityFilters }
-        : { id: { in: [] } };
+    roles.includes("ADMIN") ? {} :
+    visibilityFilters.length ? { OR: visibilityFilters } : { id: { in: [] } };
 
   const term = search?.trim();
+  const searchWhere: Prisma.WorkingPermitWhereInput = term
+    ? {
+        OR: [
+          { referenceNumber: { contains: term } },
+          { WorkerList: { is: { workerName: { contains: term } } } },
+        ],
+      }
+    : {};
+    
+  // const where: Prisma.WorkingPermitWhereInput = { AND: [visibilityWhere, searchWhere] };
+      const filterWhere: Prisma.WorkingPermitWhereInput = {
+      ...(requestToId !== undefined && {
+        requestToId,
+      }),
 
-  const searchWhere: Prisma.WorkingPermitWhereInput =
-    term
-      ? {
-          OR: [
-            {
-              referenceNumber: {
-                contains: term,
-              },
-            },
-            {
-              WorkerList: {
-                is: {
-                  workerName: {
-                    contains: term,
-                  },
-                },
-              },
-            },
-          ],
-        }
-      : {};
+      ...(date && {
+        date: new Date(`${date}T00:00:00.000Z`),
+      }),
+    };
 
-  const where: Prisma.WorkingPermitWhereInput = {
-    AND: [visibilityWhere, searchWhere],
-  };
-
-
+    const where: Prisma.WorkingPermitWhereInput = {
+      AND: [
+        visibilityWhere,
+        searchWhere,
+        filterWhere,
+      ],
+    };
 
   const [wp_data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({
       where,
-
       select: {
         id: true,
         referenceNumber: true,
-        sequence: true,
         requestToId: true,
         requestLevel: true,
         date: true,
@@ -383,118 +280,64 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         requestedBy: true,
         checkedBy: true,
         createdById: true,
-        
+        receivedById: true,
+        receivedAt: true,
         attachments: {
-        select: {
-          id: true,
-          workingPermitId: true,
-          originalName: true,
-          storedName: true,
-          mimeType: true,
-          fileSize: true,
-          createdAt: true,
+          select: {
+            id: true,
+            workingPermitId: true,
+            originalName: true,
+            storedName: true,
+            mimeType: true,
+            fileSize: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "asc" },
         },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-   
-
         WorkerList: {
           select: {
             id: true,
             workerName: true,
             firstApproverUserId: true,
             finalApproverUserId: true,
-
             troubleshooters: {
-              where: {
-                id: userId,
-                isActive: true,
-              },
-              select: {
-                id: true,
-              },
+              where: { id: userId, isActive: true },
+              select: { id: true },
             },
-
             firstApproverUser: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-                isActive: true,
-              },
+              select: { id: true, name: true, username: true, isActive: true },
             },
-
             finalApproverUser: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-                isActive: true,
-              },
+              select: { id: true, name: true, username: true, isActive: true },
             },
-            
           },
         },
-
         fromDepartment: {
-          select: {
-            id: true,
-            entityName: true,
-            checkerId: true,
-          },
+          select: { id: true, entityName: true, checkerId: true },
         },
-
         branchDepartment: {
-          select: {
-            id:true,
-            entityName: true,
-          },
+          select: { id: true, entityName: true },
         },
-
-      ApprovalTable: {
+        ApprovalTable: {
           select: {
             id: true,
-
+            sequence: true,
+            role: true,
             status: true,
-            checkedStatus: true,
-            firstApproverStatus: true,
-            finalApproverStatus: true,
-
-            receivedById: true,
-            receivedAt: true,
-
             statusAt: true,
-            checkedStatusAt: true,
-            firstApproverApprovedAt: true,
-            finalApproverApprovedAt: true,
           },
-
-          orderBy: {
-            createdAt: "desc",
-          },
-
-          take: 1,
+          orderBy: { sequence: "asc" },
         },
       },
-
       skip: (currentPage - 1) * pageLimit,
       take: pageLimit,
-
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     }),
-
-    prisma.workingPermit.count({
-      where,
-    }),
+    prisma.workingPermit.count({ where }),
   ]);
 
   return {
     data: wp_data,
-
     pagination: {
       total,
       page: currentPage,
@@ -503,10 +346,6 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     },
   };
 }
-
-
-
-
 
 export async function getWorkerRepo() {
   return prisma.workerList.findMany({
@@ -582,14 +421,12 @@ export async function updateWorkingPermitRepo(id: string, userId: number, data: 
     const worker = await tx.workerList.findUnique({ where: { id: data.requestToId }, select: { id: true } });
     if (!department?.checker?.name || !branch || !worker) return { outcome: "INVALID_SELECTION" as const };
 
-    // Checked in the database update, not merely in the web action menu.
-    // The approval workflow advances sequence 1 -> 2 transactionally.
+    // Only the creator may edit until the checker processes the request.
     const changed = await tx.workingPermit.updateMany({
       where: {
         id,
         createdById: userId,
-        sequence: 1,
-        ApprovalTable: { some: { status: WorkingPermitStatus.PENDING, checkedStatus: WorkingPermitStatus.PENDING } },
+        ApprovalTable: { some: { sequence: 1, role: "CHECKER", status: WorkingPermitStatus.PENDING } },
       },
       data: {
         requestToId: data.requestToId,
@@ -602,6 +439,21 @@ export async function updateWorkingPermitRepo(id: string, userId: number, data: 
       },
     });
     if (changed.count !== 1) return { outcome: "LOCKED" as const };
+
+    // Rebuild pending stages if the creator changes the level before checker approval.
+    if (data.requestLevel !== undefined) {
+      await tx.approvalTable.deleteMany({
+        where: { workingPermitId: id, role: { not: "CHECKER" } },
+      });
+      await tx.approvalTable.createMany({
+        data: APPROVAL_WORKFLOW[data.requestLevel].slice(1).map((role, index) => ({
+          workingPermitId: id,
+          sequence: index + 2,
+          role,
+          status: WorkingPermitStatus.PENDING,
+        })),
+      });
+    }
 
     if (attachments.length > 0) await tx.workingPermitAttachment.createMany({
       data: attachments.map(file => ({

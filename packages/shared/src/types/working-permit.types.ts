@@ -33,6 +33,8 @@ export type QueryParams = {
   page: number;
   limit: number;
   search?: string;
+  requestToId?: number;
+  date?: string; 
 };
 
 export interface WPListResponse {
@@ -92,6 +94,9 @@ export type WorkerListItem = {
   firstApprover: ApproverUser | null;
   finalApprover: ApproverUser | null;
 };
+
+// A normalized database approval row as returned by the Working Permit API.
+export type WorkingPermitApprovalRow = WorkingPermitResponse["approvals"][number];
 
 export type WorkingPermitSocketPayload = {
   id: string;

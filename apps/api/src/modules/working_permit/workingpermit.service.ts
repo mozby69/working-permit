@@ -31,102 +31,58 @@ export async function getWorkingPermitService(params: QueryParamWP) {
   const result = await workingRepo.displayWorkingPermit(params);
 
   const normalized = result.data.map((permit) => {
-    const approval = permit.ApprovalTable[0];
+    const stages = permit.ApprovalTable;
+    const byRole = (role: string) => stages.find((item) => item.role === role);
+    const checker = byRole("CHECKER");
+    const first = byRole("FIRST_APPROVER");
+    const final = byRole("FINAL_APPROVER");
+    const troubleshoot = byRole("TROUBLESHOOTER");
 
-    const isChecker = params.roles.includes("CHECKER");
-    const isFirstApprover = params.roles.includes("FIRST_APPROVER");
-    const isFinalApprover = params.roles.includes("FINAL_APPROVER");
-    const isTroubleshooter = params.roles.includes("TROUBLESHOOTER");
+    const ready = (role: string): boolean => {
+      const target = byRole(role);
+      return Boolean(
+        target &&
+        target.status === "PENDING" &&
+        stages.filter((item) => item.sequence < target.sequence)
+          .every((item) => item.status === "APPROVED") &&
+        stages.filter((item) => item.sequence < target.sequence).length === target.sequence - 1
+      );
+    };
 
-    
+    const canApproveChecker =
+      params.roles.includes("CHECKER") &&
+      permit.fromDepartment.checkerId === params.userId &&
+      ready("CHECKER");
+
+    const canApproveFirstApprover =
+      params.roles.includes("FIRST_APPROVER") &&
+      permit.WorkerList.firstApproverUserId === params.userId &&
+      ready("FIRST_APPROVER");
+
+    const canApproveFinalApprover =
+      params.roles.includes("FINAL_APPROVER") &&
+      permit.WorkerList.finalApproverUserId === params.userId &&
+      ready("FINAL_APPROVER");
+
+    const isTroubleshooterDepartment = permit.WorkerList.troubleshooters.some(
+      (user) => user.id === params.userId
+    );
+
+    const canReceiveTroubleshooter =
+      params.roles.includes("TROUBLESHOOTER") &&
+      isTroubleshooterDepartment &&
+      permit.receivedById === null &&
+      ready("TROUBLESHOOTER");
+
+    const canCompleteTroubleshooter =
+      params.roles.includes("TROUBLESHOOTER") &&
+      isTroubleshooterDepartment &&
+      permit.receivedById === params.userId &&
+      troubleshoot?.status === "IN_PROGRESS";
 
     const canEdit =
       permit.createdById === params.userId &&
-      permit.sequence === 1 &&
-      approval?.status === "PENDING" &&
-      approval?.checkedStatus === "PENDING";
-
-
-    const canApproveChecker =
-      isChecker &&
-      permit.sequence === 1 &&
-      permit.fromDepartment.checkerId === params.userId &&
-      approval?.status === "PENDING" &&
-      approval?.checkedStatus === "PENDING";
-
-      const canApproveFirstApprover =
-      isFirstApprover &&
-      permit.requestLevel === "LEVEL_2" &&
-      permit.sequence === 2 &&
-      permit.WorkerList.firstApproverUserId === params.userId &&
-      approval?.status === "PENDING" &&
-      approval?.checkedStatus === "APPROVED" &&
-      approval?.firstApproverStatus === "PENDING";
-
-
-      const canApproveFinalApprover =
-        isFinalApprover &&
-        permit.WorkerList.finalApproverUserId === params.userId &&
-        approval?.status === "PENDING" &&
-        approval?.checkedStatus === "APPROVED" &&
-        approval?.finalApproverStatus === "PENDING" &&
-        (
-          (
-            permit.requestLevel === "LEVEL_1" &&
-            permit.sequence === 2 &&
-            approval?.firstApproverStatus === "PENDING"
-          ) ||
-          (
-            permit.requestLevel === "LEVEL_2" &&
-            permit.sequence === 3 &&
-            approval?.firstApproverStatus === "APPROVED"
-          )
-        );
-
-
-      const isTroubleshooterDepartment =
-      permit.WorkerList.troubleshooters.some(
-        (user) => user.id === params.userId
-      );
-
-    const isTroubleshooterSequence =
-      permit.requestLevel === "LEVEL_1"
-        ? permit.sequence === 3
-        : permit.requestLevel === "LEVEL_2"
-          ? permit.sequence === 4
-          : false;
-
-    const requiredApprovalsCompleted =
-     permit.requestLevel === "LEVEL_1"
-      ? (
-
-          approval?.checkedStatus === "APPROVED" &&
-          approval?.finalApproverStatus === "APPROVED"
-        )
-      : permit.requestLevel === "LEVEL_2"
-        ? (
-  
-            approval?.checkedStatus === "APPROVED" &&
-            approval?.firstApproverStatus === "APPROVED" &&
-            approval?.finalApproverStatus === "APPROVED"
-          )
-        : false;
-
-    const canReceiveTroubleshooter =
-      isTroubleshooter &&
-      isTroubleshooterDepartment &&
-      isTroubleshooterSequence &&
-      requiredApprovalsCompleted &&
-      approval?.status === "PENDING" &&
-      approval?.receivedById === null;
-
-    const canCompleteTroubleshooter =
-      isTroubleshooter &&
-      isTroubleshooterDepartment &&
-      isTroubleshooterSequence &&
-      requiredApprovalsCompleted &&
-      approval?.status === "IN_PROGRESS" &&
-      approval?.receivedById === params.userId;
+      checker?.status === "PENDING";
 
     return {
       id: permit.id,
@@ -138,16 +94,23 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       requestFor: permit.requestFor,
       requestedBy: permit.requestedBy,
       checkedBy: permit.checkedBy,
-       attachments: permit.attachments.map((file) => ({
-          id: file.id,
-          workingPermitId: file.workingPermitId,
-          originalName: file.originalName,
-          storedName: file.storedName,
-          mimeType: file.mimeType,
-          fileSize: file.fileSize,
-          createdAt: file.createdAt.toISOString(),
-        })),
+      attachments: permit.attachments.map((file) => ({
+        id: file.id,
+        workingPermitId: file.workingPermitId,
+        originalName: file.originalName,
+        storedName: file.storedName,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        createdAt: file.createdAt.toISOString(),
+      })),
 
+      approvals: stages.map((item) => ({
+        id: item.id,
+        sequence: item.sequence,
+        role: item.role,
+        status: item.status,
+        statusAt: item.statusAt?.toISOString() ?? null,
+      })),
 
       canEdit,
       canApproveChecker,
@@ -160,42 +123,33 @@ export async function getWorkingPermitService(params: QueryParamWP) {
         id: permit.fromDepartment.id,
         entityName: permit.fromDepartment.entityName ?? "",
       },
-
       branchDepartment: {
-         id: permit.branchDepartment.id,
+        id: permit.branchDepartment.id,
         entityName: permit.branchDepartment.entityName ?? "",
       },
 
+      // Keep the existing UI status contract while exposing the normalized stage rows.
       approval: {
-        status: approval?.status ?? "PENDING",
-        checkedStatus: approval?.checkedStatus ?? "PENDING",
-        firstApproverStatus:
-          approval?.firstApproverStatus ?? "PENDING",
-        finalApproverStatus:
-          approval?.finalApproverStatus ?? "PENDING",
-
-        receivedById: approval?.receivedById ?? null,
-        receivedAt: approval?.receivedAt?.toISOString() ?? null,
-        statusAt: approval?.statusAt?.toISOString() ?? null,
+        status: troubleshoot?.status ?? "PENDING",
+        checkedStatus: checker?.status ?? "PENDING",
+        firstApproverStatus: first?.status ?? "PENDING",
+        finalApproverStatus: final?.status ?? "PENDING",
+        receivedById: permit.receivedById,
+        receivedAt: permit.receivedAt?.toISOString() ?? null,
+        statusAt: troubleshoot?.statusAt?.toISOString() ?? null,
       },
 
       requestToWorker: {
         id: permit.WorkerList.id,
         workerName: permit.WorkerList.workerName,
-
-        firstApproverUserId:
-          permit.WorkerList.firstApproverUserId,
-
-        finalApproverUserId:
-          permit.WorkerList.finalApproverUserId,
-
+        firstApproverUserId: permit.WorkerList.firstApproverUserId,
+        finalApproverUserId: permit.WorkerList.finalApproverUserId,
         firstApprover: permit.WorkerList.firstApproverUser
           ? {
               id: permit.WorkerList.firstApproverUser.id,
               name: permit.WorkerList.firstApproverUser.name,
             }
           : null,
-
         finalApprover: permit.WorkerList.finalApproverUser
           ? {
               id: permit.WorkerList.finalApproverUser.id,

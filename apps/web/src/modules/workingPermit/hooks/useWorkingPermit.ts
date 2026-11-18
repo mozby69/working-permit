@@ -52,8 +52,12 @@ export function useGetWorkingPermit(params: QueryParams) {
       params.page,
       params.limit,
       params.search,
+      params.requestToId,
+      params.date,
     ],
-    queryFn: () => serviceWorkingPermit.getWorkingPermitService(params),
+
+    queryFn: () =>
+      serviceWorkingPermit.getWorkingPermitService(params),
   });
 }
 

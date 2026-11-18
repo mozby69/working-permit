@@ -330,10 +330,50 @@ const approverOrder =
       </div>
       </section>
 
+      {/* Per-stage workflow history */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <SectionHeading
+          number="04"
+          title="Approval Workflow"
+          description="Each approval stage is tracked independently."
+        />
+        <div className="space-y-3">
+          {permit.approvals.map((stage) => (
+            <div
+              key={stage.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                  {stage.sequence}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {stage.role.replaceAll("_", " ")}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {stage.statusAt
+                      ? new Intl.DateTimeFormat("en-PH", {
+                          timeZone: "Asia/Manila",
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(new Date(stage.statusAt))
+                      : "Not processed yet"}
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                {stage.status.replaceAll("_", " ")}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Attachment */}
 <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
   <SectionHeading
-    number="04"
+    number="05"
     title="Supporting Documents"
     description="Click an image to view it in full size."
   />
