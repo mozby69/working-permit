@@ -32,6 +32,7 @@ router.get(
       "FIRST_APPROVER",
       "FINAL_APPROVER",
       "TROUBLESHOOTER",
+      "BRANCH",
     ],
   }),
   workingController.viewAttachmentController

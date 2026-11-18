@@ -24,16 +24,39 @@ export type BranchPermitStatus =
   | "CANCELLED"
   | "IN_PROGRESS";
 
-export interface BranchPermitApproval {
-  status: BranchPermitStatus;
-  checkedStatus: BranchPermitStatus;
-  firstApproverStatus: BranchPermitStatus;
-  finalApproverStatus: BranchPermitStatus;
+export type BranchApprovalRole =
+  | "CHECKER"
+  | "FIRST_APPROVER"
+  | "FINAL_APPROVER"
+  | "TROUBLESHOOTER";
 
-  receivedAt: string | null;
-  checkedStatusAt: string | null;
-  firstApproverApprovedAt: string | null;
-  finalApproverApprovedAt: string | null;
+export interface BranchPermitUser {
+  id: number;
+  name: string;
+  username: string;
+}
+export interface BranchPermitApproval {
+  id: string;
+  indexNum: number;
+  sequence: number;
+  role: BranchApprovalRole | (string & {});
+  status: BranchPermitStatus;
+  approvedAt: string | null;
+  approverId: number;
+  approver: BranchPermitUser;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface BranchPermitRemark {
+  id: number;
+  workingPermitId: string;
+  description: string;
+  createdById: number;
+  createdAt: string;
+  createdBy?: {
+    name: true;
+  }
 }
 
 export interface BranchWorkingPermit {
@@ -44,8 +67,15 @@ export interface BranchWorkingPermit {
   requestFor: string;
   requestedBy: string;
   checkedBy: string | null;
-  remarks: string | null;
+
+  status: BranchPermitStatus;
+  statusAt: string | null;
+
+  receivedById: number | null;
+  receivedAt: string | null;
+
   createdAt: string;
+  updatedAt: string;
 
   fromDepartment: {
     id: number;
@@ -55,6 +85,7 @@ export interface BranchWorkingPermit {
   branchDepartment: {
     id: number;
     entityName: string;
+    isBranch: boolean;
   };
 
   WorkerList: {
@@ -69,7 +100,10 @@ export interface BranchWorkingPermit {
       name: string;
     } | null;
   };
+
   ApprovalTable: BranchPermitApproval[];
+
+  remarksList: BranchPermitRemark[];
 
   attachments: {
     id: string;
@@ -77,7 +111,11 @@ export interface BranchWorkingPermit {
     mimeType: string;
     fileSize: number;
   }[];
+
+  receivedBy: BranchPermitUser | null;
+  createdBy: BranchPermitUser;
 }
+
 
 export interface BranchWorkingResponse {
   success: boolean;

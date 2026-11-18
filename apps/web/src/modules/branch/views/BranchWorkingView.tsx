@@ -62,23 +62,17 @@ export default function BranchWorkingView() {
 
   // Status counts below are for the current page.
 
-  const pending = permits.filter(
-    (item) =>
-      (item.ApprovalTable?.[0]?.status ?? "PENDING") ===
-      "PENDING"
-  ).length;
+const pending = permits.filter(
+  (item) => item.status === "PENDING"
+).length;
 
-  const inProgress = permits.filter(
-    (item) =>
-      item.ApprovalTable?.[0]?.status ===
-      "IN_PROGRESS"
-  ).length;
+const inProgress = permits.filter(
+  (item) => item.status === "IN_PROGRESS"
+).length;
 
-  const completed = permits.filter(
-    (item) =>
-      item.ApprovalTable?.[0]?.status ===
-      "COMPLETED"
-  ).length;
+const completed = permits.filter(
+  (item) => item.status === "COMPLETED"
+).length;
 
   const summaryCards = [
     {
@@ -250,9 +244,21 @@ export default function BranchWorkingView() {
 
               <tbody className="divide-y divide-slate-100">
                 {permits.map((permit) => {
-                  const approval = permit.ApprovalTable?.[0] ?? [];
-                  const progress =
-                    getApprovalProgress(permit);
+                 const approvals = permit.ApprovalTable ?? [];
+
+                  const checker = approvals.find(
+                    (item) => item.role === "CHECKER"
+                  );
+
+                  const firstApprover = approvals.find(
+                    (item) => item.role === "FIRST_APPROVER"
+                  );
+
+                  const finalApprover = approvals.find(
+                    (item) => item.role === "FINAL_APPROVER"
+                  );
+
+                  const progress = getApprovalProgress(permit);
 
                   return (
                     <tr
@@ -271,36 +277,28 @@ export default function BranchWorkingView() {
                         {permit.requestedBy}
                       </td>
 
+                        {/* CHECKER */}
                       <td className="px-5 py-4">
-                        <StatusBadge
-                          status={
-                            approval?.checkedStatus ??
-                            "PENDING"
-                          }
-                        />
+                        <StatusBadge status={checker?.status ?? "PENDING"} />
                       </td>
 
+                      {/* FIRST APPROVER */}
                       <td className="px-5 py-4">
-                        <StatusBadge
-                          status={
-                            approval?.firstApproverStatus ??
-                            "PENDING"
-                          }
-                        />
-                      </td>
-
-                      <td className="px-5 py-4">
-                        {permit.WorkerList.finalApproverUser ? (
-                          <StatusBadge
-                            status={
-                              approval?.finalApproverStatus ??
-                              "PENDING"
-                            }
-                          />
+                        {permit.requestLevel === "LEVEL_1" ? (
+                          <span className="text-sm text-slate-400">N/A</span>
                         ) : (
-                          <span className="text-slate-400">
-                            N/A
-                          </span>
+                          <StatusBadge
+                            status={firstApprover?.status ?? "PENDING"}
+                          />
+                        )}
+                      </td>
+
+                      {/* FINAL APPROVER */}
+                      <td className="px-5 py-4">
+                        {finalApprover ? (
+                          <StatusBadge status={finalApprover.status} />
+                        ) : (
+                          <span className="text-sm text-slate-400">N/A</span>
                         )}
                       </td>
 
@@ -326,13 +324,9 @@ export default function BranchWorkingView() {
                         </div>
                       </td>
 
-                      <td className="px-5 py-4">
-                        <StatusBadge
-                          status={
-                            approval?.status ?? "PENDING"
-                          }
-                        />
-                      </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={permit.status} />
+                  </td>
 
                       <td className="px-5 py-4 text-right">
                         <button

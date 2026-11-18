@@ -135,19 +135,35 @@ export async function deleteDepartmentBranchRepo(id: number) {
     });
 }
 
+
 export async function getBranchWorkingRepo({
   userId,
   page = 1,
   limit = 10,
   search = "",
-}: BranchWorkingServiceParams ) {
-  const skip = (page - 1) * limit;
+}: BranchWorkingServiceParams) {
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+
+  const currentPage = Math.max(1, Number(page) || 1);
+
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number(limit) || 10)
+  );
+
+  const skip = (currentPage - 1) * pageSize;
+
   const keyword = search.trim();
 
-  const where = {
+
+
+  const where: Prisma.WorkingPermitWhereInput = {
     branchDepartment: {
       is: {
         isBranch: true,
+
         userAssignments: {
           some: {
             userId,
@@ -156,34 +172,36 @@ export async function getBranchWorkingRepo({
       },
     },
 
-    ...(keyword
-      ? {
-          OR: [
-            {
-              referenceNumber: {
-                contains: keyword,
-              },
-            },
-            {
-              requestedBy: {
-                contains: keyword,
-              },
-            },
-            {
-              requestFor: {
-                contains: keyword,
-              },
-            },
-          ],
-        }
-      : {}),
+    ...(keyword && {
+      OR: [
+        {
+          referenceNumber: {
+            contains: keyword,
+          },
+        },
+        {
+          requestedBy: {
+            contains: keyword,
+          },
+        },
+        {
+          requestFor: {
+            contains: keyword,
+          },
+        },
+      ],
+    }),
   };
+
+
 
   const [data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({
       where,
 
       select: {
+      
+
         id: true,
         referenceNumber: true,
         requestLevel: true,
@@ -191,9 +209,17 @@ export async function getBranchWorkingRepo({
         requestFor: true,
         requestedBy: true,
         checkedBy: true,
-        remarks: true,
-        createdAt: true,
 
+        status: true,
+        statusAt: true,
+
+        receivedById: true,
+        receivedAt: true,
+
+        createdAt: true,
+        updatedAt: true,
+
+      
         fromDepartment: {
           select: {
             id: true,
@@ -201,12 +227,16 @@ export async function getBranchWorkingRepo({
           },
         },
 
+       
         branchDepartment: {
           select: {
             id: true,
             entityName: true,
+            isBranch: true,
           },
         },
+
+      
 
         WorkerList: {
           select: {
@@ -229,18 +259,57 @@ export async function getBranchWorkingRepo({
           },
         },
 
+    
+
         ApprovalTable: {
           select: {
+            id: true,
+            indexNum: true,
+            sequence: true,
+
+            role: true,
             status: true,
-            checkedStatus: true,
-            firstApproverStatus: true,
-            finalApproverStatus: true,
-            receivedAt: true,
-            checkedStatusAt: true,
-            firstApproverApprovedAt: true,
-            finalApproverApprovedAt: true,
+            approvedAt: true,
+
+            approverId: true,
+
+            approver: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+              },
+            },
+
+            createdAt: true,
+            updatedAt: true,
+          },
+
+          orderBy: {
+            sequence: "asc",
           },
         },
+
+       
+
+        remarksList:  {
+          select: {
+            id: true,
+            workingPermitId: true,
+            description: true,
+            createdById: true,
+            createdAt: true,
+            createdBy: {
+              select: {
+                name: true,
+              }
+            }
+          }
+        },
+
+        // ======================================
+        // ATTACHMENTS
+        // ======================================
 
         attachments: {
           select: {
@@ -250,14 +319,47 @@ export async function getBranchWorkingRepo({
             fileSize: true,
           },
         },
+
+        // ======================================
+        // RECEIVED BY
+        // ======================================
+
+        receivedBy: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+
+        // ======================================
+        // CREATED BY
+        // ======================================
+
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
 
-      orderBy: {
-        createdAt: "desc",
-      },
+      // ======================================
+      // SORTING
+      // ======================================
+
+      orderBy: [
+        {
+          createdAt: "desc",
+        },
+        {
+          id: "desc",
+        },
+      ],
 
       skip,
-      take: limit,
+      take: pageSize,
     }),
 
     prisma.workingPermit.count({
@@ -265,13 +367,18 @@ export async function getBranchWorkingRepo({
     }),
   ]);
 
+  // ==========================================
+  // RESPONSE
+  // ==========================================
+
   return {
     data,
+
     pagination: {
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: currentPage,
+      limit: pageSize,
+      totalPages: Math.ceil(total / pageSize),
     },
   };
 }
