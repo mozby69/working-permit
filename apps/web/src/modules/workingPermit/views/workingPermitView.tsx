@@ -182,7 +182,6 @@ export default function WorkingPermitView(){
                 key: "add-remark",
                 label: "Add Remark",
                 icon: MessageSquarePlus,
-
                 hidden: !row.canAddRemarks,
 
                 onClick: (permit) => {

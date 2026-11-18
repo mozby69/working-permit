@@ -24,26 +24,26 @@ export async function seedRoles() {
             ],
         },
         {
-            name: "CHECKER ",
+            name: "CHECKER",
             permissions: [
                 "ADD_WORKING_PERMIT",
                 "VIEW_WORKING_PERMIT",
             ],
         },
          {
-            name: "TROUBLESHOOTER ",
+            name: "TROUBLESHOOTER",
             permissions: [
                 "VIEW_WORKING_PERMIT",
             ],
         },
         {
-            name: "FIRST_APPROVER ",
+            name: "FIRST_APPROVER",
             permissions: [
                 "VIEW_WORKING_PERMIT",
             ],
         },
          {
-            name: "FINAL_APPROVER ",
+            name: "FINAL_APPROVER",
             permissions: [
                 "VIEW_WORKING_PERMIT",
             ],

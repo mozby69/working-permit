@@ -13,49 +13,132 @@ function getStageSequence(level: RequestLevel, stage: ApprovalStage): number {
   throw new Error("This approval role is not part of the requested level.");
 }
 
+
 export async function approveWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
   stage: ApprovalStage,
 ): Promise<ApprovalResult> {
-  if (!workingPermitId.trim() || !Number.isSafeInteger(userId) || userId <= 0) {
+  if (
+    !workingPermitId.trim() ||
+    !Number.isSafeInteger(userId) ||
+    userId <= 0
+  ) {
     throw new Error("Invalid approval request.");
   }
 
   return prisma.$transaction(async (tx) => {
     const permit = await tx.workingPermit.findUnique({
-      where: { id: workingPermitId },
-      select: { id: true, requestLevel: true, status: true, ApprovalTable: {
-        select: { id: true, sequence: true, role: true, approverId: true, approvedAt: true },
-        orderBy: { sequence: "asc" },
-      } },
+      where: {
+        id: workingPermitId,
+      },
+      select: {
+        id: true,
+        requestLevel: true,
+        status: true,
+
+        ApprovalTable: {
+          select: {
+            id: true,
+            sequence: true,
+            role: true,
+            approverId: true,
+            status: true,
+            approvedAt: true,
+          },
+          orderBy: {
+            sequence: "asc",
+          },
+        },
+      },
     });
-    if (!permit || permit.status !== WorkingPermitStatus.PENDING) {
-      throw new Error("Working Permit is not pending approval.");
+
+    if (
+      !permit ||
+      permit.status !== WorkingPermitStatus.PENDING
+    ) {
+      throw new Error(
+        "Working Permit is not pending approval."
+      );
     }
 
-    const sequence = getStageSequence(permit.requestLevel, stage);
-    const current = permit.ApprovalTable.find(row => row.sequence === sequence && row.role === stage);
-    const previous = permit.ApprovalTable.filter(row => row.sequence < sequence);
-    if (!current || current.approverId !== userId || current.approvedAt !== null ||
-        previous.length !== sequence - 1 || previous.some(row => row.approvedAt === null)) {
-      throw new Error("Approval is unavailable, not assigned to you, or not at the correct stage.");
+    const sequence = getStageSequence(
+      permit.requestLevel,
+      stage
+    );
+
+    const current = permit.ApprovalTable.find(
+      (row) =>
+        row.sequence === sequence &&
+        row.role === stage
+    );
+
+    const previous = permit.ApprovalTable.filter(
+      (row) => row.sequence < sequence
+    );
+
+    // Validate the assigned approver and sequence
+    if (
+      !current ||
+      current.approverId !== userId ||
+      current.status !== WorkingPermitStatus.PENDING ||
+      current.approvedAt !== null ||
+      previous.length !== sequence - 1 ||
+      previous.some(
+        (row) =>
+          row.status !== WorkingPermitStatus.APPROVED ||
+          row.approvedAt === null
+      )
+    ) {
+      throw new Error(
+        "Approval is unavailable, not assigned to you, or not at the correct stage."
+      );
     }
 
     const now = new Date();
-    const saved = await tx.approvalTable.updateMany({
-      where: { id: current.id, workingPermitId, approverId: userId, approvedAt: null },
-      data: { approvedAt: now },
-    });
-    if (saved.count !== 1) throw new Error("This stage was already approved.");
 
-    if (stage === "FINAL_APPROVER") {
-      const changed = await tx.workingPermit.updateMany({
-        where: { id: workingPermitId, status: WorkingPermitStatus.PENDING },
-        data: { status: WorkingPermitStatus.APPROVED, statusAt: now },
-      });
-      if (changed.count !== 1) throw new Error("Permit status already changed.");
+    // Update this approver's status
+    const saved = await tx.approvalTable.updateMany({
+      where: {
+        id: current.id,
+        workingPermitId,
+        approverId: userId,
+        status: WorkingPermitStatus.PENDING,
+        approvedAt: null,
+      },
+
+      data: {
+        status: WorkingPermitStatus.APPROVED,
+        approvedAt: now,
+      },
+    });
+
+    if (saved.count !== 1) {
+      throw new Error(
+        "This approval stage has already been processed."
+      );
     }
+
+   
+    // if (stage === "FINAL_APPROVER") {
+    //   const changed = await tx.workingPermit.updateMany({
+    //     where: {
+    //       id: workingPermitId,
+    //       status: WorkingPermitStatus.PENDING,
+    //     },
+
+    //     data: {
+    //       status: WorkingPermitStatus.APPROVED,
+    //       statusAt: now,
+    //     },
+    //   });
+
+    //   if (changed.count !== 1) {
+    //     throw new Error(
+    //       "Working Permit status has already changed."
+    //     );
+    //   }
+    // }
 
     return {
       workingPermitId,
@@ -66,49 +149,171 @@ export async function approveWorkingPermitRepo(
   });
 }
 
+
+
 export async function receiveWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
 ): Promise<TroubleshooterResult> {
-  if (!workingPermitId.trim() || !Number.isSafeInteger(userId) || userId <= 0) {
+  if (
+    !workingPermitId.trim() ||
+    !Number.isSafeInteger(userId) ||
+    userId <= 0
+  ) {
     throw new Error("Invalid receive request.");
   }
 
-  const now = new Date();
-  const changed = await prisma.workingPermit.updateMany({
-    where: {
-      id: workingPermitId,
-      status: WorkingPermitStatus.APPROVED,
-      receivedById: null,
-      WorkerList: {
-        is: {
-          troubleshooters: { some: { id: userId, isActive: true } },
+  return prisma.$transaction(async (tx) => {
+    const permit = await tx.workingPermit.findUnique({
+      where: {
+        id: workingPermitId,
+      },
+
+      select: {
+        id: true,
+        requestLevel: true,
+        status: true,
+        receivedById: true,
+
+        WorkerList: {
+          select: {
+            troubleshooters: {
+              where: {
+                id: userId,
+                isActive: true,
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+
+        ApprovalTable: {
+          select: {
+            sequence: true,
+            role: true,
+            status: true,
+            approvedAt: true,
+          },
+          orderBy: {
+            sequence: "asc",
+          },
         },
       },
-      ApprovalTable: { some: { role: "FINAL_APPROVER", approvedAt: { not: null } } },
-    },
-    data: {
-      status: WorkingPermitStatus.IN_PROGRESS,
-      statusAt: now,
-      receivedById: userId,
-      receivedAt: now,
-    },
-  });
-  if (changed.count !== 1) {
-    throw new Error("Permit is not available to receive or has already been received.");
-  }
+    });
 
-  const permit = await prisma.workingPermit.findUniqueOrThrow({
-    where: { id: workingPermitId },
-    select: { requestLevel: true },
+    if (!permit) {
+      throw new Error("Working Permit not found.");
+    }
+
+    // Overall permit must still be PENDING.
+    if (permit.status !== WorkingPermitStatus.PENDING) {
+      throw new Error(
+        `Cannot receive permit with status ${permit.status}.`
+      );
+    }
+
+    // Prevent multiple troubleshooters receiving the same permit.
+    if (permit.receivedById !== null) {
+      throw new Error(
+        "This Working Permit has already been received."
+      );
+    }
+
+    // Check if the authenticated user belongs to the assigned
+    // Troubleshooter department.
+    if (permit.WorkerList.troubleshooters.length === 0) {
+      throw new Error(
+        "You are not assigned as a Troubleshooter for this permit."
+      );
+    }
+
+    // Validate all required approval stages.
+    const expectedRoles =
+      permit.requestLevel === RequestLevel.LEVEL_1
+        ? ["CHECKER", "FINAL_APPROVER"]
+        : ["CHECKER", "FIRST_APPROVER", "FINAL_APPROVER"];
+
+    const approvalsComplete =
+      permit.ApprovalTable.length === expectedRoles.length &&
+      expectedRoles.every((role, index) => {
+        const approval = permit.ApprovalTable[index];
+
+        return (
+          approval?.role === role &&
+          approval.sequence === index + 1 &&
+          approval.status === WorkingPermitStatus.APPROVED &&
+          approval.approvedAt !== null
+        );
+      });
+
+    if (!approvalsComplete) {
+      throw new Error(
+        "All required approval stages must be approved before receiving."
+      );
+    }
+
+    const now = new Date();
+
+    // Atomic update prevents duplicate receiving.
+    const changed = await tx.workingPermit.updateMany({
+      where: {
+        id: workingPermitId,
+        status: WorkingPermitStatus.PENDING,
+        receivedById: null,
+
+        WorkerList: {
+          is: {
+            troubleshooters: {
+              some: {
+                id: userId,
+                isActive: true,
+              },
+            },
+          },
+        },
+
+        ApprovalTable: {
+          some: {
+            role: "FINAL_APPROVER",
+            status: WorkingPermitStatus.APPROVED,
+            approvedAt: {
+              not: null,
+            },
+          },
+        },
+      },
+
+      data: {
+        status: WorkingPermitStatus.IN_PROGRESS,
+        statusAt: now,
+        receivedById: userId,
+        receivedAt: now,
+      },
+    });
+
+    if (changed.count !== 1) {
+      throw new Error(
+        "Permit could not be received. It may have been processed by another user."
+      );
+    }
+
+    return {
+      workingPermitId,
+      sequence:
+        permit.requestLevel === RequestLevel.LEVEL_1
+          ? 3
+          : 4,
+      receivedById: userId,
+      status: "IN_PROGRESS" as const,
+    };
   });
-  return {
-    workingPermitId,
-    sequence: permit.requestLevel === RequestLevel.LEVEL_1 ? 3 : 4,
-    receivedById: userId,
-    status: "IN_PROGRESS" as const,
-  };
 }
+
+
+
+
 
 export async function completeWorkingPermitRepo(
   workingPermitId: string,

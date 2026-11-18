@@ -5,7 +5,7 @@ import { QueryParams } from "../../../../../packages/shared/src/types/query.type
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
-import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
+//import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
 
 
 export async function addRequestRepo(
@@ -53,6 +53,7 @@ export async function addRequestRepo(
         sequence: data.requestLevel === "LEVEL_1" ? 2 : 3,
         role: "FINAL_APPROVER",
         approverId: worker.finalApproverUserId,
+        
       },
     ];
 
@@ -134,7 +135,7 @@ export async function getDepartmentBranchesRepo() {
 
 
 export async function displayWorkingPermit(params: QueryParamWP) {
-  const { page = 1, limit = 10, search, userId, roles = [] } = params;
+  const { page = 1, limit = 10, search, userId, roles = [] ,requestToId, date,} = params;
   if (!Number.isSafeInteger(userId) || userId <= 0) {
     throw new Error("Authenticated user ID is required.");
   }
@@ -170,25 +171,62 @@ export async function displayWorkingPermit(params: QueryParamWP) {
       ],
     });
   }
-  if (roles.includes("TROUBLESHOOTER")) {
-    visible.push({
-      status: { in: [WorkingPermitStatus.APPROVED, WorkingPermitStatus.IN_PROGRESS, WorkingPermitStatus.COMPLETED] },
-      WorkerList: {
-        is: { troubleshooters: { some: { id: userId, isActive: true } } },
+ if (roles.includes("TROUBLESHOOTER")) {
+  visible.push({
+    status: {
+      in: [
+        WorkingPermitStatus.PENDING,
+        WorkingPermitStatus.IN_PROGRESS,
+        WorkingPermitStatus.COMPLETED,
+      ],
+    },
+
+    ApprovalTable: {
+      some: {
+        role: "FINAL_APPROVER",
+        status: WorkingPermitStatus.APPROVED,
+        approvedAt: {
+          not: null,
+        },
       },
-    });
-  }
+    },
+
+    WorkerList: {
+      is: {
+        troubleshooters: {
+          some: {
+            id: userId,
+            isActive: true,
+          },
+        },
+      },
+    },
+  });
+}
 
   const visibilityWhere: Prisma.WorkingPermitWhereInput = roles.includes("ADMIN")
     ? {} : visible.length > 0 ? { OR: visible } : { id: { in: [] } };
   const term = search?.trim();
+
   const searchWhere: Prisma.WorkingPermitWhereInput = term
     ? { OR: [
         { referenceNumber: { contains: term } },
         { WorkerList: { is: { workerName: { contains: term } } } },
       ] }
     : {};
-  const where: Prisma.WorkingPermitWhereInput = { AND: [visibilityWhere, searchWhere] };
+  
+     const filterWhere: Prisma.WorkingPermitWhereInput = {
+      ...(requestToId !== undefined && {
+        requestToId,
+      }),
+
+      ...(date && {
+        date: new Date(`${date}T00:00:00.000Z`),
+      }),
+    };
+
+
+  const where: Prisma.WorkingPermitWhereInput = { AND: [visibilityWhere, searchWhere, filterWhere] };
 
   const [wp_data, total] = await prisma.$transaction([
     prisma.workingPermit.findMany({
@@ -234,12 +272,33 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         branchDepartment: { select: { id: true, entityName: true } },
         ApprovalTable: {
           select: {
-            id: true, sequence: true, role: true, approverId: true, approvedAt: true,
+            id: true, sequence: true, role: true, approverId: true, status:true, approvedAt: true,
             approver: { select: { id: true, name: true } },
           },
           orderBy: { sequence: "asc" },
         },
+         remarksList: {
+            select: {
+              id: true,
+              description: true,
+              createdAt: true,
+
+              createdBy: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+
+            orderBy: [
+              { createdAt: "desc" },
+              { id: "desc" },
+            ],
+          },
+      
       },
+      
       skip: (currentPage - 1) * pageLimit,
       take: pageLimit,
       orderBy: { createdAt: "desc" },
@@ -404,5 +463,95 @@ export async function updateWorkingPermitRepo(
       });
     }
     return { outcome: "UPDATED" as const, id };
+  });
+}
+
+
+
+
+
+export async function addWorkingPermitRemarkRepo(
+  workingPermitId: string,
+  userId: number,
+  description: string
+) {
+  return prisma.$transaction(async (tx) => {
+
+const permit = await prisma.workingPermit.findFirst({
+  where: {
+    id: workingPermitId,
+
+    // User must be an assigned Troubleshooter
+    WorkerList: {
+      is: {
+        troubleshooters: {
+          some: {
+            id: userId,
+            isActive: true,
+          },
+        },
+      },
+    },
+
+    // Final Approver must have approved
+    ApprovalTable: {
+      some: {
+        role: "FINAL_APPROVER",
+        status: WorkingPermitStatus.APPROVED,
+        approvedAt: {
+          not: null,
+        },
+      },
+    },
+
+   status: {
+      in: [
+        WorkingPermitStatus.PENDING,
+        WorkingPermitStatus.IN_PROGRESS,
+      ],
+    },
+  },
+
+  select: {
+    id: true,
+    status: true,
+    receivedById: true,
+  },
+});
+
+if (!permit) {
+  throw new Error(
+    "Remarks can only be added by an assigned Troubleshooter " +
+    "after final approval while the request is pending or in progress."
+  );
+}
+
+
+    // CREATE, not UPDATE — preserves previous remarks
+    const remark = await tx.workingPermitRemark.create({
+      data: {
+        workingPermitId,
+        description,
+        createdById: userId,
+      },
+
+      select: {
+        id: true,
+        description: true,
+        createdAt: true,
+
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true as const,
+      data: remark,
+    };
   });
 }

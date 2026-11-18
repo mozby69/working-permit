@@ -88,17 +88,6 @@ export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSche
 
 
 
-<<<<<<< HEAD
-export const workingPermitStageSchema = z.object({
-  id: z.string(),
-  sequence: z.number().int().positive(),
-  role: z.enum(["CHECKER", "FIRST_APPROVER", "FINAL_APPROVER", "TROUBLESHOOTER"]),
-  status: workingPermitStatus,
-  statusAt: z.string().nullable(),
-});
-
-export type WorkingPermitStage = z.infer<typeof workingPermitStageSchema>;
-=======
 export const permitApprovalSchema = z.object({
   id: z.string(),
   sequence: z.number().int().positive(),
@@ -106,9 +95,9 @@ export const permitApprovalSchema = z.object({
   approverId: z.number().int().positive(),
   approverName: z.string(),
   approvedAt: z.string().nullable(),
+  status: workingPermitStatus,
 });
 export type PermitApproval = z.infer<typeof permitApprovalSchema>;
->>>>>>> feat/permit-status-and-approver-assignments
 
 export const workingPermitResponseSchema = z.object({
   id: z.string(),
@@ -145,13 +134,13 @@ export const workingPermitResponseSchema = z.object({
   receivedAt: z.string().nullable(),
   approvals: z.array(permitApprovalSchema),
   attachments: z.array(workingPermitAttachmentSchema),
-  approvals: z.array(workingPermitStageSchema),
   canApproveChecker: z.boolean(),
   canApproveFirstApprover: z.boolean(),
   canApproveFinalApprover: z.boolean(),
   canReceiveTroubleshooter: z.boolean(),
   canCompleteTroubleshooter: z.boolean(),
-  canAddRemarks:z.boolean(),
+  //remarkEntries: z.array(workingPermitRemarkSchema),
+  canAddRemarks: z.boolean(),
   fromDepartment: z.object({
     id: z.number(),
     entityName: z.string(),

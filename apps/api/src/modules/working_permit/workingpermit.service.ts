@@ -2,6 +2,7 @@ import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
+import { WorkingPermitStatus } from "../../../generated/prisma/enums";
 
 
 
@@ -36,21 +37,47 @@ export async function getWorkingPermitService(params: QueryParamWP) {
     const checker = byRole("CHECKER");
     const first = byRole("FIRST_APPROVER");
     const final = byRole("FINAL_APPROVER");
+    const troubleshoot = byRole("TROUBLESHOOTER");
 
-    const readyForApproval = (role: string): boolean => {
+
+   const readyForApproval = (role: string): boolean => {
       const current = byRole(role);
-      if (!current || current.approvedAt || permit.status !== "PENDING") return false;
-      const previous = approvals.filter(item => item.sequence < current.sequence);
-      return previous.length === current.sequence - 1 &&
-        previous.every(item => item.approvedAt !== null);
+
+      if (
+        !current ||
+        current.status !== "PENDING" ||
+        current.approvedAt !== null ||
+        permit.status !== "PENDING"
+      ) {
+        return false;
+      }
+
+      const previous = approvals.filter(
+        (item) => item.sequence < current.sequence
+      );
+
+      return (
+        previous.length === current.sequence - 1 &&
+        previous.every(
+          (item) =>
+            item.status === "APPROVED" &&
+            item.approvedAt !== null
+        )
+      );
     };
 
     const isAssignedTroubleshooter = permit.WorkerList.troubleshooters.some(
       user => user.id === params.userId,
     );
 
-    const canEdit = permit.createdById === params.userId &&
-      permit.status === "PENDING" && approvals.every(item => item.approvedAt === null);
+
+    const canEdit =
+      permit.createdById === params.userId &&
+      permit.status === "PENDING" &&
+      approvals.every(
+        (item) => item.status === "PENDING" &&
+                  item.approvedAt === null
+      );
 
     const canApproveChecker = params.roles.includes("CHECKER") &&
       checker?.approverId === params.userId && readyForApproval("CHECKER");
@@ -61,16 +88,49 @@ export async function getWorkingPermitService(params: QueryParamWP) {
     const canApproveFinalApprover = params.roles.includes("FINAL_APPROVER") &&
       final?.approverId === params.userId && readyForApproval("FINAL_APPROVER");
 
-    const canReceiveTroubleshooter = params.roles.includes("TROUBLESHOOTER") &&
-      isAssignedTroubleshooter && permit.status === "APPROVED" &&
+
+    const canReceiveTroubleshooter =
+      params.roles.includes("TROUBLESHOOTER") &&
+      isAssignedTroubleshooter &&
+      final?.status === "APPROVED" &&
+      final.approvedAt !== null &&
+      permit.status === "PENDING" &&
       permit.receivedById === null;
 
-    const canCompleteTroubleshooter = params.roles.includes("TROUBLESHOOTER") &&
-      isAssignedTroubleshooter && permit.status === "IN_PROGRESS" &&
+    const canCompleteTroubleshooter =
+      params.roles.includes("TROUBLESHOOTER") &&
+      isAssignedTroubleshooter &&
+      permit.status === "IN_PROGRESS" &&
       permit.receivedById === params.userId;
 
+      const canAddRemarks =
+        params.roles.includes("TROUBLESHOOTER") &&
+        isAssignedTroubleshooter &&
+        final?.status === "APPROVED" &&
+        final.approvedAt !== null &&
+        (
+          permit.status === "PENDING" ||
+          permit.status === "IN_PROGRESS"
+        );
+        
+      // const canAddRemarks =
+      //   params.roles.includes("TROUBLESHOOTER") &&
+      //   isAssignedTroubleshooter &&
+      //   final?.status === "APPROVED" &&
+      //   final.approvedAt !== null &&
+      //   (
+      //     (
+      //       permit.status === "PENDING" &&
+      //       permit.receivedById === null
+      //     ) ||
+      //     (
+      //       permit.status === "IN_PROGRESS" &&
+      //       permit.receivedById === params.userId
+      //     )
+      //   );
+
     const stageStatus = (role: string) =>
-      byRole(role)?.approvedAt ? "APPROVED" as const : "PENDING" as const;
+      byRole(role)?.status ?? WorkingPermitStatus.PENDING;
 
     return {
       id: permit.id,
@@ -92,6 +152,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
         role: item.role,
         approverId: item.approverId,
         approverName: item.approver.name,
+          status: item.status,
         approvedAt: item.approvedAt?.toISOString() ?? null,
       })),
       attachments: permit.attachments.map(file => ({
@@ -126,6 +187,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
         receivedById: permit.receivedById,
         receivedAt: permit.receivedAt?.toISOString() ?? null,
         statusAt: permit.statusAt?.toISOString() ?? null,
+        
       },
       requestToWorker: {
         id: permit.WorkerList.id,

@@ -2,7 +2,6 @@ export type QueryParamWP = {
   page?: number;
   limit?: number;
   search?: string;
-
   // Filters
   requestToId?: number;
   date?: string;

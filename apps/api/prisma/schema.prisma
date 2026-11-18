@@ -122,7 +122,9 @@ model WorkingPermit {
   checkedBy        String?    @map("checked_by") @db.VarChar(100)
   status WorkingPermitStatus @default(PENDING)
   statusAt DateTime? @map("status_at")
-  remarks String? @db.VarChar(100)
+  remarksList WorkingPermitRemark[]
+
+
   receivedById Int? @map("received_by_id")
   receivedBy User? @relation("WorkingPermitReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
   receivedAt DateTime? @map("received_at")
@@ -140,7 +142,7 @@ model WorkingPermit {
   createdBy User @relation("WorkingPermitCreator",fields: [createdById],references: [id])
 
 
-  WorkingPermitRemark WorkingPermitRemark[]
+
   attachments WorkingPermitAttachment[]
   ApprovalTable           ApprovalTable[] @relation()
   createdAt        DateTime   @default(now()) @map("created_at")
@@ -216,6 +218,7 @@ model ApprovalTable {
   approver User @relation("UserApprovedBy", fields: [approverId], references: [id])
   role String @db.VarChar(40)
   approvedAt DateTime? @map("approved_at")
+  status WorkingPermitStatus @default(PENDING)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

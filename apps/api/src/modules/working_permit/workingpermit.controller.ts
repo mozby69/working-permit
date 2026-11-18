@@ -470,6 +470,7 @@ export async function updateWorkingPermitController(req: Request, res: Response,
 
 
 
+
 export async function addWorkingPermitRemarkController(
   req: Request,
   res: Response,
@@ -502,7 +503,9 @@ export async function addWorkingPermitRemarkController(
       return;
     }
 
-    const parsed = addWorkingPermitRemarkSchema.safeParse(req.body);
+    const parsed = addWorkingPermitRemarkSchema.safeParse(
+      req.body
+    );
 
     if (!parsed.success) {
       res.status(400).json({
@@ -520,30 +523,26 @@ export async function addWorkingPermitRemarkController(
         parsed.data.description
       );
 
-    if (result.outcome !== "CREATED") {
-      res.status(403).json({
-        success: false,
-        message:
-          "Remarks can only be added by an assigned Troubleshooter after final approval while the request is pending or in progress.",
-      });
-      return;
-    }
+    // The service returns { success: true, data: remark }
+    // rather than { outcome: "CREATED", remark }.
 
     try {
       emitWPUpdated({ id: workingPermitId });
     } catch (error: unknown) {
-      console.error("Failed to emit remark event:", error);
+      console.error(
+        "Failed to emit remark event:",
+        error
+      );
     }
 
     res.status(201).json({
       success: true,
       message: "Remark added successfully",
-
       data: {
-        id: result.remark.id,
-        description: result.remark.description,
-        createdAt: result.remark.createdAt.toISOString(),
-        createdBy: result.remark.createdBy,
+        id: result.data.id,
+        description: result.data.description,
+        createdAt: result.data.createdAt.toISOString(),
+        createdBy: result.data.createdBy,
       },
     });
   } catch (error: unknown) {

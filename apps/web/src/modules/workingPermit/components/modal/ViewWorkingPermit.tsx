@@ -39,14 +39,18 @@ export default function ViewWorkingPermit({permit,onCancel}: ViewWorkingPermitPr
   const {
   mutate: receivePermit,
   isPending: isReceiving,
-} = useReceiveWorkingPermit();
+  } = useReceiveWorkingPermit();
 
-const {
-  mutate: completePermit,
-  isPending: isCompleting,
-} = useCompleteWorkingPermit();
+  const {
+    mutate: completePermit,
+    isPending: isCompleting,
+  } = useCompleteWorkingPermit();
 
 
+  const {
+    mutate: approvePermit,
+    isPending: isSaving,
+    } = useApproveWorkingPermit();
 
   const formattedDate = new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
@@ -56,54 +60,44 @@ const {
   }).format(new Date(permit.date));
 
 
-        const {
-        mutate: approvePermit,
-        isPending: isSaving,
-        } = useApproveWorkingPermit();
+
+  const approvalStage: ApprovalStage | null =
+    permit.canApproveChecker
+      ? "CHECKER"
+      : permit.canApproveFinalApprover
+        ? "FINAL_APPROVER"
+        : permit.canApproveFirstApprover
+          ? "FIRST_APPROVER"
+          : null;
 
 
-        const approvalStage: ApprovalStage | null =
-          permit.canApproveChecker
-            ? "CHECKER"
-            : permit.canApproveFinalApprover
-              ? "FINAL_APPROVER"
-              : permit.canApproveFirstApprover
-                ? "FIRST_APPROVER"
-                : null;
+    const handleApprove = () => {
+    if (!approvalStage || isSaving) return;
 
-
-        const handleApprove = () => {
-        if (!approvalStage || isSaving) return;
-
-        approvePermit(
-            {
-            workingPermitId: permit.id,
-            stage: approvalStage,
-            },
-            {
-            onSuccess: () => {
-                toast.success("Working Permit approved successfully!");
-                onCancel();
-            },
-            onError: () => {
-                toast.error("Failed to approve Working Permit.");
-            },
-            }
-        );
-        };
+    approvePermit(
+        {
+        workingPermitId: permit.id,
+        stage: approvalStage,
+        },
+        {
+        onSuccess: () => {
+            toast.success("Working Permit approved successfully!");
+            onCancel();
+        },
+        onError: () => {
+            toast.error("Failed to approve Working Permit.");
+        },
+        }
+    );
+    };
 
 
 
-  const firstApprover =
- permit.requestToWorker.firstApprover;
+  const firstApprover = permit.requestToWorker.firstApprover;
 
-  const finalApprover =
-    permit.requestToWorker.finalApprover;
+  const finalApprover = permit.requestToWorker.finalApprover;
 
-
-
-const isProcessing =
-  isSaving || isReceiving || isCompleting;
+  const isProcessing =isSaving || isReceiving || isCompleting;
 
 
   const handleReceive = () => {
@@ -126,6 +120,9 @@ const isProcessing =
     }
   );
 };
+
+
+
 
 const handleComplete = () => {
   if (!permit.canCompleteTroubleshooter || isProcessing) {
@@ -170,6 +167,9 @@ const approverOrder =
           description: "Approval stage 2",
         },
       ];
+
+
+
   return (
     <div className="space-y-6 pb-2">
       {/* Reference header */}
@@ -331,31 +331,6 @@ const approverOrder =
       </div>
       </section>
 
-<<<<<<< HEAD
-      {/* Per-stage workflow history */}
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-        <SectionHeading
-          number="04"
-          title="Approval Workflow"
-          description="Each approval stage is tracked independently."
-        />
-        <div className="space-y-3">
-          {permit.approvals.map((stage) => (
-            <div
-              key={stage.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
-                  {stage.sequence}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
-                    {stage.role.replaceAll("_", " ")}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {stage.statusAt
-=======
       {/* Assigned approval steps */}
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
         <SectionHeading
@@ -377,20 +352,10 @@ const approverOrder =
                   <p className="text-xs text-slate-600">{step.approverName}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     {step.approvedAt
->>>>>>> feat/permit-status-and-approver-assignments
                       ? new Intl.DateTimeFormat("en-PH", {
                           timeZone: "Asia/Manila",
                           dateStyle: "medium",
                           timeStyle: "short",
-<<<<<<< HEAD
-                        }).format(new Date(stage.statusAt))
-                      : "Not processed yet"}
-                  </p>
-                </div>
-              </div>
-              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                {stage.status.replaceAll("_", " ")}
-=======
                         }).format(new Date(step.approvedAt))
                       : "Awaiting approval"}
                   </p>
@@ -398,7 +363,6 @@ const approverOrder =
               </div>
               <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
                 {step.approvedAt ? "APPROVED" : "PENDING"}
->>>>>>> feat/permit-status-and-approver-assignments
               </span>
             </div>
           ))}
@@ -466,7 +430,7 @@ const approverOrder =
             key={remark.id}
             className="relative rounded-xl border border-slate-200 bg-slate-50/70 p-4"
           >
-            {/* HEADER */}
+       
             <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
@@ -484,7 +448,7 @@ const approverOrder =
                 </div>
               </div>
 
-              {/* DATE & TIME */}
+          
               <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
                 <CalendarDays size={13} className="text-slate-400" />
 
@@ -494,7 +458,6 @@ const approverOrder =
               </div>
             </div>
 
-            {/* DESCRIPTION */}
             <div className="rounded-lg border border-slate-100 bg-white px-4 py-3">
               <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
                 {remark.description}
