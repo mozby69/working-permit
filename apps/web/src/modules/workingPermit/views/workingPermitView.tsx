@@ -1,6 +1,6 @@
 "use client";
 import Modal from "@/components/common/ModalHeader";
-import { FilesIcon, Plus,CalendarDays, X } from "lucide-react";
+import { FilesIcon, Plus,CalendarDays, X, MessageSquarePlus } from "lucide-react";
 import ModalAddRequest from "../components/modal/AddRequest";
 // import { useDisclosure } from "@/hooks/useDisclosure";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -14,6 +14,7 @@ import TableRowActions from "@/components/common/TableAction/DropdownAction";
 import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
 import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 import EditWorkingPermit from "../components/modal/EditWorkingPermit";
+import AddRemark from "../components/modal/AddRemarks";
 
 
 export default function WorkingPermitView(){
@@ -26,13 +27,10 @@ export default function WorkingPermitView(){
     const debouncedSearch = useDebounce(userSearch, 500);
     const [editingPermit, setEditingPermit] = useState<WorkingPermitResponse | null>(null);
     const [selectedPermit, setSelectedPermit] = useState<WorkingPermitResponse | null>(null);
-    const [selectedWorkerId, setSelectedWorkerId] =
-    useState<number | null>(null);
-
+    const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
+    const [remarkPermit, setRemarkPermit] =useState<WorkingPermitResponse | null>(null);
     const [selectedDate, setSelectedDate] = useState("");
-
-    const [showDateFilter, setShowDateFilter] =
-      useState(false);
+    const [showDateFilter, setShowDateFilter] = useState(false);
 
     const {
       data: workers = [],
@@ -155,26 +153,46 @@ export default function WorkingPermitView(){
           ),
         },
 
-       {
-          key: "actions",
-          header: "Actions",
-          render: (row) => (
-            <TableRowActions<WorkingPermitResponse>
-              item={row}
-              viewLabel="View Request"
-              onView={(permit) => {
-                setSelectedPermit(permit);
-                setIsModalOpen2(true);
-              }}
-              onEdit={
-                row.canEdit
-                  ? (permit) => setEditingPermit(permit)
-                  : undefined
-              }
-              editLabel="Edit Request"
-            />
-          ),
-        },
+      {
+        key: "actions",
+        header: "Actions",
+
+        render: (row) => (
+          <TableRowActions<WorkingPermitResponse>
+            item={row}
+
+            // Default View
+            viewLabel="View Request"
+            onView={(permit) => {
+              setSelectedPermit(permit);
+              setIsModalOpen2(true);
+            }}
+
+            // Default Edit
+            editLabel="Edit Request"
+            onEdit={
+              row.canEdit
+                ? (permit) => setEditingPermit(permit)
+                : undefined
+            }
+
+            // Custom actions
+            customActions={[
+              {
+                key: "add-remark",
+                label: "Add Remark",
+                icon: MessageSquarePlus,
+
+                hidden: !row.canAddRemarks,
+
+                onClick: (permit) => {
+                  setRemarkPermit(permit);
+                },
+              },
+            ]}
+          />
+        ),
+      },
                       
      
       ];
@@ -270,118 +288,116 @@ export default function WorkingPermitView(){
 
 
 
-{/* WORKING PERMIT FILTERS */}
-<div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-  <div className="flex flex-wrap items-center justify-between gap-4">
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Two worker buttons, populated from worker_list */}
-      {isWorkersLoading ? (
-        <span className="px-3 py-2 text-xs text-slate-400">
-          Loading departments...
-        </span>
-      ) : (
-        workers.map((worker) => {
-          const isActive = selectedWorkerId === worker.id;
+    {/* WORKING PERMIT FILTERS */}
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {isWorkersLoading ? (
+            <span className="px-3 py-2 text-xs text-slate-400">
+              Loading departments...
+            </span>
+          ) : (
+            workers.map((worker) => {
+              const isActive = selectedWorkerId === worker.id;
 
-          return (
+              return (
+                <button
+                  key={worker.id}
+                  type="button"
+                  onClick={() => handleWorkerFilter(worker.id)}
+                  aria-pressed={isActive}
+                  className={`inline-flex h-10 items-center justify-center
+                    rounded-lg border px-4 text-xs font-semibold
+                    transition-all duration-200
+                    ${
+                      isActive
+                        ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                    }`}>
+                  {worker.workerName}
+                </button>
+              );
+            })
+          )}
+
+          {/* Date filter button */}
+          <button
+            type="button"
+            onClick={() =>
+              setShowDateFilter((previous) => !previous)
+            }
+            aria-expanded={showDateFilter}
+            className={`inline-flex h-10 items-center gap-2
+              rounded-lg border px-4 text-xs font-semibold
+              transition-all duration-200
+              ${
+                selectedDate
+                  ? "border-indigo-600 bg-indigo-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+              }`}
+          >
+            <CalendarDays size={15} />
+            Date
+          </button>
+
+          {/* Clear all filters */}
+          {hasActiveFilters && (
             <button
-              key={worker.id}
               type="button"
-              onClick={() => handleWorkerFilter(worker.id)}
-              aria-pressed={isActive}
-              className={`inline-flex h-10 items-center justify-center
-                rounded-lg border px-4 text-xs font-semibold
-                transition-all duration-200
-                ${
-                  isActive
-                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-                }`}
+              onClick={clearFilters}
+              className="inline-flex h-10 items-center gap-1.5
+                rounded-lg px-3 text-xs font-medium
+                text-slate-500 hover:bg-slate-100 hover:text-red-600"
             >
-              {worker.workerName}
+              <X size={14} />
+              Clear filters
             </button>
-          );
-        })
-      )}
+          )}
+        </div>
 
-      {/* Date filter button */}
-      <button
-        type="button"
-        onClick={() =>
-          setShowDateFilter((previous) => !previous)
-        }
-        aria-expanded={showDateFilter}
-        className={`inline-flex h-10 items-center gap-2
-          rounded-lg border px-4 text-xs font-semibold
-          transition-all duration-200
-          ${
-            selectedDate
-              ? "border-indigo-600 bg-indigo-600 text-white"
-              : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
-          }`}
-      >
-        <CalendarDays size={15} />
-        Date
-      </button>
-
-      {/* Clear all filters */}
-      {hasActiveFilters && (
-        <button
-          type="button"
-          onClick={clearFilters}
-          className="inline-flex h-10 items-center gap-1.5
-            rounded-lg px-3 text-xs font-medium
-            text-slate-500 hover:bg-slate-100 hover:text-red-600"
-        >
-          <X size={14} />
-          Clear filters
-        </button>
-      )}
-    </div>
-
-    <p className="text-xs text-slate-500">
-      {hasActiveFilters ? "Filtered results" : "Showing all permits"}
-    </p>
-  </div>
-
-  {/* Expandable date picker */}
-  {showDateFilter && (
-    <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
-      <div className="space-y-1.5">
-        <label
-          htmlFor="working-permit-date-filter"
-          className="block text-xs font-medium text-slate-600"
-        >
-          Request date
-        </label>
-
-        <input
-          id="working-permit-date-filter"
-          type="date"
-          value={selectedDate}
-          onChange={(event) =>
-            handleDateChange(event.target.value)
-          }
-          className="h-10 rounded-lg border border-slate-200
-            bg-white px-3 text-sm text-slate-700 outline-none
-            focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-        />
+        <p className="text-xs text-slate-500">
+          {hasActiveFilters ? "Filtered results" : "Showing all permits"}
+        </p>
       </div>
 
-      {selectedDate && (
-        <button
-          type="button"
-          onClick={() => handleDateChange("")}
-          className="h-10 rounded-lg border border-slate-200
-            px-3 text-xs font-medium text-slate-600
-            hover:bg-slate-50"
-        >
-          Clear date
-        </button>
+      {/* Expandable date picker */}
+      {showDateFilter && (
+        <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="working-permit-date-filter"
+              className="block text-xs font-medium text-slate-600"
+            >
+              Request date
+            </label>
+
+            <input
+              id="working-permit-date-filter"
+              type="date"
+              value={selectedDate}
+              onChange={(event) =>
+                handleDateChange(event.target.value)
+              }
+              className="h-10 rounded-lg border border-slate-200
+                bg-white px-3 text-sm text-slate-700 outline-none
+                focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            />
+          </div>
+
+          {selectedDate && (
+            <button
+              type="button"
+              onClick={() => handleDateChange("")}
+              className="h-10 rounded-lg border border-slate-200
+                px-3 text-xs font-medium text-slate-600
+                hover:bg-slate-50"
+            >
+              Clear date
+            </button>
+          )}
+        </div>
       )}
     </div>
-  )}
-</div>
 
 
        <DataTable<WorkingPermitResponse>
@@ -463,6 +479,27 @@ export default function WorkingPermitView(){
               key={editingPermit.id}
               permit={editingPermit}
               onCancel={() => setEditingPermit(null)}
+            />
+          )}
+        </Modal>
+
+
+
+        <Modal
+          isOpen={remarkPermit !== null}
+          onClose={() => setRemarkPermit(null)}
+          title={
+            remarkPermit
+              ? `Add Remark - ${remarkPermit.referenceNumber}`
+              : "Add Remark"
+          }
+          size="lg"
+        >
+          {remarkPermit && (
+            <AddRemark
+              key={remarkPermit.id}
+              permit={remarkPermit}
+              onCancel={() => setRemarkPermit(null)}
             />
           )}
         </Modal>

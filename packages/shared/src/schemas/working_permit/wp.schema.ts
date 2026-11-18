@@ -45,6 +45,34 @@ export type AddRequestInput = z.input<typeof addRequestSchema>;
 //***************************************** */
 
 
+
+
+export const addWorkingPermitRemarkSchema = z.object({
+  description: z
+    .string()
+    .trim()
+    .min(1, "Remark description is required")
+    .max(2000, "Maximum 2000 characters"),
+});
+
+export type AddWorkingPermitRemarkInput = z.infer<typeof addWorkingPermitRemarkSchema>;
+
+export const workingPermitRemarkSchema = z.object({
+  id: z.number(),
+  description: z.string(),
+  createdAt: z.string(),
+
+  createdBy: z.object({
+    id: z.number(),
+    name: z.string(),
+  }),
+});
+
+export type WorkingPermitRemark = z.infer<typeof workingPermitRemarkSchema>;
+
+
+
+
 export const workingPermitAttachmentSchema = z.object({
   id: z.string(),
   workingPermitId: z.string(),
@@ -74,15 +102,14 @@ export const workingPermitResponseSchema = z.object({
   referenceNumber: z.string(),
   requestToId: z.number(),
   requestTo: z.string(),
-  // fromId: z.number(),
-  // branchDepartmentId: z.number(),
   canEdit: z.boolean(),
+  remarksList: z.array(workingPermitRemarkSchema),
   requestToWorker: z.object({
-    id: z.number(),
-    workerName: z.string(),
+  id: z.number(),
+  workerName: z.string(),
 
-    firstApproverUserId: z.number().nullable(),
-    finalApproverUserId: z.number().nullable(),
+  firstApproverUserId: z.number().nullable(),
+  finalApproverUserId: z.number().nullable(),
 
     firstApprover: z.object({
       id: z.number(),
@@ -106,7 +133,7 @@ export const workingPermitResponseSchema = z.object({
   canApproveFinalApprover: z.boolean(),
   canReceiveTroubleshooter: z.boolean(),
   canCompleteTroubleshooter: z.boolean(),
-
+  canAddRemarks:z.boolean(),
   fromDepartment: z.object({
     id: z.number(),
     entityName: z.string(),
@@ -153,3 +180,6 @@ export type WPListResponse = z.infer<
 export const approveWorkingPermitParamsSchema = z.object({
   id: z.uuid(),
 });
+
+
+

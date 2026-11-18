@@ -42,6 +42,13 @@ router.patch(
   uploadWorkingPermitAttachment.array("attachments", 5),
   workingController.updateWorkingPermitController
 );
+router.post(
+  "/:id/remarks",
+  authorize({
+    roles: ["TROUBLESHOOTER"],
+  }),
+  workingController.addWorkingPermitRemarkController
+);
 
 
 export default router; 

@@ -84,6 +84,15 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       permit.createdById === params.userId &&
       checker?.status === "PENDING";
 
+      const canAddRemarks =
+      params.roles.includes("TROUBLESHOOTER") &&
+      isTroubleshooterDepartment &&
+      final?.status === "APPROVED" &&
+      (
+        troubleshoot?.status === "PENDING" ||
+        troubleshoot?.status === "IN_PROGRESS"
+      );
+
     return {
       id: permit.id,
       referenceNumber: permit.referenceNumber,
@@ -157,6 +166,19 @@ export async function getWorkingPermitService(params: QueryParamWP) {
             }
           : null,
       },
+
+      canAddRemarks,
+
+      remarksList: permit.remarksList.map((remark) => ({
+        id: remark.id,
+        description: remark.description,
+        createdAt: remark.createdAt.toISOString(),
+        createdBy: {
+          id: remark.createdBy.id,
+          name: remark.createdBy.name,
+        },
+      })),
+
     };
   });
 
@@ -183,3 +205,15 @@ export async function updateWorkingPermitService(id: string, userId: number, dat
 }
 
 
+
+export async function addWorkingPermitRemarkService(
+  workingPermitId: string,
+  userId: number,
+  description: string
+) {
+  return workingRepo.addWorkingPermitRemarkRepo(
+    workingPermitId,
+    userId,
+    description
+  );
+}

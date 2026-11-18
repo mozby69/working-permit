@@ -14,6 +14,7 @@ import {
   ImageIcon,
   Inbox,
   Loader2,
+  MessageSquareText,
   Paperclip,
 
   UserRound,
@@ -371,35 +372,121 @@ const approverOrder =
       </section>
 
       {/* Attachment */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <SectionHeading
+          number="05"
+          title="Supporting Documents"
+          description="Click an image to view it in full size."
+        />
+
+        {permit.attachments.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {permit.attachments.map((attachment) => (
+              <AttachmentPreview
+                key={attachment.id}
+                permitId={permit.id}
+                attachment={attachment}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+            <ImageIcon className="mx-auto mb-3 h-7 w-7 text-slate-400" />
+            <p className="text-sm font-medium text-slate-700">
+              No attachments available
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              No supporting documents were uploaded for this request.
+            </p>
+          </div>
+        )}
+      </section>
+
+
+
+
+
+{/* TROUBLESHOOTER REMARKS */}
 <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
   <SectionHeading
     number="05"
-    title="Supporting Documents"
-    description="Click an image to view it in full size."
+    title="Troubleshooter Remarks"
+    description="Progress updates, explanations, and remarks history."
   />
 
-  {permit.attachments.length > 0 ? (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {permit.attachments.map((attachment) => (
-        <AttachmentPreview
-          key={attachment.id}
-          permitId={permit.id}
-          attachment={attachment}
-        />
-      ))}
+  {permit.remarksList.length > 0 ? (
+    <div className="space-y-3">
+      {permit.remarksList.map((remark, index) => {
+        const remarkDate = new Intl.DateTimeFormat("en-PH", {
+          timeZone: "Asia/Manila",
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }).format(new Date(remark.createdAt));
+
+        return (
+          <div
+            key={remark.id}
+            className="relative rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+          >
+            {/* HEADER */}
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                  <MessageSquareText size={17} />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {remark.createdBy.name}
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Remark #{permit.remarksList.length - index}
+                  </p>
+                </div>
+              </div>
+
+              {/* DATE & TIME */}
+              <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
+                <CalendarDays size={13} className="text-slate-400" />
+
+                <span className="text-xs font-medium text-slate-600">
+                  {remarkDate}
+                </span>
+              </div>
+            </div>
+
+            {/* DESCRIPTION */}
+            <div className="rounded-lg border border-slate-100 bg-white px-4 py-3">
+              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                {remark.description}
+              </p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   ) : (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-      <ImageIcon className="mx-auto mb-3 h-7 w-7 text-slate-400" />
-      <p className="text-sm font-medium text-slate-700">
-        No attachments available
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-9 text-center">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+        <MessageSquareText size={21} />
+      </div>
+
+      <p className="text-sm font-semibold text-slate-700">
+        No remarks available
       </p>
+
       <p className="mt-1 text-xs text-slate-500">
-        No supporting documents were uploaded for this request.
+        Troubleshooter progress updates will appear here.
       </p>
     </div>
   )}
 </section>
+
 
 
      <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

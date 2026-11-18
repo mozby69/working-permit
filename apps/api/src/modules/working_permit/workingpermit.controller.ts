@@ -1,4 +1,4 @@
-import { addRequestSchema, approveWorkingPermitParamsSchema, updateWorkingPermitSchema } from '@repo/shared';
+import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, updateWorkingPermitSchema } from '@repo/shared';
 import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
@@ -461,6 +461,92 @@ export async function updateWorkingPermitController(req: Request, res: Response,
     });
   } catch (error: unknown) {
     await cleanup();
+    next(error);
+  }
+}
+
+
+
+
+
+
+export async function addWorkingPermitRemarkController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const workingPermitId = req.params.id;
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    if (
+      typeof workingPermitId !== "string" ||
+      !workingPermitId.trim()
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Working Permit ID",
+      });
+      return;
+    }
+
+    const parsed = addWorkingPermitRemarkSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid remark",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const result =
+      await workingPermitService.addWorkingPermitRemarkService(
+        workingPermitId,
+        userId,
+        parsed.data.description
+      );
+
+    if (result.outcome !== "CREATED") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Remarks can only be added by an assigned Troubleshooter after final approval while the request is pending or in progress.",
+      });
+      return;
+    }
+
+    try {
+      emitWPUpdated({ id: workingPermitId });
+    } catch (error: unknown) {
+      console.error("Failed to emit remark event:", error);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Remark added successfully",
+
+      data: {
+        id: result.remark.id,
+        description: result.remark.description,
+        createdAt: result.remark.createdAt.toISOString(),
+        createdBy: result.remark.createdBy,
+      },
+    });
+  } catch (error: unknown) {
     next(error);
   }
 }

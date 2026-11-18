@@ -1,4 +1,4 @@
-import { AddRequestInput, AddRequestSchema, WorkingPermitResponse } from "../schemas";
+import { AddRequestInput, AddRequestSchema, AddWorkingPermitRemarkInput, WorkingPermitResponse } from "../schemas";
 
 export type DepartmentBranch = {
   id: number;
@@ -186,4 +186,10 @@ export type Props = {
 export type UpdateWorkingPermitParams = {
   id: string;
   payload: CreateWorkingPermitPayload;
+};
+
+
+export type AddRemarkParams = {
+  workingPermitId: string;
+  payload: AddWorkingPermitRemarkInput;
 };

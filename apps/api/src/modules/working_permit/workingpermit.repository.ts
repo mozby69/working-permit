@@ -328,6 +328,25 @@ export async function displayWorkingPermit(params: QueryParamWP) {
           },
           orderBy: { sequence: "asc" },
         },
+        remarksList: {
+            select: {
+              id: true,
+              description: true,
+              createdAt: true,
+
+              createdBy: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+
+            orderBy: [
+              { createdAt: "desc" },
+              { id: "desc" },
+            ],
+          },
       },
       skip: (currentPage - 1) * pageLimit,
       take: pageLimit,
@@ -465,5 +484,96 @@ export async function updateWorkingPermitRepo(id: string, userId: number, data: 
       })),
     });
     return { outcome: "UPDATED" as const, id };
+  });
+}
+
+
+
+
+
+
+
+export async function addWorkingPermitRemarkRepo(
+  workingPermitId: string,
+  userId: number,
+  description: string
+) {
+  return prisma.$transaction(async (tx) => {
+    const permit = await tx.workingPermit.findFirst({
+      where: {
+        id: workingPermitId,
+
+        WorkerList: {
+          is: {
+            troubleshooters: {
+              some: {
+                id: userId,
+                isActive: true,
+              },
+            },
+          },
+        },
+
+        AND: [
+          {
+            ApprovalTable: {
+              some: {
+                role: "FINAL_APPROVER",
+                status: WorkingPermitStatus.APPROVED,
+              },
+            },
+          },
+          {
+            ApprovalTable: {
+              some: {
+                role: "TROUBLESHOOTER",
+                status: {
+                  in: [
+                    WorkingPermitStatus.PENDING,
+                    WorkingPermitStatus.IN_PROGRESS,
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+    if (!permit) {
+      return {
+        outcome: "FORBIDDEN" as const,
+      };
+    }
+
+    const remark = await tx.workingPermitRemark.create({
+      data: {
+        workingPermitId,
+        description,
+        createdById: userId,
+      },
+
+      select: {
+        id: true,
+        description: true,
+        createdAt: true,
+
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      outcome: "CREATED" as const,
+      remark,
+    };
   });
 }
