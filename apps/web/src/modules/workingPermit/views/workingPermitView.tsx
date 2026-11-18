@@ -447,7 +447,7 @@ export default function WorkingPermitView(){
           setSelectedPermit(null);
         }}
         title="Working Permit Details"
-        size="lg"
+        size="xl"
       >
         {selectedPermit && (
           <ViewWorkingPermit

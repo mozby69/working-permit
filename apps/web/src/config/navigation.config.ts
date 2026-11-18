@@ -4,7 +4,8 @@ import {
     Truck,
     ClipboardList,
     Settings,
-    File
+    File,
+    CircleDashed
 } from "lucide-react";
 
 import { NavigationItem } from "@/types/navigation.types";
@@ -35,10 +36,16 @@ export const navigation: NavigationItem[] = [
         icon: Settings,
         roles: ["SUPER_ADMIN"],
     },
-      {
+    {
         title: "Working Permit",
         href: ROUTES.USER.WORKING_PERMIT,
         icon: File,
+        roles: ["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"],
+    },
+      {
+        title: "Ongoing Permit",
+        href: ROUTES.USER.ONGOING_PERMIT,
+        icon: CircleDashed,
         roles: ["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"],
     },
 ];
