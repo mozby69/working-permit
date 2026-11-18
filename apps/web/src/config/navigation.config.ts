@@ -41,4 +41,10 @@ export const navigation: NavigationItem[] = [
         icon: File,
         roles: ["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"],
     },
+      {
+        title: "Branch Working Permits",
+        href: ROUTES.BRANCH.WORKING_PERMIT,
+        icon: ClipboardList,
+        roles: ["BRANCH"],
+        }
 ];

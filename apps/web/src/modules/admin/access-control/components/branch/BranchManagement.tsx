@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Building2,
   GitBranch,
@@ -12,15 +12,16 @@ import {
   Pencil,
   Trash2,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { toast } from "sonner";
-
 import type { DepartmentBranch } from "@repo/shared";
 
 import {
   useDeleteDepartmentBranch,
-  useDepartmentBranches,
+  usePaginatedDepartmentBranches,
 } from "../../hooks/useDepartmentBranches";
 
 import { DepartmentBranchModal } from "./DepartmentBranchModal";
@@ -32,6 +33,10 @@ export function BranchDepartmentManagement() {
     useState<EntityType>("branches");
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -44,33 +49,50 @@ export function BranchDepartmentManagement() {
   const isBranch = activeTab === "branches";
 
   // ==========================================
-  // QUERIES
+  // DEBOUNCED SEARCH
+  // ==========================================
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // ==========================================
+  // PAGINATED QUERY
   // ==========================================
 
   const {
-    data: entities = [],
+    data: response,
     isLoading,
+    isFetching,
     isError,
     refetch,
-  } = useDepartmentBranches({ isBranch });
+  } = usePaginatedDepartmentBranches({
+    isBranch,
+    page,
+    limit,
+    search: debouncedSearch,
+  });
+
+  const entities = response?.data ?? [];
+
+  const pagination = response?.pagination;
+
+  const total = pagination?.total ?? 0;
+  const totalPages = pagination?.totalPages ?? 0;
+
+  const startRecord =
+    total === 0 ? 0 : (page - 1) * limit + 1;
+
+  const endRecord =
+    total === 0
+      ? 0
+      : Math.min(page * limit, total);
 
   const deleteMutation = useDeleteDepartmentBranch();
-
-  // ==========================================
-  // FILTERING
-  // ==========================================
-
-  const filteredEntities = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    if (!keyword) return entities;
-
-    return entities.filter((item) =>
-      item.entityName
-        .toLowerCase()
-        .includes(keyword)
-    );
-  }, [entities, search]);
 
   // ==========================================
   // HANDLERS
@@ -79,6 +101,18 @@ export function BranchDepartmentManagement() {
   function handleTabChange(tab: EntityType) {
     setActiveTab(tab);
     setSearch("");
+    setDebouncedSearch("");
+    setPage(1);
+  }
+
+  function handleSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  function handleLimitChange(value: number) {
+    setLimit(value);
+    setPage(1);
   }
 
   function handleAdd() {
@@ -107,6 +141,12 @@ export function BranchDepartmentManagement() {
       );
 
       setDeleting(null);
+
+      // Return to previous page if the last
+      // record on the current page was deleted.
+      if (entities.length === 1 && page > 1) {
+        setPage((previous) => previous - 1);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -119,6 +159,7 @@ export function BranchDepartmentManagement() {
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+
         {/* TABS AND SEARCH */}
         <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
           <div className="flex rounded-lg bg-slate-100 p-1">
@@ -155,7 +196,7 @@ export function BranchDepartmentManagement() {
                 type="search"
                 value={search}
                 onChange={(event) =>
-                  setSearch(event.target.value)
+                  handleSearch(event.target.value)
                 }
                 placeholder={`Search ${activeTab}...`}
                 className="w-60 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -197,11 +238,10 @@ export function BranchDepartmentManagement() {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
+              {isLoading || (isFetching && !response) ? (
                 <tr>
                   <td colSpan={5} className="py-14 text-center">
                     <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-blue-600" />
-
                     <p className="text-sm text-slate-500">
                       Loading {activeTab}...
                     </p>
@@ -225,7 +265,7 @@ export function BranchDepartmentManagement() {
                     </button>
                   </td>
                 </tr>
-              ) : filteredEntities.length === 0 ? (
+              ) : entities.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-14 text-center">
                     <GitBranch className="mx-auto mb-3 h-9 w-9 text-slate-300" />
@@ -235,14 +275,14 @@ export function BranchDepartmentManagement() {
                     </p>
 
                     <p className="mt-1 text-sm text-slate-400">
-                      {search
+                      {debouncedSearch
                         ? "Try a different search keyword."
                         : `No ${activeTab} have been registered yet.`}
                     </p>
                   </td>
                 </tr>
               ) : (
-                filteredEntities.map((item) => (
+                entities.map((item) => (
                   <tr
                     key={item.id}
                     className="transition hover:bg-slate-50"
@@ -278,7 +318,7 @@ export function BranchDepartmentManagement() {
                     {/* CHECKER */}
                     <td className="px-5 py-4 text-slate-600">
                       {item.checker?.name ??
-                        (item.checkerId !== null
+                        (item.checkerId != null
                           ? `User #${item.checkerId}`
                           : "Not assigned")}
                     </td>
@@ -327,11 +367,80 @@ export function BranchDepartmentManagement() {
           </table>
         </div>
 
-        {/* FOOTER */}
-        <div className="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">
-          {isLoading || isError
-            ? "—"
-            : `Showing ${filteredEntities.length} ${activeTab}`}
+        {/* PAGINATION FOOTER */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-5 py-4">
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">
+              {isLoading || isError
+                ? "—"
+                : `Showing ${startRecord}–${endRecord} of ${total} ${activeTab}`}
+            </span>
+
+            {isFetching && !isLoading && (
+              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+
+            {/* ROWS PER PAGE */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">
+                Rows per page
+              </span>
+
+              <select
+                value={limit}
+                onChange={(event) =>
+                  handleLimitChange(Number(event.target.value))
+                }
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            {/* PAGE NAVIGATION */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || isFetching || isError}
+                onClick={() =>
+                  setPage((previous) =>
+                    Math.max(1, previous - 1)
+                  )
+                }
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <span className="min-w-24 text-center text-sm text-slate-600">
+                Page {page} of {Math.max(1, totalPages)}
+              </span>
+
+              <button
+                type="button"
+                disabled={
+                  page >= totalPages ||
+                  isFetching ||
+                  isError
+                }
+                onClick={() =>
+                  setPage((previous) => previous + 1)
+                }
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -404,7 +513,6 @@ export function BranchDepartmentManagement() {
                 {deleteMutation.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-
                 Delete
               </button>
             </div>

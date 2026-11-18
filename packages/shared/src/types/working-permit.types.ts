@@ -35,16 +35,16 @@ export type QueryParams = {
   search?: string;
 };
 
-export interface WPListResponse {
-  success: boolean;
-  data: WorkingPermitResponse[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
+// export interface WPListResponse {
+//   success: boolean;
+//   data: WorkingPermitResponse[];
+//   pagination: {
+//     total: number;
+//     page: number;
+//     limit: number;
 
-  };
-}
+//   };
+// }
 
 
 

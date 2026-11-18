@@ -61,7 +61,7 @@ export function AuthProvider({
             }
 
             if (roles.includes("BRANCH")) {
-                router.replace("/branch/dashboard");
+                router.replace("/branch");
                 return;
             }
 

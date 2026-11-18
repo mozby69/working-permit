@@ -140,6 +140,17 @@ export async function findAllUsers(
                             },
                         },
                     },
+                    branchAssignments: {
+                    include: {
+                        branch: {
+                        select: {
+                            id: true,
+                            entityName: true,
+                            isBranch: true,
+                        },
+                        },
+                    },
+                    },
                 },
 
                 skip: (page - 1) * limit,
@@ -240,110 +251,209 @@ export async function findDuplicateUser(
     });
 }
 
+
 export async function createUser(data: {
-    name: string;
-    username: string;
-    email?: string | null;
-    password: string;
-    roleIds: number[];
+  name: string;
+  username: string;
+  email?: string | null;
+  password: string;
+  roleIds: number[];
+  branchIds?: number[];
 }) {
-    return prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-            data: {
-                name: data.name,
-                username: data.username,
-                email: data.email,
-                password: data.password,
-                isActive: true,
-            },
-        });
+  return prisma.$transaction(async (tx) => {
+    const branchIds = [...new Set(data.branchIds ?? [])];
 
-        await tx.userRole.createMany({
-            data: data.roleIds.map((roleId) => ({
-                userId: user.id,
-                roleId,
-            })),
-        });
+    if (branchIds.length > 0) {
+      const count = await tx.departmentBranches.count({
+        where: {
+          id: { in: branchIds },
+          isBranch: true,
+        },
+      });
 
-        return tx.user.findUniqueOrThrow({
-            where: {
-                id: user.id,
+      if (count !== branchIds.length) {
+        throw new Error("Invalid branch assignment");
+      }
+    }
+
+    const user = await tx.user.create({
+      data: {
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        isActive: true,
+
+        roles: {
+          create: data.roleIds.map((roleId) => ({
+            role: {
+              connect: { id: roleId },
             },
-            include: {
-                roles: {
-                    include: {
-                        role: {
-                            include: {
-                                permissions: {
-                                    include: {
-                                        permission: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
+          })),
+        },
+
+        branchAssignments: {
+          create: branchIds.map((branchId) => ({
+            branch: {
+              connect: { id: branchId },
             },
-        });
+          })),
+        },
+      },
     });
+
+    return tx.user.findUniqueOrThrow({
+      where: { id: user.id },
+
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        branchAssignments: {
+          include: {
+            branch: {
+              select: {
+                id: true,
+                entityName: true,
+                isBranch: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 }
+
 
 export async function updateUser(
-    userId: number,
-    data: {
-        name?: string;
-        username?: string;
-        email?: string | null;
-        password?: string;
-        isActive?: boolean;
-        roleIds?: number[];
-    }
+  userId: number,
+  data: {
+    name?: string;
+    username?: string;
+    email?: string | null;
+    password?: string;
+    isActive?: boolean;
+    roleIds?: number[];
+    branchIds?: number[];
+  }
 ) {
-    return prisma.$transaction(async (tx) => {
-        const user = await tx.user.update({
-            where: {
-                id: userId,
-            },
+  return prisma.$transaction(async (tx) => {
+    if (data.branchIds !== undefined) {
+      const branchIds = [...new Set(data.branchIds)];
 
-            data: {
-                ...(data.name !== undefined && {
-                    name: data.name,
-                }),
-                ...(data.username !== undefined && {
-                    username: data.username,
-                }),
-                ...(data.email !== undefined && {
-                    email: data.email,
-                }),
-                ...(data.password !== undefined && {
-                    password: data.password,
-                }),
-                ...(data.isActive !== undefined && {
-                    isActive: data.isActive,
-                }),
-            },
+      if (branchIds.length > 0) {
+        const count = await tx.departmentBranches.count({
+          where: {
+            id: { in: branchIds },
+            isBranch: true,
+          },
         });
 
-        if (data.roleIds !== undefined) {
-            await tx.userRole.deleteMany({
-                where: {
-                    userId,
-                },
-            });
-
-            if (data.roleIds.length > 0) {
-                await tx.userRole.createMany({
-                    data: data.roleIds.map((roleId) => ({
-                        userId,
-                        roleId,
-                    })),
-                });
-            }
+        if (count !== branchIds.length) {
+          throw new Error("Invalid branch assignment");
         }
+      }
+    }
 
-        return user;
+    await tx.user.update({
+      where: { id: userId },
+
+      data: {
+        ...(data.name !== undefined && {
+          name: data.name,
+        }),
+
+        ...(data.username !== undefined && {
+          username: data.username,
+        }),
+
+        ...(data.email !== undefined && {
+          email: data.email,
+        }),
+
+        ...(data.password !== undefined &&
+          data.password !== "" && {
+            password: data.password,
+          }),
+
+        ...(data.isActive !== undefined && {
+          isActive: data.isActive,
+        }),
+      },
     });
+
+    if (data.roleIds !== undefined) {
+      await tx.userRole.deleteMany({
+        where: { userId },
+      });
+
+      if (data.roleIds.length > 0) {
+        await tx.userRole.createMany({
+          data: [...new Set(data.roleIds)].map(
+            (roleId) => ({
+              userId,
+              roleId,
+            })
+          ),
+        });
+      }
+    }
+
+    if (data.branchIds !== undefined) {
+      await tx.userBranchAssignment.deleteMany({
+        where: { userId },
+      });
+
+      if (data.branchIds.length > 0) {
+        await tx.userBranchAssignment.createMany({
+          data: [...new Set(data.branchIds)].map(
+            (branchId) => ({
+              userId,
+              branchId,
+            })
+          ),
+        });
+      }
+    }
+
+    return tx.user.findUniqueOrThrow({
+      where: { id: userId },
+
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+
+        branchAssignments: {
+          include: {
+            branch: {
+              select: {
+                id: true,
+                entityName: true,
+                isBranch: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 }
+
 
 export const deleteUser = async (userId: number) => {
     return prisma.user.delete({

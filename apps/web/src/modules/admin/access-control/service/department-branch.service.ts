@@ -1,11 +1,9 @@
 import api from "@/lib/api/api-client";
-import { ApiResponse, CreateDepartmentBranchInput, DepartmentBranch, UpdateDepartmentBranchInput } from "@repo/shared";
+import { ApiResponse, CreateDepartmentBranchInput, DepartmentBranch, DepartmentBranchFilter, DepartmentBranchPaginationResponse, UpdateDepartmentBranchInput } from "@repo/shared";
 
 
 
-export type DepartmentBranchFilter = {
-  isBranch?: boolean;
-};
+
 
 type DepartmentBranchResponse = {
   success: boolean;
@@ -25,6 +23,18 @@ export const departmentBranchService = {
 
   return response.data;
 },
+    // New endpoint - for paginated tables
+    async getPaginated(
+        params: DepartmentBranchFilter = {}
+    ): Promise<DepartmentBranchPaginationResponse> {
+        const response =
+        await api.get<DepartmentBranchPaginationResponse>(
+            "/admin/pagination-branches",
+            { params }
+        );
+
+        return response.data;
+    },
 
     async create(payload: CreateDepartmentBranchInput){
         const response = await api.post<
