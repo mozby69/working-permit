@@ -132,7 +132,7 @@ export const approveCheckerController =
 
 // ==================================================
 // FINAL APPROVER
-// LEVEL 2: SEQUENCE 2 -> 3
+// LEVEL 1: sequence 2, LEVEL 2: sequence 3
 // ==================================================
 
 export const approveFinalApproverController =
@@ -142,8 +142,7 @@ export const approveFinalApproverController =
 
 // ==================================================
 // FIRST APPROVER
-// LEVEL 1: SEQUENCE 2 -> 3
-// LEVEL 2: SEQUENCE 3 -> 4
+// LEVEL 2 ONLY: sequence 2
 // ==================================================
 
 export const approveFirstApproverController =
