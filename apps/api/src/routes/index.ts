@@ -31,6 +31,6 @@ router.use("/admin/", workingRoute);
 
 router.use("/working-permit",authenticate,workingPermitRoute);
 router.use("/approval",authenticate,approvalRoute);
-router.use("/notification",authenticate,notifcationRoute);
+router.use("/notifications",authenticate,notifcationRoute);
 
 export default router;
