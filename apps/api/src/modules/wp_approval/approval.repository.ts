@@ -5,6 +5,7 @@ import {
 import { prisma } from "@/lib/database/prisma.js";
 import type { ApprovalResult, ApprovalStage } from "@repo/shared";
 import type { TroubleshooterResult } from "./approval.types.js";
+import { notifyCoordinatorStatusTx } from "../notifications/notification.service.js";
 
 function getStageSequence(level: RequestLevel, stage: ApprovalStage): number {
   if (stage === "CHECKER") return 1;
@@ -151,6 +152,7 @@ export async function approveWorkingPermitRepo(
 
 
 
+
 export async function receiveWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
@@ -168,9 +170,10 @@ export async function receiveWorkingPermitRepo(
       where: {
         id: workingPermitId,
       },
-
       select: {
         id: true,
+        referenceNumber: true,
+        createdById: true,
         requestLevel: true,
         status: true,
         receivedById: true,
@@ -207,29 +210,24 @@ export async function receiveWorkingPermitRepo(
       throw new Error("Working Permit not found.");
     }
 
-    // Overall permit must still be PENDING.
     if (permit.status !== WorkingPermitStatus.PENDING) {
       throw new Error(
         `Cannot receive permit with status ${permit.status}.`
       );
     }
 
-    // Prevent multiple troubleshooters receiving the same permit.
     if (permit.receivedById !== null) {
       throw new Error(
         "This Working Permit has already been received."
       );
     }
 
-    // Check if the authenticated user belongs to the assigned
-    // Troubleshooter department.
     if (permit.WorkerList.troubleshooters.length === 0) {
       throw new Error(
         "You are not assigned as a Troubleshooter for this permit."
       );
     }
 
-    // Validate all required approval stages.
     const expectedRoles =
       permit.requestLevel === RequestLevel.LEVEL_1
         ? ["CHECKER", "FINAL_APPROVER"]
@@ -256,7 +254,6 @@ export async function receiveWorkingPermitRepo(
 
     const now = new Date();
 
-    // Atomic update prevents duplicate receiving.
     const changed = await tx.workingPermit.updateMany({
       where: {
         id: workingPermitId,
@@ -299,6 +296,17 @@ export async function receiveWorkingPermitRepo(
       );
     }
 
+    // Notify the Coordinator who created the permit.
+    await notifyCoordinatorStatusTx(
+      tx,
+      {
+        id: permit.id,
+        referenceNumber: permit.referenceNumber,
+        createdById: permit.createdById,
+      },
+      "IN_PROGRESS"
+    );
+
     return {
       workingPermitId,
       sequence:
@@ -315,42 +323,83 @@ export async function receiveWorkingPermitRepo(
 
 
 
+
 export async function completeWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
 ): Promise<TroubleshooterResult> {
-  if (!workingPermitId.trim() || !Number.isSafeInteger(userId) || userId <= 0) {
+  if (
+    !workingPermitId.trim() ||
+    !Number.isSafeInteger(userId) ||
+    userId <= 0
+  ) {
     throw new Error("Invalid completion request.");
   }
 
-  const changed = await prisma.workingPermit.updateMany({
-    where: {
-      id: workingPermitId,
-      status: WorkingPermitStatus.IN_PROGRESS,
-      receivedById: userId,
-      WorkerList: {
-        is: { troubleshooters: { some: { id: userId, isActive: true } } },
-      },
-    },
-    data: {
-      status: WorkingPermitStatus.COMPLETED,
-      statusAt: new Date(),
-    },
-  });
-  if (changed.count !== 1) {
-    throw new Error("Permit is not in progress or was not received by you.");
-  }
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.workingPermit.updateMany({
+      where: {
+        id: workingPermitId,
+        status: WorkingPermitStatus.IN_PROGRESS,
+        receivedById: userId,
 
-  const permit = await prisma.workingPermit.findUniqueOrThrow({
-    where: { id: workingPermitId },
-    select: { requestLevel: true },
+        WorkerList: {
+          is: {
+            troubleshooters: {
+              some: {
+                id: userId,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
+
+      data: {
+        status: WorkingPermitStatus.COMPLETED,
+        statusAt: new Date(),
+      },
+    });
+
+    if (changed.count !== 1) {
+      throw new Error(
+        "Permit is not in progress or was not received by you."
+      );
+    }
+
+    const permit = await tx.workingPermit.findUniqueOrThrow({
+      where: {
+        id: workingPermitId,
+      },
+      select: {
+        id: true,
+        referenceNumber: true,
+        createdById: true,
+        requestLevel: true,
+      },
+    });
+
+    // Notify the Coordinator who created the permit.
+    await notifyCoordinatorStatusTx(
+      tx,
+      {
+        id: permit.id,
+        referenceNumber: permit.referenceNumber,
+        createdById: permit.createdById,
+      },
+      "COMPLETED"
+    );
+
+    return {
+      workingPermitId,
+      sequence:
+        permit.requestLevel === RequestLevel.LEVEL_1
+          ? 3
+          : 4,
+      receivedById: userId,
+      status: "COMPLETED" as const,
+    };
   });
-  return {
-    workingPermitId,
-    sequence: permit.requestLevel === RequestLevel.LEVEL_1 ? 3 : 4,
-    receivedById: userId,
-    status: "COMPLETED" as const,
-  };
 }
 
 

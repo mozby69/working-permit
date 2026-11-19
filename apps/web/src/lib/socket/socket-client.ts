@@ -16,7 +16,8 @@ let socket: Socket<
 export const createSocket = () => {
     if (!socket) {
         socket = io(SOCKET_URL!, {
-            autoConnect: true,
+            //autoConnect: true,
+            autoConnect:false,
             withCredentials: true,
         });
     }

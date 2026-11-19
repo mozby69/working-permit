@@ -12,3 +12,20 @@ export type CreateNotificationInput = {
   type: string;
   workingPermitId?: string;
 };
+
+
+export type PermitNotificationStage =
+  | "CHECKER"
+  | "FIRST_APPROVER"
+  | "FINAL_APPROVER";
+
+export interface PermitNotificationContext {
+  id: string;
+  referenceNumber: string;
+  createdById: number;
+  requestLevel: "LEVEL_1" | "LEVEL_2";
+  ApprovalTable: {
+    role: string;
+    approverId: number;
+  }[];
+}
