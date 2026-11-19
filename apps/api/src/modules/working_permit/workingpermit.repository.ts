@@ -5,6 +5,7 @@ import { QueryParams } from "../../../../../packages/shared/src/types/query.type
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
+import { notifyAssignedApproverTx } from "../notifications/notification.service";
 //import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
 
 
@@ -63,7 +64,7 @@ export async function addRequestRepo(
       update: { lastValue: { increment: 1 } },
     });
 
-    return tx.workingPermit.create({
+    const permit = await tx.workingPermit.create({
       data: {
         referenceNumber: `WP${counter.lastValue}`,
         createdBy: { connect: { id: userId } },
@@ -88,6 +89,16 @@ export async function addRequestRepo(
       },
       include: { ApprovalTable: true },
     });
+
+    await notifyAssignedApproverTx(
+      tx,
+      permit,
+      "CHECKER"
+    );
+
+    return permit;
+
+
   });
 }
 

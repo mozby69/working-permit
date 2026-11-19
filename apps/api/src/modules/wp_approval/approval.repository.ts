@@ -5,7 +5,7 @@ import {
 import { prisma } from "@/lib/database/prisma.js";
 import type { ApprovalResult, ApprovalStage } from "@repo/shared";
 import type { TroubleshooterResult } from "./approval.types.js";
-import { notifyCoordinatorStatusTx } from "../notifications/notification.service.js";
+import { notifyAssignedApproverTx, notifyCoordinatorStatusTx } from "../notifications/notification.service.js";
 
 function getStageSequence(level: RequestLevel, stage: ApprovalStage): number {
   if (stage === "CHECKER") return 1;
@@ -37,7 +37,20 @@ export async function approveWorkingPermitRepo(
         id: true,
         requestLevel: true,
         status: true,
-
+        referenceNumber: true,
+        createdById: true,
+        WorkerList: {
+          select: {
+            troubleshooters: {
+              where: {
+                isActive: true,
+              },
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
         ApprovalTable: {
           select: {
             id: true,
@@ -119,27 +132,23 @@ export async function approveWorkingPermitRepo(
         "This approval stage has already been processed."
       );
     }
+    const nextStage =
+      stage === "CHECKER"
+        ? permit.requestLevel === RequestLevel.LEVEL_2
+          ? "FIRST_APPROVER"
+          : "FINAL_APPROVER"
+        : stage === "FIRST_APPROVER"
+          ? "FINAL_APPROVER"
+          : null;
 
+    if (nextStage) {
+      await notifyAssignedApproverTx(
+        tx,
+        permit,
+        nextStage
+      );
+    }
    
-    // if (stage === "FINAL_APPROVER") {
-    //   const changed = await tx.workingPermit.updateMany({
-    //     where: {
-    //       id: workingPermitId,
-    //       status: WorkingPermitStatus.PENDING,
-    //     },
-
-    //     data: {
-    //       status: WorkingPermitStatus.APPROVED,
-    //       statusAt: now,
-    //     },
-    //   });
-
-    //   if (changed.count !== 1) {
-    //     throw new Error(
-    //       "Working Permit status has already changed."
-    //     );
-    //   }
-    // }
 
     return {
       workingPermitId,
