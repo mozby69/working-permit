@@ -4,3 +4,4 @@ export * from "./admin/access-control.types";
 export * from "./admin/dashboard.types";
 export * from "./admin/working.types"
 export * from "./notification.types";
+export * from "./ongoing/ongoing-permit.types";

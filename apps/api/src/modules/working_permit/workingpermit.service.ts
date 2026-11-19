@@ -1,4 +1,4 @@
-import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
+import { AddRequestInput, MyApprovedPermitFilters, UpdateWorkingPermitInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -241,5 +241,21 @@ export async function addWorkingPermitRemarkService(
     workingPermitId,
     userId,
     description
+  );
+}
+
+
+
+//Kim
+
+
+
+export async function getMyApprovedPermitService(
+  userId: number,
+  filters: MyApprovedPermitFilters = {}
+) {
+  return workingRepo.getMyApprovedPermitRepo(
+    userId,
+    filters
   );
 }

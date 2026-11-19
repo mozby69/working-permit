@@ -52,4 +52,8 @@ router.post(
 );
 
 
+//Kim 
+router.get("/my-approved-permit", workingController.getMyApprovedPermitController);
+
+
 export default router; 
