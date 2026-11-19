@@ -17,6 +17,8 @@ import AddRemark from "../components/modal/AddRemarks";
 import toast from "react-hot-toast";
 import SweetAlert from "@/lib/alerts/alert";
 import { useWPSocket } from "../hooks/useWorkingPermitSocket";
+import PermissionGuard from "@/components/guards/PermissionGuard";
+import RoleGuard from "@/components/guards/RoleGuard";
 
 
 export default function WorkingPermitView(){
@@ -53,9 +55,7 @@ export default function WorkingPermitView(){
       page: userPage,
       limit: userLimit,
       search: debouncedSearch,
-
       requestToId: selectedWorkerId ?? undefined,
-
       date: selectedDate || undefined,
     });
 
@@ -63,8 +63,6 @@ export default function WorkingPermitView(){
     const workingPermits: WorkingPermitResponse[] =  wpResponse?.data ?? [];
 
     const totalRecords = wpResponse?.pagination?.total ?? 0;
-
-
 
 
       const columns: TableColumn<WorkingPermitResponse>[] = [
@@ -330,11 +328,10 @@ const handleRejectPermit = async (
         </div>
       </div>
 
-
+      <PermissionGuard permissions={["ADD_WORKING_PERMIT"]}> 
       <button
         type="button"
         onClick={() => {
-             // setSaveError(null);
               setIsAddOpen(true);
             }}
         className="
@@ -356,6 +353,8 @@ const handleRejectPermit = async (
         <Plus size={17} strokeWidth={2} />
         Add Request
       </button>
+     </PermissionGuard> 
+
     </div>
 
 

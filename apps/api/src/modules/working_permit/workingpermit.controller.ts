@@ -568,3 +568,23 @@ export async function addWorkingPermitRemarkController(
     next(error);
   }
 }
+
+
+
+export async function getAllRequestTypesController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const requestTypes = await workingPermitService.getAllRequestTypesService();
+
+    res.status(200).json({
+      success: true,
+      message: "Request types retrieved successfully.",
+      data: requestTypes,
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+}

@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CheckCheck,
   ClipboardList,
+  ClipboardType,
   File,
   FileText,
   Hash,
@@ -236,6 +237,13 @@ const approverOrder =
             value={permit.status}
             icon={<BadgeCheck size={15} />}
           />
+
+          <DetailField
+            label="Request Type"
+            value={permit.requestType?.description ?? "Not specified"}
+            icon={<ClipboardType size={15} />}
+          />
+                    
         </div>
 
         <div className="mt-6 border-t border-slate-100 pt-5">

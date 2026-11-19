@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, RequestTypesResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -24,7 +24,12 @@ export async function addWorkingPermitService(
   if (payload.checkedBy) {
     formData.append("checkedBy", payload.checkedBy);
   }
-
+  if (payload.requestTypeId != null) {
+    formData.append(
+      "requestTypeId",
+      String(payload.requestTypeId)
+    );
+  }
   // Append multiple attachments
   for (const file of payload.attachments) {
     formData.append("attachments", file);
@@ -233,3 +238,10 @@ export async function rejectWorkingPermitService(
 
   return response.data;
 }
+
+
+export async function getRequestTypes() {
+  const response = await api.get<RequestTypesResponse>("/working-permit/get-request-type");
+  return response.data.data;
+}
+

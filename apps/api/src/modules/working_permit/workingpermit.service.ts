@@ -201,9 +201,15 @@ export async function getWorkingPermitService(params: QueryParamWP) {
           ? { id: permit.WorkerList.finalApproverUser.id, name: permit.WorkerList.finalApproverUser.name }
           : null,
       },
+       requestTypeId: permit.RequestType?.id ?? null,
+      requestType: permit.RequestType
+      ? {
+          id: permit.RequestType.id,
+          description: permit.RequestType.description,
+        }
+      : null,
 
       canAddRemarks,
-
       remarksList: permit.remarksList.map((remark) => ({
         id: remark.id,
         description: remark.description,
@@ -212,6 +218,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
           id: remark.createdBy.id,
           name: remark.createdBy.name,
         },
+
       })),
 
     };
@@ -242,4 +249,9 @@ export async function addWorkingPermitRemarkService(
     userId,
     description
   );
+}
+
+
+export async function getAllRequestTypesService() {
+  return workingRepo.getAllRequestTypesRepo();
 }

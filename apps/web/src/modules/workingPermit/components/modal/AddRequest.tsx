@@ -16,14 +16,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays,
   Download,
-  Eye,
   FileImage,
   FileText,
   Loader2,
   Paperclip,
   Save,
   ShieldCheck,
-  Trash2,
   UploadCloud,
   X,
 } from "lucide-react";
@@ -39,15 +37,14 @@ import {
   useNextWorkingPermitReference,
   useWorkerList,
   useDepartmentBranches,
+  useRequestTypes,
 } from "@/modules/workingPermit/hooks/useWorkingPermit";
 
 import { DepartmentBranchSelect } from "../ui/departmentBranches";
 import AttachmentPreview from "../ui/attachmentPreview"; 
 import toast from "react-hot-toast";
 
-// ============================================
-// TYPES
-// ============================================
+
 
 type SelectOption = {
   value: string;
@@ -65,9 +62,6 @@ type FilePreview = {
   url: string;
 };
 
-// ============================================
-// CONSTANTS
-// ============================================
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -99,9 +93,7 @@ const inputClass = `
 const errorClass =
   "mt-1.5 text-xs font-medium text-red-500";
 
-// ============================================
-// FILE HELPERS
-// ============================================
+
 
 function isImageFile(file: File): boolean {
   return (
@@ -126,16 +118,12 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-// ============================================
-// COMPONENT
-// ============================================
+
 
 export default function ModalAddRequest({
   onCancel,
 }: ModalAddRequestProps) {
-  // ==========================================
-  // API HOOKS
-  // ==========================================
+
 
   const {
     data: workers = [],
@@ -155,20 +143,22 @@ export default function ModalAddRequest({
     isError: isDepartmentsError,
   } = useDepartmentBranches();
 
+  const {
+  data: requestTypes = [],
+  isLoading: isRequestTypesLoading,
+  isError: isRequestTypesError,
+} = useRequestTypes();
+
   const createMutation = useCreateWorkingPermit();
 
-  // ==========================================
-  // REFS
-  // ==========================================
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Keep track of the active object URL.
+
   const previewUrlRef = useRef<string | null>(null);
 
-  // ==========================================
-  // STATES
-  // ==========================================
+
 
   const [files, setFiles] = useState<File[]>([]);
 
@@ -178,9 +168,7 @@ export default function ModalAddRequest({
   const [submitError, setSubmitError] =
     useState<string | null>(null);
 
-  // ==========================================
-  // FORM
-  // ==========================================
+
 
   const {
     control,
@@ -208,15 +196,13 @@ export default function ModalAddRequest({
       requestedBy: "",
       checkedBy: "",
       attachment: "",
+      requestTypeId: null,
     },
   });
 
-  const isSaving =
-    isSubmitting || createMutation.isPending;
+  const isSaving = isSubmitting || createMutation.isPending;
 
-  // ==========================================
-  // PREVIEW URL CLEANUP
-  // ==========================================
+
 
   useEffect(() => {
     return () => {
@@ -227,36 +213,31 @@ export default function ModalAddRequest({
     };
   }, []);
 
-  // ==========================================
-  // OPEN PREVIEW
-  // ==========================================
 
-  const openPreview = (file: File) => {
-    if (!canPreviewFile(file)) {
-      toast.error(
-        "Preview is only available for images and PDF files."
-      );
-      return;
-    }
 
-    // Revoke the previous URL if one exists.
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-    }
+  // const openPreview = (file: File) => {
+  //   if (!canPreviewFile(file)) {
+  //     toast.error(
+  //       "Preview is only available for images and PDF files."
+  //     );
+  //     return;
+  //   }
 
-    const url = URL.createObjectURL(file);
+  //   if (previewUrlRef.current) {
+  //     URL.revokeObjectURL(previewUrlRef.current);
+  //   }
 
-    previewUrlRef.current = url;
+  //   const url = URL.createObjectURL(file);
 
-    setPreview({
-      file,
-      url,
-    });
-  };
+  //   previewUrlRef.current = url;
 
-  // ==========================================
-  // CLOSE PREVIEW
-  // ==========================================
+  //   setPreview({
+  //     file,
+  //     url,
+  //   });
+  // };
+
+
 
   const closePreview = () => {
     if (previewUrlRef.current) {
@@ -267,9 +248,7 @@ export default function ModalAddRequest({
     setPreview(null);
   };
 
-  // ==========================================
-  // DOWNLOAD FILE
-  // ==========================================
+
 
   const downloadFile = (file: File) => {
     const url = URL.createObjectURL(file);
@@ -288,9 +267,7 @@ export default function ModalAddRequest({
     }, 1000);
   };
 
-  // ==========================================
-  // REMOVE FILE
-  // ==========================================
+
 
   const removeFile = (index: number) => {
     const selectedFile = files[index];
@@ -310,9 +287,7 @@ export default function ModalAddRequest({
     );
   };
 
-  // ==========================================
-  // HANDLE FILE SELECTION
-  // ==========================================
+
 
   const handleFileChange = (
     fileList: FileList | null
@@ -663,6 +638,7 @@ export default function ModalAddRequest({
 
             {/* REQUEST LEVEL */}
 
+              
             <div className="min-w-0 space-y-1.5">
               <label
                 htmlFor="requestLevel"
@@ -726,39 +702,108 @@ export default function ModalAddRequest({
             )}
           </div>
 
-          {/* BRANCH / DEPARTMENT */}
 
-          <div className="min-w-0 space-y-1.5">
-            <label className="block text-[13px] font-medium text-slate-700">
-              Branch / Department{" "}
-              <span className="text-red-500">*</span>
-            </label>
 
-            <Controller
-              name="branchDepartmentId"
-              control={control}
-              render={({ field }) => (
-                <DepartmentBranchSelect
-                  value={field.value}
-                  onChange={field.onChange}
-                  departments={departments}
-                  disabled={
-                    isDepartmentsLoading ||
-                    isDepartmentsError
-                  }
-                  invalid={Boolean(
-                    errors.branchDepartmentId
-                  )}
-                />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+            {/* BRANCH / DEPARTMENT */}
+            <div className="min-w-0 space-y-1.5">
+              <label className="block text-[13px] font-medium text-slate-700">
+                Branch / Department{" "}
+                <span className="text-red-500">*</span>
+              </label>
+
+              <Controller
+                name="branchDepartmentId"
+                control={control}
+                render={({ field }) => (
+                  <DepartmentBranchSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    departments={departments}
+                    disabled={
+                      isDepartmentsLoading ||
+                      isDepartmentsError
+                    }
+                    invalid={Boolean(errors.branchDepartmentId)}
+                  />
+                )}
+              />
+
+              {errors.branchDepartmentId && (
+                <p role="alert" className={errorClass}>
+                  {errors.branchDepartmentId.message}
+                </p>
               )}
-            />
+            </div>
 
-            {errors.branchDepartmentId && (
-              <p role="alert" className={errorClass}>
-                {errors.branchDepartmentId.message}
-              </p>
-            )}
+            {/* REQUEST TYPE */}
+            <div className="min-w-0 space-y-1.5">
+              <label className="block text-[13px] font-medium text-slate-700">
+                Request Type
+                <span className="ml-1 text-xs font-normal text-slate-400">
+                  (Optional)
+                </span>
+              </label>
+
+              <Controller
+                name="requestTypeId"
+                control={control}
+                render={({ field }) => (
+                  <select
+                    value={field.value ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+
+                      field.onChange(
+                        value === "" ? null : Number(value)
+                      );
+                    }}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    disabled={
+                      isRequestTypesLoading ||
+                      isRequestTypesError
+                    }
+                    aria-invalid={Boolean(errors.requestTypeId)}
+                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm
+                      text-slate-700 outline-none transition
+                      focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10
+                      disabled:cursor-not-allowed disabled:bg-slate-50
+                      disabled:text-slate-400
+                      ${
+                        errors.requestTypeId
+                          ? "border-red-500"
+                          : "border-slate-300"
+                      }`}
+                  >
+                    <option value="">
+                      {isRequestTypesLoading
+                        ? "Loading request types..."
+                        : "Select request type"}
+                    </option>
+
+                    {requestTypes.map((requestType) => (
+                      <option
+                        key={requestType.id}
+                        value={requestType.id}
+                      >
+                        {requestType.description}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+
+              {errors.requestTypeId && (
+                <p role="alert" className={errorClass}>
+                  {errors.requestTypeId.message}
+                </p>
+              )}
+            </div>
           </div>
+
+
         </section>
 
         {/* ======================================
@@ -925,24 +970,24 @@ export default function ModalAddRequest({
           {/* SELECTED FILES */}
 
         {/* SELECTED FILES */}
-{files.length > 0 && (
-  <div className="space-y-3">
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {files.map((file, index) => (
-        <AttachmentPreview
-          key={`${file.name}-${file.size}-${file.lastModified}`}
-          file={file}
-          onRemove={() => removeFile(index)}
-          disabled={isSaving}
-        />
-      ))}
-    </div>
+        {files.length > 0 && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {files.map((file, index) => (
+                <AttachmentPreview
+                  key={`${file.name}-${file.size}-${file.lastModified}`}
+                  file={file}
+                  onRemove={() => removeFile(index)}
+                  disabled={isSaving}
+                />
+              ))}
+            </div>
 
-    <p className="text-right text-xs text-slate-500">
-      {files.length} of {MAX_FILES} files selected
-    </p>
-  </div>
-)}
+            <p className="text-right text-xs text-slate-500">
+              {files.length} of {MAX_FILES} files selected
+            </p>
+          </div>
+        )}
 
           {files.length > 0 && (
             <p className="text-right text-xs text-slate-500">

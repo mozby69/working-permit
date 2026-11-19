@@ -51,4 +51,7 @@ router.post(
 );
 
 
+
+router.get("/get-request-type",workingController.getAllRequestTypesController);
+
 export default router; 

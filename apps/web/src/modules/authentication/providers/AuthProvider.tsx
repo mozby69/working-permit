@@ -8,6 +8,7 @@ import type { AuthenticatedUser, PermissionName } from "@repo/shared";
 
 import { AuthContext } from "../context/AuthContext";
 import { Authme, LogoutService } from "../services/auth.service";
+import { disconnectSocket } from "@/lib/socket/socket-client";
 
 const AUTH_USER_QUERY_KEY = ["auth", "me"] as const;
 
@@ -92,20 +93,34 @@ export function AuthProvider({
         [queryClient, router]
     );
 
-    const logout = useCallback(async () => {
-        try {
-            await LogoutService();
-        } catch (error) {
-            console.error(error);
-        } finally {
-            queryClient.setQueryData(
-                AUTH_USER_QUERY_KEY,
-                null
-            );
+ const logout = useCallback(async () => {
+    try {
+        await LogoutService();
+    } catch (error) {
+        console.error("Logout failed:", error);
+    } finally {
+        // Disconnect the current user's Socket.IO connection
+        disconnectSocket();
 
-            router.replace("/login");
-        }
-    }, [queryClient, router]);
+        // Clear authentication state
+        queryClient.setQueryData(
+            AUTH_USER_QUERY_KEY,
+            null
+        );
+
+        // Clear cached data belonging to the previous user
+        queryClient.removeQueries({
+            queryKey: ["notifications"],
+        });
+
+        queryClient.removeQueries({
+            queryKey: ["working-permits"],
+        });
+
+        // Redirect to login
+        router.replace("/login");
+    }
+}, [queryClient, router]);
 
 
     const hasRole = useCallback(

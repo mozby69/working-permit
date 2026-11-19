@@ -26,8 +26,15 @@ export const addRequestSchema = z.object({
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   checkedBy: z.string().trim().min(1, "Checked by is required"),
   attachment: z.string().max(500).optional(),
-
+  requestTypeId: z
+    .union([
+      z.coerce.number<string | number>().int().positive(),
+      z.null(),
+    ])
+    .optional(),
 });
+
+
 export const updateWorkingPermitSchema = addRequestSchema.pick({
     requestToId: true,
     fromId: true, 
@@ -106,13 +113,19 @@ export const workingPermitResponseSchema = z.object({
   requestTo: z.string(),
   canEdit: z.boolean(),
   remarksList: z.array(workingPermitRemarkSchema),
+  requestTypeId: z.number().nullable(),
+  requestType: z
+    .object({
+      id: z.number(),
+      description: z.string(),
+    })
+    .nullable(),
+    
   requestToWorker: z.object({
   id: z.number(),
   workerName: z.string(),
-
   firstApproverUserId: z.number().nullable(),
   finalApproverUserId: z.number().nullable(),
-
     firstApprover: z.object({
       id: z.number(),
       name: z.string(),
@@ -123,6 +136,8 @@ export const workingPermitResponseSchema = z.object({
       name: z.string(),
     }).nullable(),
   }),
+
+  
   requestLevel: levelEnum,
   date: z.string(),
   requestFor: z.string(),
@@ -161,6 +176,8 @@ export const workingPermitResponseSchema = z.object({
     statusAt: z.string().nullable(),
   }),
 });
+
+
 
 export const wpListResponseSchema = z.object({
   success: z.boolean(),

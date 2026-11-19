@@ -6,6 +6,7 @@ import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
 import { notifyAssignedApproverTx } from "../notifications/notification.service";
+import { request } from "node:http";
 //import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
 
 
@@ -14,6 +15,8 @@ export async function addRequestRepo(
   userId: number,
   attachments: UploadedAttachment[],
 ) {
+
+
   return prisma.$transaction(async (tx) => {
     const from = await tx.departmentBranches.findFirst({
       where: { id: data.fromId, isBranch: false },
@@ -71,6 +74,13 @@ export async function addRequestRepo(
         WorkerList: { connect: { id: worker.id } },
         fromDepartment: { connect: { id: from.id } },
         branchDepartment: { connect: { id: branch.id } },
+       ...(data.requestTypeId != null && {
+          RequestType: {
+            connect: {
+              id: Number(data.requestTypeId),
+            },
+          },
+        }),
         requestLevel: data.requestLevel,
         date: getDate(),
         requestFor: data.requestFor,
@@ -91,15 +101,15 @@ export async function addRequestRepo(
     });
 
    const notification = await notifyAssignedApproverTx(
-  tx,
-  permit,
-  "CHECKER"
-);
+      tx,
+      permit,
+      "CHECKER"
+    );
 
-return {
-  permit,
-  notification,
-};
+    return {
+      permit,
+      notification,
+    };
 
 
   });
@@ -318,6 +328,13 @@ export async function displayWorkingPermit(params: QueryParamWP) {
               { id: "desc" },
             ],
           },
+          requestTypeId: true,
+           RequestType: {
+              select: {
+                id: true,
+                description: true,
+              },
+            },
       
       },
       
@@ -581,5 +598,20 @@ if (!permit) {
       success: true as const,
       data: remark,
     };
+  });
+}
+
+
+
+
+export async function getAllRequestTypesRepo() {
+  return prisma.requestType.findMany({
+    select: {
+      id: true,
+      description: true,
+    },
+    orderBy: {
+      description: "asc",
+    },
   });
 }

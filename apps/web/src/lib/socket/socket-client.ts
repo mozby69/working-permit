@@ -35,12 +35,14 @@ import type {
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
 
-let socket: Socket<
+type AppSocket = Socket<
   ServerToClientEvents,
   ClientToServerEvents
-> | null = null;
+>;
 
-export const createSocket = () => {
+let socket: AppSocket | null = null;
+
+export const createSocket = (): AppSocket => {
   if (!SOCKET_URL) {
     throw new Error(
       "NEXT_PUBLIC_BACKEND_LAN_URL is not configured"
@@ -61,4 +63,12 @@ export const createSocket = () => {
   }
 
   return socket;
+};
+
+// Disconnect the current user's socket on logout
+export const disconnectSocket = (): void => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
 };

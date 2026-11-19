@@ -142,6 +142,8 @@ model WorkingPermit {
   createdById Int @map("created_by_id")
   createdBy User @relation("WorkingPermitCreator",fields: [createdById],references: [id])
 
+  requestTypeId Int? @map("request_type_id")
+  RequestType RequestType? @relation("WorkingPermitRequestType",fields: [requestTypeId],references: [id])
 
 
   attachments WorkingPermitAttachment[]
@@ -292,4 +294,15 @@ model Notification {
 
   @@index([userId, isRead, createdAt])
   @@map("notifications")
+}
+
+
+model RequestType{
+  id Int @id @default(autoincrement())
+  description  String  @db.VarChar(200)
+  WorkingPermit WorkingPermit[] @relation("WorkingPermitRequestType")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("request_type")
 }

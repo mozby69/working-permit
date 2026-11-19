@@ -23,3 +23,15 @@ export type AttachmentParams = {
   permitId: string;
   attachmentId: string;
 };
+
+
+export interface RequestType {
+  id: number;
+  description: string;
+}
+
+export interface RequestTypesResponse {
+  success: boolean;
+  message?: string;
+  data: RequestType[];
+}
