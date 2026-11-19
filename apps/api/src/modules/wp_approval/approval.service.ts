@@ -5,6 +5,7 @@ import {
   approveWorkingPermitRepo,
   receiveWorkingPermitRepo,
   completeWorkingPermitRepo,
+  rejectWorkingPermitRepo,
 } from "./approval.repository.js";
 
 // Approves the assigned Checker (sequence 1 for both levels).
@@ -68,5 +69,50 @@ export async function completeWorkingPermitService(
   return completeWorkingPermitRepo(
     workingPermitId,
     userId
+  );
+}
+
+
+
+
+//REJECT
+
+
+export async function rejectCheckerService(
+  workingPermitId: string,
+  userId: number,
+  rejectRemarks: string
+) {
+  return rejectWorkingPermitRepo(
+    workingPermitId,
+    userId,
+    "CHECKER",
+    rejectRemarks
+  );
+}
+
+export async function rejectFirstApproverService(
+  workingPermitId: string,
+  userId: number,
+  rejectRemarks: string
+) {
+  return rejectWorkingPermitRepo(
+    workingPermitId,
+    userId,
+    "FIRST_APPROVER",
+    rejectRemarks
+  );
+}
+
+export async function rejectFinalApproverService(
+  workingPermitId: string,
+  userId: number,
+  rejectRemarks: string
+) {
+  return rejectWorkingPermitRepo(
+    workingPermitId,
+    userId,
+    "FINAL_APPROVER",
+    rejectRemarks
   );
 }

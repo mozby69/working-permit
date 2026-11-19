@@ -49,6 +49,7 @@ model User {
   finalApproverAssignments WorkerList[] @relation("FinalApprover")
   createdWorkingPermits WorkingPermit[] @relation("WorkingPermitCreator")
   workingPermitRemarks WorkingPermitRemark[] @relation("WorkingPermitRemarkAuthor")
+  notifications Notification[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -218,6 +219,8 @@ model ApprovalTable {
   approver User @relation("UserApprovedBy", fields: [approverId], references: [id])
   role String @db.VarChar(40)
   approvedAt DateTime? @map("approved_at")
+  rejectedAt DateTime? @map("rejected_at")
+  rejectRemarks String? @map("reject_remarks") @db.Text
   status WorkingPermitStatus @default(PENDING)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -263,4 +266,30 @@ model WorkingPermitRemark {
 
   @@index([workingPermitId, createdAt])
   @@map("working_permit_remarks")
+}
+
+
+
+
+
+model Notification {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+
+  userId          Int      @map("user_id")
+  user            User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  title           String   @db.VarChar(150)
+  message         String   @db.Text
+
+  type            String   @db.VarChar(50)
+
+  workingPermitId String?  @map("working_permit_id") @db.VarChar(36)
+
+  isRead          Boolean  @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
 }

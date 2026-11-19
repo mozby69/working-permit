@@ -37,16 +37,16 @@ export type QueryParams = {
   date?: string; 
 };
 
-export interface WPListResponse {
-  success: boolean;
-  data: WorkingPermitResponse[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
+// export interface WPListResponse {
+//   success: boolean;
+//   data: WorkingPermitResponse[];
+//   pagination: {
+//     total: number;
+//     page: number;
+//     limit: number;
 
-  };
-}
+//   };
+// }
 
 
 
@@ -193,3 +193,38 @@ export type AddRemarkParams = {
   workingPermitId: string;
   payload: AddWorkingPermitRemarkInput;
 };
+
+
+//reject button 
+
+export const rejectionEndpoints: Record<
+  RejectApprovalStage,
+  string
+> = {
+  CHECKER: "checker-reject",
+  FIRST_APPROVER: "first-reject",
+  FINAL_APPROVER: "final-reject",
+};
+
+export type RejectApprovalStage =
+  | "CHECKER"
+  | "FIRST_APPROVER"
+  | "FINAL_APPROVER";
+
+export interface RejectWorkingPermitInput {
+  workingPermitId: string;
+  stage: RejectApprovalStage;
+  rejectRemarks: string;
+}
+
+export interface RejectWorkingPermitResponse {
+  success: boolean;
+  message: string;
+  data: {
+    workingPermitId: string;
+    sequence: number;
+    stage: RejectApprovalStage;
+    status: "REJECTED";
+    statusAt: string;
+  };
+}

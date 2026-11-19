@@ -1,13 +1,13 @@
 "use client";
 import Modal from "@/components/common/ModalHeader";
-import { FilesIcon, Plus,CalendarDays, X, MessageSquarePlus } from "lucide-react";
+import { FilesIcon, Plus,CalendarDays, X, MessageSquarePlus, Ban } from "lucide-react";
 import ModalAddRequest from "../components/modal/AddRequest";
 // import { useDisclosure } from "@/hooks/useDisclosure";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState } from "react";
-import { useGetWorkingPermit, useWorkerList } from "../hooks/useWorkingPermit";
+import { useGetWorkingPermit, useRejectWorkingPermit, useWorkerList } from "../hooks/useWorkingPermit";
 import { TableColumn } from "@/components/common/Table";
-import {  WorkingPermitResponse } from "@repo/shared";
+import {  RejectApprovalStage, WorkingPermitResponse } from "@repo/shared";
 import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
@@ -15,6 +15,8 @@ import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
 import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 import EditWorkingPermit from "../components/modal/EditWorkingPermit";
 import AddRemark from "../components/modal/AddRemarks";
+import toast from "react-hot-toast";
+import SweetAlert from "@/lib/alerts/alert";
 
 
 export default function WorkingPermitView(){
@@ -31,6 +33,9 @@ export default function WorkingPermitView(){
     const [remarkPermit, setRemarkPermit] =useState<WorkingPermitResponse | null>(null);
     const [selectedDate, setSelectedDate] = useState("");
     const [showDateFilter, setShowDateFilter] = useState(false);
+
+
+    const rejectMutation = useRejectWorkingPermit();
 
     const {
       data: workers = [],
@@ -113,36 +118,52 @@ export default function WorkingPermitView(){
           key: "CheckedStatus",
           header: "Checked Status",
           render: (row) => (
-                <WorkingPermitStatusBadge status={(row.approvals.find(stage => stage.role === "CHECKER")?.approvedAt ? "APPROVED" : "PENDING")} />
+               <WorkingPermitStatusBadge
+                  status={
+                    row.approvals.find(
+                      (stage) => stage.role === "CHECKER"
+                    )?.status ?? "PENDING"
+                  }
+                />
           ),
         },
-        {
-          key: "firstApproverStatus",
-          header: "Approver 1",
-            render: (row) => {
-            if (row.requestLevel === "LEVEL_1") {
-              return (
-                <span
-                  title="Final approval is not required for Level 1"
-                  className="inline-flex h-7 w-23 items-center justify-center rounded-full border border-slate-400 bg-slate-100 text-[11px] font-semibold text-slate-500"
-                >
-                  N/A
-                </span>
-              );
-            }
+     {
+              key: "firstApproverStatus",
+              header: "Approver 1",
+              render: (row) => {
+                if (row.requestLevel === "LEVEL_1") {
+                  return (
+                    <span
+                      title="First approval is not required for Level 1"
+                      className="inline-flex h-7 w-23 items-center justify-center rounded-full border border-slate-400 bg-slate-100 text-[11px] font-semibold text-slate-500"
+                    >
+                      N/A
+                    </span>
+                  );
+                }
 
-              return (
-                <WorkingPermitStatusBadge
-                  status={(row.approvals.find(stage => stage.role === "FIRST_APPROVER")?.approvedAt ? "APPROVED" : "PENDING")}
-                />
-              );
-            },
+                return (
+                  <WorkingPermitStatusBadge
+                    status={
+                      row.approvals.find(
+                        (stage) => stage.role === "FIRST_APPROVER"
+                      )?.status ?? "PENDING"
+                    }
+                  />
+                );
+              },
             },
        {
         key: "finalApproverStatus",
         header: "Approver 2",
         render: (row) => (
-             <WorkingPermitStatusBadge status={(row.approvals.find(stage => stage.role === "FINAL_APPROVER")?.approvedAt ? "APPROVED" : "PENDING")} />
+             <WorkingPermitStatusBadge
+              status={
+                row.approvals.find(
+                  (stage) => stage.role === "FINAL_APPROVER"
+                )?.status ?? "PENDING"
+              }
+            />
           ),
       },
       {
@@ -153,45 +174,70 @@ export default function WorkingPermitView(){
           ),
         },
 
-      {
-        key: "actions",
-        header: "Actions",
+        {
+          key: "actions",
+          header: "Actions",
 
-        render: (row) => (
-          <TableRowActions<WorkingPermitResponse>
-            item={row}
+          render: (row) => {
+            const rejectStage: RejectApprovalStage | null =
+              row.canApproveChecker
+                ? "CHECKER"
+                : row.canApproveFirstApprover
+                  ? "FIRST_APPROVER"
+                  : row.canApproveFinalApprover
+                    ? "FINAL_APPROVER"
+                    : null;
 
-            // Default View
-            viewLabel="View Request"
-            onView={(permit) => {
-              setSelectedPermit(permit);
-              setIsModalOpen2(true);
-            }}
+            const canReject =
+              row.status === "PENDING" &&
+              rejectStage !== null;
 
-            // Default Edit
-            editLabel="Edit Request"
-            onEdit={
-              row.canEdit
-                ? (permit) => setEditingPermit(permit)
-                : undefined
-            }
+            return (
+              <TableRowActions<WorkingPermitResponse>
+                item={row}
+                viewLabel="View Request"
+                onView={(permit) => {
+                  setSelectedPermit(permit);
+                  setIsModalOpen2(true);
+                }}
+                editLabel="Edit Request"
+                onEdit={
+                  row.canEdit
+                    ? (permit) => setEditingPermit(permit)
+                    : undefined
+                }
+                customActions={[
+                  {
+                    key: "add-remark",
+                    label: "Add Remark",
+                    icon: MessageSquarePlus,
+                    hidden: !row.canAddRemarks,
+                    onClick: (permit) => {
+                      setRemarkPermit(permit);
+                    },
+                  },
+                  {
+                    key: "reject-request",
+                    label: "Reject Request",
+                    icon: Ban,
+                    variant: "destructive",
+                    hidden: !canReject,
+                    disabled: rejectMutation.isPending,
+                    onClick: (permit) => {
+                      if (!rejectStage) return;
 
-            // Custom actions
-            customActions={[
-              {
-                key: "add-remark",
-                label: "Add Remark",
-                icon: MessageSquarePlus,
-                hidden: !row.canAddRemarks,
+                      void handleRejectPermit(
+                        permit,
+                        rejectStage
+                      );
+                    },
+                  },
+                ]}
+              />
+            );
+          },
+        }
 
-                onClick: (permit) => {
-                  setRemarkPermit(permit);
-                },
-              },
-            ]}
-          />
-        ),
-      },
                       
      
       ];
@@ -219,6 +265,42 @@ export default function WorkingPermitView(){
 
       const hasActiveFilters =
         selectedWorkerId !== null || selectedDate !== "";
+
+
+
+
+const handleRejectPermit = async (
+  permit: WorkingPermitResponse,
+  stage: RejectApprovalStage
+): Promise<void> => {
+  if (rejectMutation.isPending) return;
+
+  const rejectRemarks = await SweetAlert.rejectionAlert(
+    permit.referenceNumber
+  );
+
+  if (!rejectRemarks) return;
+
+  try {
+    await rejectMutation.mutateAsync({
+      workingPermitId: permit.id,
+      stage,
+      rejectRemarks,
+    });
+
+    toast.success(
+      `${permit.referenceNumber} rejected successfully.`
+    );
+  } catch (error: unknown) {
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Failed to reject Working Permit."
+    );
+  }
+};
+
+
 
     return(
       <div className="w-full min-w-0 space-y-6 px-8 py-2">

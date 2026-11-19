@@ -51,4 +51,30 @@ router.patch(
 );
 
 
+
+router.patch(
+  "/:id/checker-reject",
+  authorize({
+    roles: ["CHECKER"],
+  }),
+  approvalController.rejectCheckerController
+);
+
+router.patch(
+  "/:id/first-reject",
+  authorize({
+    roles: ["FIRST_APPROVER"],
+  }),
+  approvalController.rejectFirstApproverController
+);
+
+router.patch(
+  "/:id/final-reject",
+  authorize({
+    roles: ["FINAL_APPROVER"],
+  }),
+  approvalController.rejectFinalApproverController
+);
+
+
 export default router; 

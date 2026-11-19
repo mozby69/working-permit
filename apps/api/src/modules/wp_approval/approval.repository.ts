@@ -352,3 +352,167 @@ export async function completeWorkingPermitRepo(
     status: "COMPLETED" as const,
   };
 }
+
+
+
+
+
+//REJECT backend
+export async function rejectWorkingPermitRepo(
+  workingPermitId: string,
+  userId: number,
+  stage: ApprovalStage,
+    rejectRemarks: string
+) {
+
+  const remarks = rejectRemarks.trim();
+
+if (remarks.length < 5 || remarks.length > 500) {
+  throw new Error(
+    "Rejection remarks must contain between 5 and 500 characters."
+  );
+}
+
+
+  if (
+    !workingPermitId.trim() ||
+    !Number.isSafeInteger(userId) ||
+    userId <= 0
+  ) {
+    throw new Error("Invalid rejection request.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const permit = await tx.workingPermit.findUnique({
+      where: {
+        id: workingPermitId,
+      },
+      select: {
+        id: true,
+        requestLevel: true,
+        status: true,
+        ApprovalTable: {
+          select: {
+            id: true,
+            sequence: true,
+            role: true,
+            approverId: true,
+            status: true,
+          },
+          orderBy: {
+            sequence: "asc",
+          },
+        },
+      },
+    });
+
+    if (!permit) {
+      throw new Error("Working Permit not found.");
+    }
+
+    if (permit.status !== WorkingPermitStatus.PENDING) {
+      throw new Error(
+        "Only pending Working Permits can be rejected."
+      );
+    }
+
+    const sequence = getStageSequence(
+      permit.requestLevel,
+      stage
+    );
+
+    const current = permit.ApprovalTable.find(
+      (item) =>
+        item.sequence === sequence &&
+        item.role === stage
+    );
+
+    if (!current) {
+      throw new Error(
+        "Approval stage not found for this request level."
+      );
+    }
+
+    if (current.approverId !== userId) {
+      throw new Error(
+        "You are not assigned to reject this approval stage."
+      );
+    }
+
+    if (current.status !== WorkingPermitStatus.PENDING) {
+      throw new Error(
+        "This approval stage has already been processed."
+      );
+    }
+
+    const previous = permit.ApprovalTable.filter(
+      (item) => item.sequence < sequence
+    );
+
+    if (
+      previous.length !== sequence - 1 ||
+      previous.some(
+        (item) =>
+          item.status !== WorkingPermitStatus.APPROVED
+      )
+    ) {
+      throw new Error(
+        "Previous approval stages must be approved first."
+      );
+    }
+
+    const now = new Date();
+
+    // Claim the main permit first. This prevents concurrent
+    // approval/rejection when all status-changing operations
+    // use the same conditional permit guard.
+    const permitUpdate = await tx.workingPermit.updateMany({
+      where: {
+        id: workingPermitId,
+        status: WorkingPermitStatus.PENDING,
+        receivedById: null,
+      },
+      data: {
+        status: WorkingPermitStatus.REJECTED,
+        statusAt: now,
+      },
+    });
+
+    if (permitUpdate.count !== 1) {
+      throw new Error(
+        "Working Permit has already been processed."
+      );
+    }
+
+    // Reject only the current approval stage.
+ const stageUpdate = await tx.approvalTable.updateMany({
+  where: {
+    id: current.id,
+    workingPermitId,
+    sequence,
+    role: stage,
+    approverId: userId,
+    status: WorkingPermitStatus.PENDING,
+  },
+  data: {
+    status: WorkingPermitStatus.REJECTED,
+    rejectedAt: now,
+    rejectRemarks: remarks,
+  },
+});
+
+    if (stageUpdate.count !== 1) {
+      throw new Error(
+        "This approval stage has already been processed."
+      );
+    }
+
+    return {
+      workingPermitId,
+      sequence,
+      stage,
+      status: "REJECTED" as const,
+      statusAt: now.toISOString(),
+    };
+  });
+}

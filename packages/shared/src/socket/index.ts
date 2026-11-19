@@ -4,9 +4,9 @@ import type { RoleServerToClientEvents } from "./admin/role.events";
 import { WPServerToClientEvents } from "./wp.events";
 
 export interface ServerToClientEvents
-    extends UserServerToClientEvents, RoleServerToClientEvents, WPServerToClientEvents { }
+    extends UserServerToClientEvents, RoleServerToClientEvents, WPServerToClientEvents,NotificationClientToServerEvents { }
 
-export interface ClientToServerEvents
-    extends NotificationClientToServerEvents { }
+// export interface ClientToServerEvents
+//     extends NotificationClientToServerEvents { }
 
 
