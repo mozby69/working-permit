@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-
-export const levelEnum = z.enum([
-  "LEVEL_1",
-  "LEVEL_2",
-]);
+export const levelEnum = z.enum(["LEVEL_1", "LEVEL_2"]);
 
 export const workingPermitStatus = z.enum([
   "PENDING",
@@ -12,48 +8,43 @@ export const workingPermitStatus = z.enum([
   "REJECTED",
   "COMPLETED",
   "IN_PROGRESS",
-  "CANCELLED"
+  "CANCELLED",
 ]);
 
 export const addRequestSchema = z.object({
-
   requestToId: z.number().int().positive("Please select a request recipient"),
   fromId: z.number().int().positive("Please select a department or branch"),
   requestLevel: levelEnum,
   date: z.date().optional(),
   requestFor: z.string().trim().min(1, "Request description is required"),
-  branchDepartmentId:z.number().int().positive("Please select a department or branch"),
+  branchDepartmentId: z
+    .number()
+    .int()
+    .positive("Please select a department or branch"),
   requestedBy: z.string().trim().min(1, "Requested by is required"),
   checkedBy: z.string().trim().min(1, "Checked by is required"),
   attachment: z.string().max(500).optional(),
   requestTypeId: z
-    .union([
-      z.coerce.number<string | number>().int().positive(),
-      z.null(),
-    ])
+    .union([z.coerce.number<string | number>().int().positive(), z.null()])
     .optional(),
 });
 
-
 export const updateWorkingPermitSchema = addRequestSchema.pick({
-    requestToId: true,
-    fromId: true, 
-    requestLevel: true,
-    requestFor: true,
-    branchDepartmentId: true, 
-    requestedBy: true, 
-    checkedBy: true
-   });
-export type UpdateWorkingPermitInput = z.infer<typeof updateWorkingPermitSchema>;
+  requestToId: true,
+  fromId: true,
+  requestLevel: true,
+  requestFor: true,
+  branchDepartmentId: true,
+  requestedBy: true,
+  checkedBy: true,
+});
+export type UpdateWorkingPermitInput = z.infer<
+  typeof updateWorkingPermitSchema
+>;
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
 export type AddRequestInput = z.input<typeof addRequestSchema>;
 
-
-
 //***************************************** */
-
-
-
 
 export const addWorkingPermitRemarkSchema = z.object({
   description: z
@@ -63,7 +54,9 @@ export const addWorkingPermitRemarkSchema = z.object({
     .max(2000, "Maximum 2000 characters"),
 });
 
-export type AddWorkingPermitRemarkInput = z.infer<typeof addWorkingPermitRemarkSchema>;
+export type AddWorkingPermitRemarkInput = z.infer<
+  typeof addWorkingPermitRemarkSchema
+>;
 
 export const workingPermitRemarkSchema = z.object({
   id: z.number(),
@@ -78,9 +71,6 @@ export const workingPermitRemarkSchema = z.object({
 
 export type WorkingPermitRemark = z.infer<typeof workingPermitRemarkSchema>;
 
-
-
-
 export const workingPermitAttachmentSchema = z.object({
   id: z.string(),
   workingPermitId: z.string(),
@@ -91,9 +81,9 @@ export const workingPermitAttachmentSchema = z.object({
   createdAt: z.string(),
 });
 
-export type WorkingPermitAttachment = z.infer<typeof workingPermitAttachmentSchema>;
-
-
+export type WorkingPermitAttachment = z.infer<
+  typeof workingPermitAttachmentSchema
+>;
 
 export const permitApprovalSchema = z.object({
   id: z.string(),
@@ -120,24 +110,27 @@ export const workingPermitResponseSchema = z.object({
       description: z.string(),
     })
     .nullable(),
-    
-  requestToWorker: z.object({
-  id: z.number(),
-  workerName: z.string(),
-  firstApproverUserId: z.number().nullable(),
-  finalApproverUserId: z.number().nullable(),
-    firstApprover: z.object({
-      id: z.number(),
-      name: z.string(),
-    }).nullable(),
 
-    finalApprover: z.object({
-      id: z.number(),
-      name: z.string(),
-    }).nullable(),
+  requestToWorker: z.object({
+    id: z.number(),
+    workerName: z.string(),
+    firstApproverUserId: z.number().nullable(),
+    finalApproverUserId: z.number().nullable(),
+    firstApprover: z
+      .object({
+        id: z.number(),
+        name: z.string(),
+      })
+      .nullable(),
+
+    finalApprover: z
+      .object({
+        id: z.number(),
+        name: z.string(),
+      })
+      .nullable(),
   }),
 
-  
   requestLevel: levelEnum,
   date: z.string(),
   requestFor: z.string(),
@@ -177,8 +170,6 @@ export const workingPermitResponseSchema = z.object({
   }),
 });
 
-
-
 export const wpListResponseSchema = z.object({
   success: z.boolean(),
 
@@ -192,21 +183,45 @@ export const wpListResponseSchema = z.object({
   }),
 });
 
-export type WorkingPermitResponse = z.infer<
-  typeof workingPermitResponseSchema
->;
+export type WorkingPermitResponse = z.infer<typeof workingPermitResponseSchema>;
 
-export type WPListResponse = z.infer<
-  typeof wpListResponseSchema
->;
-
+export type WPListResponse = z.infer<typeof wpListResponseSchema>;
 
 export const approveWorkingPermitParamsSchema = z.object({
   id: z.uuid(),
 });
 
-
-
 export const rejectWorkingPermitSchema = z.object({
   rejectRemarks: z.string().trim().min(5).max(500),
 });
+
+//check duplicate
+export const checkDuplicateWorkingPermitSchema = addRequestSchema.pick({
+  requestToId: true,
+  fromId: true,
+  branchDepartmentId: true,
+  requestTypeId: true,
+});
+
+export type CheckDuplicateWorkingPermitInput = z.infer<
+  typeof checkDuplicateWorkingPermitSchema
+>;
+
+export const duplicateWorkingPermitResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.object({
+    isDuplicate: z.boolean(),
+    existingPermit: z
+      .object({
+        id: z.string(),
+        referenceNumber: z.string(),
+        date: z.string(),
+        status: workingPermitStatus,
+      })
+      .nullable(),
+  }),
+});
+
+export type DuplicateWorkingPermitResponse = z.infer<
+  typeof duplicateWorkingPermitResponseSchema
+>;

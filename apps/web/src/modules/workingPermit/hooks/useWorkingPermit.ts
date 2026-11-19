@@ -1,19 +1,28 @@
 "use client";
 
-
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as serviceWorkingPermit from '../services/workingPermitService'
-import { AddRemarkParams, ApprovalResponse, ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, RejectWorkingPermitInput, RejectWorkingPermitResponse, RequestType, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
-
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as serviceWorkingPermit from "../services/workingPermitService";
+import {
+  AddRemarkParams,
+  ApprovalResponse,
+  ApproveWorkingPermitInput,
+  CheckDuplicateWorkingPermitInput,
+  CreateWorkingPermitPayload,
+  QueryParams,
+  RejectWorkingPermitInput,
+  RejectWorkingPermitResponse,
+  RequestType,
+  TroubleshooterActionResponse,
+  TroubleshooterMutationInput,
+  UpdateWorkingPermitParams,
+} from "@repo/shared";
 
 export function useCreateWorkingPermit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (
-      payload: CreateWorkingPermitPayload
-    ) => serviceWorkingPermit.addWorkingPermitService(payload),
+    mutationFn: (payload: CreateWorkingPermitPayload) =>
+      serviceWorkingPermit.addWorkingPermitService(payload),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -33,7 +42,6 @@ export function useNextWorkingPermitReference(enabled = true) {
   });
 }
 
-
 export function useDepartmentBranches() {
   return useQuery({
     queryKey: ["department-branches"],
@@ -41,9 +49,6 @@ export function useDepartmentBranches() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-
-
 
 export function useGetWorkingPermit(params: QueryParams) {
   return useQuery({
@@ -56,11 +61,9 @@ export function useGetWorkingPermit(params: QueryParams) {
       params.date,
     ],
 
-    queryFn: () =>
-      serviceWorkingPermit.getWorkingPermitService(params),
+    queryFn: () => serviceWorkingPermit.getWorkingPermitService(params),
   });
 }
-
 
 export function useWorkerList() {
   return useQuery({
@@ -69,17 +72,6 @@ export function useWorkerList() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // export function useApproveChecker() {
 //   const queryClient = useQueryClient();
@@ -96,20 +88,12 @@ export function useWorkerList() {
 //   });
 // }
 
-
 export function useApproveWorkingPermit() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    ApprovalResponse,
-    Error,
-    ApproveWorkingPermitInput
-  >({
+  return useMutation<ApprovalResponse, Error, ApproveWorkingPermitInput>({
     mutationFn: ({ workingPermitId, stage }) =>
-      serviceWorkingPermit.approveWorkingPermitService(
-        workingPermitId,
-        stage
-      ),
+      serviceWorkingPermit.approveWorkingPermitService(workingPermitId, stage),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -118,8 +102,6 @@ export function useApproveWorkingPermit() {
     },
   });
 }
-
-
 
 export function useReceiveWorkingPermit() {
   const queryClient = useQueryClient();
@@ -131,7 +113,7 @@ export function useReceiveWorkingPermit() {
   >({
     mutationFn: ({ workingPermitId }) =>
       serviceWorkingPermit.troubleshooterService.receiveWorkingPermit(
-        workingPermitId
+        workingPermitId,
       ),
 
     onSuccess: async () => {
@@ -141,7 +123,6 @@ export function useReceiveWorkingPermit() {
     },
   });
 }
-
 
 export function useCompleteWorkingPermit() {
   const queryClient = useQueryClient();
@@ -152,8 +133,8 @@ export function useCompleteWorkingPermit() {
     TroubleshooterMutationInput
   >({
     mutationFn: ({ workingPermitId }) =>
-       serviceWorkingPermit.troubleshooterService.completeWorkingPermit(
-        workingPermitId
+      serviceWorkingPermit.troubleshooterService.completeWorkingPermit(
+        workingPermitId,
       ),
 
     onSuccess: async () => {
@@ -164,16 +145,11 @@ export function useCompleteWorkingPermit() {
   });
 }
 
-
-
 export function useUpdateWorkingPermit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: UpdateWorkingPermitParams) => {
+    mutationFn: async ({ id, payload }: UpdateWorkingPermitParams) => {
       return serviceWorkingPermit.updateWorkingPermitService(id, payload);
     },
 
@@ -185,20 +161,14 @@ export function useUpdateWorkingPermit() {
   });
 }
 
-
-
-
 export function useAddWorkingPermitRemark() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      workingPermitId,
-      payload,
-    }: AddRemarkParams) =>
+    mutationFn: ({ workingPermitId, payload }: AddRemarkParams) =>
       serviceWorkingPermit.addWorkingPermitRemarkService(
         workingPermitId,
-        payload
+        payload,
       ),
 
     onSuccess: async () => {
@@ -209,10 +179,6 @@ export function useAddWorkingPermitRemark() {
   });
 }
 
-
-
-
-
 export function useRejectWorkingPermit() {
   const queryClient = useQueryClient();
 
@@ -222,11 +188,11 @@ export function useRejectWorkingPermit() {
     RejectWorkingPermitInput
   >({
     mutationFn: ({ workingPermitId, stage, rejectRemarks }) =>
-  serviceWorkingPermit.rejectWorkingPermitService(
-    workingPermitId,
-    stage,
-    rejectRemarks
-  ),
+      serviceWorkingPermit.rejectWorkingPermitService(
+        workingPermitId,
+        stage,
+        rejectRemarks,
+      ),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
@@ -235,8 +201,6 @@ export function useRejectWorkingPermit() {
     },
   });
 }
-
-
 
 export const requestTypeKeys = {
   all: ["request-types"] as const,
@@ -249,5 +213,12 @@ export function useRequestTypes() {
     queryFn: serviceWorkingPermit.getRequestTypes,
     staleTime: 5 * 60 * 1000,
     retry: 1,
+  });
+}
+
+export function useCheckDuplicateWorkingPermit() {
+  return useMutation({
+    mutationFn: (payload: CheckDuplicateWorkingPermitInput) =>
+      serviceWorkingPermit.checkDuplicateWorkingPermitService(payload),
   });
 }

@@ -1,4 +1,4 @@
-import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
+import { AddRequestInput, CheckDuplicateWorkingPermitInput, UpdateWorkingPermitInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -97,11 +97,16 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       permit.status === "PENDING" &&
       permit.receivedById === null;
 
-    const canCompleteTroubleshooter =
+    // const canCompleteTroubleshooter =
+    //   params.roles.includes("TROUBLESHOOTER") &&
+    //   isAssignedTroubleshooter &&
+    //   permit.status === "IN_PROGRESS" &&
+    //   permit.receivedById === params.userId;
+
+        const canCompleteTroubleshooter =
       params.roles.includes("TROUBLESHOOTER") &&
       isAssignedTroubleshooter &&
-      permit.status === "IN_PROGRESS" &&
-      permit.receivedById === params.userId;
+      permit.status === "IN_PROGRESS";
 
       const canAddRemarks =
         params.roles.includes("TROUBLESHOOTER") &&
@@ -254,4 +259,10 @@ export async function addWorkingPermitRemarkService(
 
 export async function getAllRequestTypesService() {
   return workingRepo.getAllRequestTypesRepo();
+}
+
+export async function checkDuplicateWorkingPermitService(
+  data: CheckDuplicateWorkingPermitInput
+) {
+  return workingRepo.checkDuplicateWorkingPermitRepo(data);
 }

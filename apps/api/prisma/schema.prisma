@@ -41,6 +41,7 @@ model User {
 
   workerList WorkerList? @relation("UserWorkerDepartment",fields: [workerListId], references: [id],onDelete: SetNull)
   receivedWorkingPermits WorkingPermit[] @relation("WorkingPermitReceiver")
+  completeWorkingPermits WorkingPermit[] @relation("WorkingPermitCompleteBy")
   approverAssignments ApprovalTable[] @relation("UserApprovedBy")
 
   roles UserRole[]
@@ -144,6 +145,10 @@ model WorkingPermit {
 
   requestTypeId Int? @map("request_type_id")
   RequestType RequestType? @relation("WorkingPermitRequestType",fields: [requestTypeId],references: [id])
+
+  completeById Int? @map("complete_by_id")
+  completeBy User? @relation("WorkingPermitCompleteBy", fields: [completeById], references: [id], onDelete: SetNull)
+  
 
 
   attachments WorkingPermitAttachment[]

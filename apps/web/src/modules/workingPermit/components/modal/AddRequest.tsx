@@ -1,15 +1,9 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import {
-  Controller,
-  FieldErrors,
-  useForm,
-  useWatch,
-} from "react-hook-form";
+import { Controller, FieldErrors, useForm, useWatch } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -38,13 +32,14 @@ import {
   useWorkerList,
   useDepartmentBranches,
   useRequestTypes,
+  useCheckDuplicateWorkingPermit,
 } from "@/modules/workingPermit/hooks/useWorkingPermit";
 
 import { DepartmentBranchSelect } from "../ui/departmentBranches";
-import AttachmentPreview from "../ui/attachmentPreview"; 
+import AttachmentPreview from "../ui/attachmentPreview";
 import toast from "react-hot-toast";
-
-
+import SweetAlert from "@/lib/alerts/alert";
+import { duplicateWorkingPermitAlert } from "../../helper/wp.helper";
 
 type SelectOption = {
   value: string;
@@ -61,7 +56,6 @@ type FilePreview = {
   file: File;
   url: string;
 };
-
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -90,16 +84,10 @@ const inputClass = `
   disabled:text-slate-400
 `;
 
-const errorClass =
-  "mt-1.5 text-xs font-medium text-red-500";
-
-
+const errorClass = "mt-1.5 text-xs font-medium text-red-500";
 
 function isImageFile(file: File): boolean {
-  return (
-    file.type === "image/jpeg" ||
-    file.type === "image/png"
-  );
+  return file.type === "image/jpeg" || file.type === "image/png";
 }
 
 function isPdfFile(file: File): boolean {
@@ -118,13 +106,7 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-
-
-export default function ModalAddRequest({
-  onCancel,
-}: ModalAddRequestProps) {
-
-
+export default function ModalAddRequest({ onCancel }: ModalAddRequestProps) {
   const {
     data: workers = [],
     isLoading: isWorkersLoading,
@@ -144,31 +126,23 @@ export default function ModalAddRequest({
   } = useDepartmentBranches();
 
   const {
-  data: requestTypes = [],
-  isLoading: isRequestTypesLoading,
-  isError: isRequestTypesError,
-} = useRequestTypes();
+    data: requestTypes = [],
+    isLoading: isRequestTypesLoading,
+    isError: isRequestTypesError,
+  } = useRequestTypes();
 
   const createMutation = useCreateWorkingPermit();
-
-
+  const duplicateMutation = useCheckDuplicateWorkingPermit();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
   const previewUrlRef = useRef<string | null>(null);
-
-
 
   const [files, setFiles] = useState<File[]>([]);
 
-  const [preview, setPreview] =
-    useState<FilePreview | null>(null);
+  const [preview, setPreview] = useState<FilePreview | null>(null);
 
-  const [submitError, setSubmitError] =
-    useState<string | null>(null);
-
-
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     control,
@@ -176,15 +150,8 @@ export default function ModalAddRequest({
     handleSubmit,
     reset,
     setValue,
-    formState: {
-      errors,
-      isSubmitting,
-    },
-  } = useForm<
-    AddRequestInput,
-    unknown,
-    AddRequestSchema
-  >({
+    formState: { errors, isSubmitting },
+  } = useForm<AddRequestInput, unknown, AddRequestSchema>({
     resolver: zodResolver(addRequestSchema),
 
     defaultValues: {
@@ -200,9 +167,8 @@ export default function ModalAddRequest({
     },
   });
 
-  const isSaving = isSubmitting || createMutation.isPending;
-
-
+  const isSaving =
+    isSubmitting || createMutation.isPending || duplicateMutation.isPending;
 
   useEffect(() => {
     return () => {
@@ -212,8 +178,6 @@ export default function ModalAddRequest({
       }
     };
   }, []);
-
-
 
   // const openPreview = (file: File) => {
   //   if (!canPreviewFile(file)) {
@@ -237,8 +201,6 @@ export default function ModalAddRequest({
   //   });
   // };
 
-
-
   const closePreview = () => {
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
@@ -247,8 +209,6 @@ export default function ModalAddRequest({
 
     setPreview(null);
   };
-
-
 
   const downloadFile = (file: File) => {
     const url = URL.createObjectURL(file);
@@ -267,8 +227,6 @@ export default function ModalAddRequest({
     }, 1000);
   };
 
-
-
   const removeFile = (index: number) => {
     const selectedFile = files[index];
 
@@ -281,17 +239,11 @@ export default function ModalAddRequest({
     }
 
     setFiles((previous) =>
-      previous.filter(
-        (_, fileIndex) => fileIndex !== index
-      )
+      previous.filter((_, fileIndex) => fileIndex !== index),
     );
   };
 
-
-
-  const handleFileChange = (
-    fileList: FileList | null
-  ) => {
+  const handleFileChange = (fileList: FileList | null) => {
     if (!fileList?.length) {
       return;
     }
@@ -300,25 +252,21 @@ export default function ModalAddRequest({
 
     // Validate file types.
     const invalidFile = selectedFiles.find(
-      (file) => !ALLOWED_TYPES.includes(file.type)
+      (file) => !ALLOWED_TYPES.includes(file.type),
     );
 
     if (invalidFile) {
-      toast.error(
-        `Unsupported file type: ${invalidFile.name}`
-      );
+      toast.error(`Unsupported file type: ${invalidFile.name}`);
       return;
     }
 
     // Validate individual file sizes.
     const oversizedFile = selectedFiles.find(
-      (file) => file.size > MAX_FILE_SIZE
+      (file) => file.size > MAX_FILE_SIZE,
     );
 
     if (oversizedFile) {
-      toast.error(
-        `${oversizedFile.name} exceeds the 10 MB limit.`
-      );
+      toast.error(`${oversizedFile.name} exceeds the 10 MB limit.`);
       return;
     }
 
@@ -329,16 +277,13 @@ export default function ModalAddRequest({
           (existing) =>
             existing.name === file.name &&
             existing.size === file.size &&
-            existing.lastModified ===
-              file.lastModified
-        )
+            existing.lastModified === file.lastModified,
+        ),
     );
 
     // Validate maximum number of files.
     if (files.length + newFiles.length > MAX_FILES) {
-      toast.error(
-        `You can upload a maximum of ${MAX_FILES} files.`
-      );
+      toast.error(`You can upload a maximum of ${MAX_FILES} files.`);
       return;
     }
 
@@ -347,10 +292,7 @@ export default function ModalAddRequest({
       return;
     }
 
-    setFiles((previous) => [
-      ...previous,
-      ...newFiles,
-    ]);
+    setFiles((previous) => [...previous, ...newFiles]);
 
     setSubmitError(null);
   };
@@ -370,7 +312,7 @@ export default function ModalAddRequest({
   });
 
   const selectedWorker = workers.find(
-    (worker) => worker.id === selectedWorkerId
+    (worker) => worker.id === selectedWorkerId,
   );
 
   // ==========================================
@@ -382,18 +324,14 @@ export default function ModalAddRequest({
       ? [
           {
             label: "First Approver",
-            name:
-              selectedWorker?.firstApprover?.name ??
-              "Not assigned",
+            name: selectedWorker?.firstApprover?.name ?? "Not assigned",
           },
         ]
       : []),
 
     {
       label: "Final Approver",
-      name:
-        selectedWorker?.finalApprover?.name ??
-        "Not assigned",
+      name: selectedWorker?.finalApprover?.name ?? "Not assigned",
     },
   ];
 
@@ -402,41 +340,63 @@ export default function ModalAddRequest({
   // ==========================================
 
   const handleInvalidSubmit = (
-    validationErrors: FieldErrors<AddRequestInput>
+    validationErrors: FieldErrors<AddRequestInput>,
   ) => {
-    console.error(
-      "Working Permit validation errors:",
-      validationErrors
-    );
+    console.error("Working Permit validation errors:", validationErrors);
 
-    setSubmitError(
-      "Please correct the highlighted fields before submitting."
-    );
+    setSubmitError("Please correct the highlighted fields before submitting.");
   };
 
   // ==========================================
   // SUBMIT REQUEST
   // ==========================================
 
-  const submitForm = async (
-    values: AddRequestSchema
-  ) => {
+  const submitForm = async (values: AddRequestSchema) => {
     setSubmitError(null);
 
     try {
+      // ==========================================
+      // STEP 1: CHECK DUPLICATES
+      // ==========================================
+
+      const duplicateResult = await duplicateMutation.mutateAsync({
+        requestToId: values.requestToId,
+        fromId: values.fromId,
+        branchDepartmentId: values.branchDepartmentId,
+        requestTypeId: values.requestTypeId ?? null,
+      });
+
+      // ==========================================
+      // STEP 2: WARN, BUT ALLOW CONTINUATION
+      // ==========================================
+
+      if (duplicateResult.isDuplicate && duplicateResult.existingPermit) {
+        const confirmed = await duplicateWorkingPermitAlert(
+          duplicateResult.existingPermit.referenceNumber,
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      // ==========================================
+      // STEP 3: CREATE WORKING PERMIT
+      // ==========================================
+
       await createMutation.mutateAsync({
         ...values,
         attachments: files,
       });
 
+      // ==========================================
+      // STEP 4: SUCCESS
+      // ==========================================
+
       reset();
       setFiles([]);
 
-  
-
-      toast.success(
-        "Working Permit created successfully!"
-      );
+      toast.success("Working Permit created successfully!");
 
       onCancel();
     } catch (error: unknown) {
@@ -457,10 +417,7 @@ export default function ModalAddRequest({
   return (
     <>
       <form
-        onSubmit={handleSubmit(
-          submitForm,
-          handleInvalidSubmit
-        )}
+        onSubmit={handleSubmit(submitForm, handleInvalidSubmit)}
         noValidate
         className="space-y-8"
       >
@@ -522,8 +479,7 @@ export default function ModalAddRequest({
                 htmlFor="requestToId"
                 className="block text-[13px] font-medium text-slate-700"
               >
-                Request To{" "}
-                <span className="text-red-500">*</span>
+                Request To <span className="text-red-500">*</span>
               </label>
 
               <Controller
@@ -539,30 +495,16 @@ export default function ModalAddRequest({
                     onChange={(event) => {
                       const value = event.target.value;
 
-                      field.onChange(
-                        value === ""
-                          ? 0
-                          : Number(value)
-                      );
+                      field.onChange(value === "" ? 0 : Number(value));
                     }}
-                    disabled={
-                      isWorkersLoading ||
-                      isWorkersError
-                    }
+                    disabled={isWorkersLoading || isWorkersError}
                     className={inputClass}
-                    aria-invalid={Boolean(
-                      errors.requestToId
-                    )}
+                    aria-invalid={Boolean(errors.requestToId)}
                   >
-                    <option value="">
-                      Select recipient
-                    </option>
+                    <option value="">Select recipient</option>
 
                     {workers.map((worker) => (
-                      <option
-                        key={worker.id}
-                        value={worker.id}
-                      >
+                      <option key={worker.id} value={worker.id}>
                         {worker.workerName}
                       </option>
                     ))}
@@ -571,9 +513,7 @@ export default function ModalAddRequest({
               />
 
               {errors.requestToId && (
-                <p className={errorClass}>
-                  {errors.requestToId.message}
-                </p>
+                <p className={errorClass}>{errors.requestToId.message}</p>
               )}
             </div>
 
@@ -581,8 +521,7 @@ export default function ModalAddRequest({
 
             <div className="min-w-0 space-y-1.5">
               <label className="block text-[13px] font-medium text-slate-700">
-                From{" "}
-                <span className="text-red-500">*</span>
+                From <span className="text-red-500">*</span>
               </label>
 
               <Controller
@@ -595,35 +534,23 @@ export default function ModalAddRequest({
                       field.onChange(departmentId);
                       field.onBlur();
 
-                      const selectedDepartment =
-                        departments.find(
-                          (department) =>
-                            department.id ===
-                            departmentId
-                        );
+                      const selectedDepartment = departments.find(
+                        (department) => department.id === departmentId,
+                      );
 
                       const checkerName =
-                        selectedDepartment?.checker
-                          ?.name ?? "";
+                        selectedDepartment?.checker?.name ?? "";
 
-                      setValue(
-                        "checkedBy",
-                        checkerName,
-                        {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                          shouldTouch: true,
-                        }
-                      );
+                      setValue("checkedBy", checkerName, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      });
                     }}
                     departments={departments.filter(
-                      (department) =>
-                        department.isBranch === false
+                      (department) => department.isBranch === false,
                     )}
-                    disabled={
-                      isDepartmentsLoading ||
-                      isDepartmentsError
-                    }
+                    disabled={isDepartmentsLoading || isDepartmentsError}
                     invalid={Boolean(errors.fromId)}
                   />
                 )}
@@ -638,31 +565,23 @@ export default function ModalAddRequest({
 
             {/* REQUEST LEVEL */}
 
-              
             <div className="min-w-0 space-y-1.5">
               <label
                 htmlFor="requestLevel"
                 className="block text-[13px] font-medium text-slate-700"
               >
-                Request Level{" "}
-                <span className="text-red-500">*</span>
+                Request Level <span className="text-red-500">*</span>
               </label>
 
               <select
                 id="requestLevel"
                 {...register("requestLevel")}
                 className={inputClass}
-                aria-invalid={Boolean(
-                  errors.requestLevel
-                )}
+                aria-invalid={Boolean(errors.requestLevel)}
               >
-                <option value="LEVEL_1">
-                  Level 1
-                </option>
+                <option value="LEVEL_1">Level 1</option>
 
-                <option value="LEVEL_2">
-                  Level 2
-                </option>
+                <option value="LEVEL_2">Level 2</option>
               </select>
 
               {errors.requestLevel && (
@@ -680,8 +599,7 @@ export default function ModalAddRequest({
               htmlFor="requestFor"
               className="block text-[13px] font-medium text-slate-700"
             >
-              Request For{" "}
-              <span className="text-red-500">*</span>
+              Request For <span className="text-red-500">*</span>
             </label>
 
             <textarea
@@ -689,28 +607,20 @@ export default function ModalAddRequest({
               {...register("requestFor")}
               rows={4}
               placeholder="Describe the work to be performed..."
-              aria-invalid={Boolean(
-                errors.requestFor
-              )}
+              aria-invalid={Boolean(errors.requestFor)}
               className={`${inputClass} min-h-28 resize-y`}
             />
 
             {errors.requestFor && (
-              <p className={errorClass}>
-                {errors.requestFor.message}
-              </p>
+              <p className={errorClass}>{errors.requestFor.message}</p>
             )}
           </div>
 
-
-
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
             {/* BRANCH / DEPARTMENT */}
             <div className="min-w-0 space-y-1.5">
               <label className="block text-[13px] font-medium text-slate-700">
-                Branch / Department{" "}
-                <span className="text-red-500">*</span>
+                Branch / Department <span className="text-red-500">*</span>
               </label>
 
               <Controller
@@ -721,10 +631,7 @@ export default function ModalAddRequest({
                     value={field.value}
                     onChange={field.onChange}
                     departments={departments}
-                    disabled={
-                      isDepartmentsLoading ||
-                      isDepartmentsError
-                    }
+                    disabled={isDepartmentsLoading || isDepartmentsError}
                     invalid={Boolean(errors.branchDepartmentId)}
                   />
                 )}
@@ -755,16 +662,11 @@ export default function ModalAddRequest({
                     onChange={(event) => {
                       const value = event.target.value;
 
-                      field.onChange(
-                        value === "" ? null : Number(value)
-                      );
+                      field.onChange(value === "" ? null : Number(value));
                     }}
                     onBlur={field.onBlur}
                     ref={field.ref}
-                    disabled={
-                      isRequestTypesLoading ||
-                      isRequestTypesError
-                    }
+                    disabled={isRequestTypesLoading || isRequestTypesError}
                     aria-invalid={Boolean(errors.requestTypeId)}
                     className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm
                       text-slate-700 outline-none transition
@@ -784,10 +686,7 @@ export default function ModalAddRequest({
                     </option>
 
                     {requestTypes.map((requestType) => (
-                      <option
-                        key={requestType.id}
-                        value={requestType.id}
-                      >
+                      <option key={requestType.id} value={requestType.id}>
                         {requestType.description}
                       </option>
                     ))}
@@ -802,8 +701,6 @@ export default function ModalAddRequest({
               )}
             </div>
           </div>
-
-
         </section>
 
         {/* ======================================
@@ -829,8 +726,7 @@ export default function ModalAddRequest({
                 htmlFor="requestedBy"
                 className="block text-[13px] font-medium text-slate-700"
               >
-                Requested By{" "}
-                <span className="text-red-500">*</span>
+                Requested By <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -838,15 +734,11 @@ export default function ModalAddRequest({
                 {...register("requestedBy")}
                 placeholder="Employee name"
                 className={inputClass}
-                aria-invalid={Boolean(
-                  errors.requestedBy
-                )}
+                aria-invalid={Boolean(errors.requestedBy)}
               />
 
               {errors.requestedBy && (
-                <p className={errorClass}>
-                  {errors.requestedBy.message}
-                </p>
+                <p className={errorClass}>{errors.requestedBy.message}</p>
               )}
             </div>
 
@@ -857,8 +749,7 @@ export default function ModalAddRequest({
                 htmlFor="checkedBy"
                 className="block text-[13px] font-medium text-slate-700"
               >
-                Checked By{" "}
-                <span className="text-red-500">*</span>
+                Checked By <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -867,15 +758,11 @@ export default function ModalAddRequest({
                 readOnly
                 placeholder="Automatically assigned from department"
                 className={`${inputClass} cursor-not-allowed bg-slate-50`}
-                aria-invalid={Boolean(
-                  errors.checkedBy
-                )}
+                aria-invalid={Boolean(errors.checkedBy)}
               />
 
               {errors.checkedBy && (
-                <p className={errorClass}>
-                  {errors.checkedBy.message}
-                </p>
+                <p className={errorClass}>{errors.checkedBy.message}</p>
               )}
             </div>
           </div>
@@ -897,9 +784,7 @@ export default function ModalAddRequest({
                   key={approver.label}
                   className="rounded-lg border border-slate-200 bg-white p-4"
                 >
-                  <p className="text-xs text-slate-500">
-                    {approver.label}
-                  </p>
+                  <p className="text-xs text-slate-500">{approver.label}</p>
 
                   <p className="mt-1.5 text-sm font-medium text-slate-800">
                     {approver.name}
@@ -944,12 +829,8 @@ export default function ModalAddRequest({
 
           <button
             type="button"
-            onClick={() =>
-              fileInputRef.current?.click()
-            }
-            disabled={
-              isSaving || files.length >= MAX_FILES
-            }
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSaving || files.length >= MAX_FILES}
             className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 px-5 py-8 text-center transition-colors hover:border-blue-300 hover:bg-blue-50/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <UploadCloud className="mb-3 h-7 w-7 text-blue-600" />
@@ -958,9 +839,7 @@ export default function ModalAddRequest({
               Click to upload files
             </p>
 
-            <p className="mt-1 text-xs text-slate-400">
-              PDF, Word, JPG or PNG
-            </p>
+            <p className="mt-1 text-xs text-slate-400">PDF, Word, JPG or PNG</p>
 
             <p className="mt-2 text-xs text-slate-400">
               Maximum {MAX_FILES} files, 10 MB each
@@ -969,25 +848,25 @@ export default function ModalAddRequest({
 
           {/* SELECTED FILES */}
 
-        {/* SELECTED FILES */}
-        {files.length > 0 && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {files.map((file, index) => (
-                <AttachmentPreview
-                  key={`${file.name}-${file.size}-${file.lastModified}`}
-                  file={file}
-                  onRemove={() => removeFile(index)}
-                  disabled={isSaving}
-                />
-              ))}
-            </div>
+          {/* SELECTED FILES */}
+          {files.length > 0 && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {files.map((file, index) => (
+                  <AttachmentPreview
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    file={file}
+                    onRemove={() => removeFile(index)}
+                    disabled={isSaving}
+                  />
+                ))}
+              </div>
 
-            <p className="text-right text-xs text-slate-500">
-              {files.length} of {MAX_FILES} files selected
-            </p>
-          </div>
-        )}
+              <p className="text-right text-xs text-slate-500">
+                {files.length} of {MAX_FILES} files selected
+              </p>
+            </div>
+          )}
 
           {files.length > 0 && (
             <p className="text-right text-xs text-slate-500">
@@ -1000,28 +879,22 @@ export default function ModalAddRequest({
             VALIDATION ERRORS
         ====================================== */}
 
-        {(Object.keys(errors).length > 0 ||
-          submitError) && (
+        {(Object.keys(errors).length > 0 || submitError) && (
           <div
             role="alert"
             className="rounded-lg border border-red-200 bg-red-50 px-4 py-3"
           >
             <p className="text-sm font-semibold text-red-700">
-              {submitError ??
-                "Please correct the following fields:"}
+              {submitError ?? "Please correct the following fields:"}
             </p>
 
             {Object.keys(errors).length > 0 && (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-red-600">
-                {Object.entries(errors).map(
-                  ([field, error]) => (
-                    <li key={field}>
-                      {field}:{" "}
-                      {error?.message ??
-                        "Invalid value"}
-                    </li>
-                  )
-                )}
+                {Object.entries(errors).map(([field, error]) => (
+                  <li key={field}>
+                    {field}: {error?.message ?? "Invalid value"}
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -1033,11 +906,7 @@ export default function ModalAddRequest({
 
         <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-400">
-            Fields marked{" "}
-            <span className="text-red-500">
-              *
-            </span>{" "}
-            are required
+            Fields marked <span className="text-red-500">*</span> are required
           </p>
 
           <div className="flex items-center justify-end gap-3">
@@ -1052,11 +921,7 @@ export default function ModalAddRequest({
 
             <button
               type="submit"
-              disabled={
-                isSaving ||
-                isReferenceLoading ||
-                isReferenceError
-              }
+              disabled={isSaving || isReferenceLoading || isReferenceError}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
@@ -1065,9 +930,7 @@ export default function ModalAddRequest({
                 <Save className="h-4 w-4" />
               )}
 
-              {isSaving
-                ? "Saving Request..."
-                : "Submit Request"}
+              {isSaving ? "Saving Request..." : "Submit Request"}
             </button>
           </div>
         </div>
@@ -1083,10 +946,7 @@ export default function ModalAddRequest({
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
             onMouseDown={(event) => {
-              if (
-                event.target ===
-                event.currentTarget
-              ) {
+              if (event.target === event.currentTarget) {
                 closePreview();
               }
             }}
@@ -1101,9 +961,7 @@ export default function ModalAddRequest({
 
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
                 <div className="flex min-w-0 items-center gap-3">
-                  {isImageFile(
-                    preview.file
-                  ) ? (
+                  {isImageFile(preview.file) ? (
                     <FileImage className="h-5 w-5 shrink-0 text-blue-600" />
                   ) : (
                     <FileText className="h-5 w-5 shrink-0 text-blue-600" />
@@ -1115,9 +973,7 @@ export default function ModalAddRequest({
                     </h3>
 
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {formatFileSize(
-                        preview.file.size
-                      )}
+                      {formatFileSize(preview.file.size)}
                     </p>
                   </div>
                 </div>
@@ -1127,11 +983,7 @@ export default function ModalAddRequest({
 
                   <button
                     type="button"
-                    onClick={() =>
-                      downloadFile(
-                        preview.file
-                      )
-                    }
+                    onClick={() => downloadFile(preview.file)}
                     title="Download file"
                     aria-label="Download file"
                     className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100"
@@ -1156,9 +1008,7 @@ export default function ModalAddRequest({
               {/* PREVIEW BODY */}
 
               <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100 p-3 sm:p-5">
-                {isImageFile(
-                  preview.file
-                ) ? (
+                {isImageFile(preview.file) ? (
                   // Blob URLs are local previews, not remote Next.js assets.
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -1166,9 +1016,7 @@ export default function ModalAddRequest({
                     alt={preview.file.name}
                     className="max-h-full max-w-full rounded-lg object-contain"
                   />
-                ) : isPdfFile(
-                    preview.file
-                  ) ? (
+                ) : isPdfFile(preview.file) ? (
                   <iframe
                     src={preview.url}
                     title={preview.file.name}
@@ -1179,8 +1027,7 @@ export default function ModalAddRequest({
                     <FileText className="mx-auto mb-3 h-10 w-10 text-slate-400" />
 
                     <p className="text-sm text-slate-500">
-                      Preview is not available
-                      for this file type.
+                      Preview is not available for this file type.
                     </p>
                   </div>
                 )}
@@ -1199,7 +1046,7 @@ export default function ModalAddRequest({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );
