@@ -4,9 +4,7 @@ import type {
   NotificationUpdatedPayload,
 } from "@repo/shared";
 
-// ==========================================
-// EMIT NEW NOTIFICATION TO ONE USER
-// ==========================================
+
 
 export function emitNotificationCreated(notification: NotificationSocketPayload) {
   getIO()
@@ -14,15 +12,29 @@ export function emitNotificationCreated(notification: NotificationSocketPayload)
     .emit("notification:new", notification);
 }
 
-// ==========================================
-// EMIT READ STATUS TO ONE USER
-// ==========================================
 
-export function emitNotificationUpdated(
-  userId: number,
-  notification: NotificationUpdatedPayload
-) {
-  getIO()
-    .to(`user:${userId}`)
-    .emit("notification:updated", notification);
-}
+// export function emitNotificationCreated(
+//   notification: NotificationSocketPayload
+// ): void {
+//   const io = getIO();
+//   const room = `user:${notification.userId}`;
+
+//   console.log("[NOTIFICATION EMIT]", {
+//     room,
+//     notificationId: notification.id,
+//     connectedClients: io.sockets.adapter.rooms.get(room)?.size ?? 0,
+//   });
+
+//   io.to(room).emit("notification:new", notification);
+// }
+
+
+// export function emitNotificationUpdated(
+//   userId: number,
+//   notification: NotificationUpdatedPayload
+// ) {
+//   getIO()
+//     .to(`user:${userId}`)
+//     .emit("notification:updated", notification);
+// }
+

@@ -90,13 +90,16 @@ export async function addRequestRepo(
       include: { ApprovalTable: true },
     });
 
-    await notifyAssignedApproverTx(
-      tx,
-      permit,
-      "CHECKER"
-    );
+   const notification = await notifyAssignedApproverTx(
+  tx,
+  permit,
+  "CHECKER"
+);
 
-    return permit;
+return {
+  permit,
+  notification,
+};
 
 
   });

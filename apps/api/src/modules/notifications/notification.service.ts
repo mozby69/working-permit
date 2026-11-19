@@ -51,12 +51,12 @@ export async function markAllNotificationsAsReadService(
 
 
 
+
 export async function notifyAssignedApproverTx(
-    tx: Prisma.TransactionClient,
-    permit: PermitNotificationContext,
-    stage: PermitNotificationStage
-  ) {
-    
+  tx: Prisma.TransactionClient,
+  permit: PermitNotificationContext,
+  stage: PermitNotificationStage
+) {
   const assignment = permit.ApprovalTable.find(
     (item) => item.role === stage
   );
@@ -65,14 +65,30 @@ export async function notifyAssignedApproverTx(
     throw new Error(`Missing ${stage} assignment.`);
   }
 
+  // Fetch the name of the user who created the permit.
+  const creator = await tx.user.findUnique({
+    where: {
+      id: permit.createdById,
+    },
+    select: {
+      name: true,
+    },
+  });
+
+  const creatorName =
+    creator?.name?.trim() || "Unknown User";
+
   return notificationRepo.createNotificationTx(tx, {
     userId: assignment.approverId,
     title: "New Working Permit",
-    message: `New Working Permit ${permit.referenceNumber} from User ID ${permit.createdById}.`,
+    message:
+      `New Working Permit ${permit.referenceNumber} ` +
+      `from ${creatorName}.`,
     type: "WP_APPROVAL_REQUIRED",
     workingPermitId: permit.id,
   });
 }
+
 
 export async function notifyCoordinatorStatusTx(
   tx: Prisma.TransactionClient,

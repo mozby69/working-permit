@@ -12,6 +12,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { emitNotificationCreated } from '@/socket/emitters/notification.emitter';
 
 
 export async function createRequestController(
@@ -86,25 +87,43 @@ export async function createRequestController(
       })
     );
 
-    const result =
+   const { permit, notification } =
       await workingPermitService.createRequestService(
         parsed.data,
         userId,
         attachments
       );
 
-    // The database transaction has succeeded.
-    // Event errors should not trigger deletion of saved files.
+    // The transaction has committed successfully.
     try {
-      emitWPCreated({ id: result.id });
-    } catch (eventError: unknown) {
-      console.error("Failed to emit Working Permit event:", eventError);
+      // Refresh the Working Permit table.
+      emitWPCreated({
+        id: permit.id,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Failed to emit Working Permit event:",
+        error
+      );
+    }
+
+    try {
+      // Notify the assigned Checker in real time.
+      emitNotificationCreated({
+        ...notification,
+        createdAt: notification.createdAt.toISOString(),
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Failed to emit notification event:",
+        error
+      );
     }
 
     return res.status(201).json({
       success: true,
       message: "Working permit request created successfully",
-      data: result,
+      data: permit,
     });
   } catch (error: unknown) {
     await cleanupUploads();

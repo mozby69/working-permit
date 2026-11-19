@@ -6,6 +6,7 @@ import { prisma } from "@/lib/database/prisma.js";
 import type { ApprovalResult, ApprovalStage } from "@repo/shared";
 import type { TroubleshooterResult } from "./approval.types.js";
 import { notifyAssignedApproverTx, notifyCoordinatorStatusTx } from "../notifications/notification.service.js";
+import { createNotificationTx } from "../notifications/notification.repository.js";
 
 function getStageSequence(level: RequestLevel, stage: ApprovalStage): number {
   if (stage === "CHECKER") return 1;
@@ -19,7 +20,13 @@ export async function approveWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
   stage: ApprovalStage,
-): Promise<ApprovalResult> {
+): Promise<{
+  result: ApprovalResult;
+  notifications: Awaited<
+    ReturnType<typeof notifyAssignedApproverTx>
+  >[];
+}> {
+
   if (
     !workingPermitId.trim() ||
     !Number.isSafeInteger(userId) ||
@@ -141,20 +148,58 @@ export async function approveWorkingPermitRepo(
           ? "FINAL_APPROVER"
           : null;
 
+    
+    const notifications: Awaited<
+      ReturnType<typeof createNotificationTx>>[] = [];
+
+
     if (nextStage) {
-      await notifyAssignedApproverTx(
+      const notification = await notifyAssignedApproverTx(
         tx,
         permit,
         nextStage
       );
+
+      notifications.push(notification);
+    }
+
+    // Notify Troubleshooters after Final Approver approval
+      if (stage === "FINAL_APPROVER") {
+      const creator = await tx.user.findUnique({
+        where: {
+          id: permit.createdById,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      const creatorName = creator?.name?.trim() || "Unknown User";
+
+      for (const troubleshooter of permit.WorkerList.troubleshooters) {
+        const notification = await createNotificationTx(tx, {
+          userId: troubleshooter.id,
+          title: "New Working Permit",
+          message:
+            `New Working Permit ${permit.referenceNumber} ` +
+            `from ${creatorName}.`,
+          type: "WP_TROUBLESHOOTER_ASSIGNED",
+          workingPermitId: permit.id,
+        });
+
+        notifications.push(notification);
+      }
     }
    
 
-    return {
-      workingPermitId,
-      sequence: sequence + 1,
-      stage,
-      status: "APPROVED" as const,
+   return {
+      result: {
+        workingPermitId,
+        sequence: sequence + 1,
+        stage,
+        status: "APPROVED" as const,
+      },
+      notifications,
     };
   });
 }
@@ -165,7 +210,12 @@ export async function approveWorkingPermitRepo(
 export async function receiveWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
-): Promise<TroubleshooterResult> {
+): Promise<{
+  result: TroubleshooterResult;
+  notifications: Awaited<
+    ReturnType<typeof notifyCoordinatorStatusTx>
+  >[];
+}> {
   if (
     !workingPermitId.trim() ||
     !Number.isSafeInteger(userId) ||
@@ -305,8 +355,7 @@ export async function receiveWorkingPermitRepo(
       );
     }
 
-    // Notify the Coordinator who created the permit.
-    await notifyCoordinatorStatusTx(
+      const notification = await notifyCoordinatorStatusTx(
       tx,
       {
         id: permit.id,
@@ -317,13 +366,14 @@ export async function receiveWorkingPermitRepo(
     );
 
     return {
-      workingPermitId,
-      sequence:
-        permit.requestLevel === RequestLevel.LEVEL_1
-          ? 3
-          : 4,
-      receivedById: userId,
-      status: "IN_PROGRESS" as const,
+      result: {
+        workingPermitId,
+        sequence:
+          permit.requestLevel === RequestLevel.LEVEL_1 ? 3 : 4,
+        receivedById: userId,
+        status: "IN_PROGRESS" as const,
+      },
+      notifications: [notification],
     };
   });
 }
@@ -336,7 +386,12 @@ export async function receiveWorkingPermitRepo(
 export async function completeWorkingPermitRepo(
   workingPermitId: string,
   userId: number,
-): Promise<TroubleshooterResult> {
+): Promise<{
+  result: TroubleshooterResult;
+  notifications: Awaited<
+    ReturnType<typeof notifyCoordinatorStatusTx>
+  >[];
+}> {
   if (
     !workingPermitId.trim() ||
     !Number.isSafeInteger(userId) ||
@@ -389,7 +444,7 @@ export async function completeWorkingPermitRepo(
     });
 
     // Notify the Coordinator who created the permit.
-    await notifyCoordinatorStatusTx(
+    const notification = await notifyCoordinatorStatusTx(
       tx,
       {
         id: permit.id,
@@ -400,13 +455,14 @@ export async function completeWorkingPermitRepo(
     );
 
     return {
-      workingPermitId,
-      sequence:
-        permit.requestLevel === RequestLevel.LEVEL_1
-          ? 3
-          : 4,
-      receivedById: userId,
-      status: "COMPLETED" as const,
+      result: {
+        workingPermitId,
+        sequence:
+          permit.requestLevel === RequestLevel.LEVEL_1 ? 3 : 4,
+        receivedById: userId,
+        status: "COMPLETED" as const,
+      },
+      notifications: [notification],
     };
   });
 }

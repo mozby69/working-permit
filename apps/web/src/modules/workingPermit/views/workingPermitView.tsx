@@ -12,11 +12,11 @@ import DataTable from "@/components/common/Datatable/Datatable";
 import WorkingPermitStatusBadge from "../components/ui/workingPermitStatusBadge"; 
 import TableRowActions from "@/components/common/TableAction/DropdownAction";
 import ViewWorkingPermit from "../components/modal/ViewWorkingPermit";
-import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 import EditWorkingPermit from "../components/modal/EditWorkingPermit";
 import AddRemark from "../components/modal/AddRemarks";
 import toast from "react-hot-toast";
 import SweetAlert from "@/lib/alerts/alert";
+import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 
 
 export default function WorkingPermitView(){
