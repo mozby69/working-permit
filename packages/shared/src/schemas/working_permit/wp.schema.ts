@@ -190,3 +190,6 @@ export const approveWorkingPermitParamsSchema = z.object({
 
 
 
+export const rejectWorkingPermitSchema = z.object({
+  rejectRemarks: z.string().trim().min(5).max(500),
+});

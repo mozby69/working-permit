@@ -8,3 +8,5 @@ export default function AccessControlPage() {
         </RoleGuard>
     );
 }
+
+

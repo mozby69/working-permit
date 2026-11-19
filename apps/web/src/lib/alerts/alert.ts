@@ -75,23 +75,109 @@ const SweetAlert = {
         });
     },
 
-    confirmationAlert2: async (
-        title: string = "Are you sure?",
-        text: string = ""
-    ): Promise<boolean> => {
-        const result = await Swal.fire({
-            title,
-            text,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Yes",
-            cancelButtonText: "No",
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-        });
+    // confirmationAlert2: async (
+    //     title: string = "Are you sure?",
+    //     text: string = ""
+    // ): Promise<boolean> => {
+    //     const result = await Swal.fire({
+    //         title,
+    //         text,
+    //         icon: "warning",
+    //         showCancelButton: true,
+    //         confirmButtonText: "Yes",
+    //         cancelButtonText: "No",
+    //         confirmButtonColor: "#3085d6",
+    //         cancelButtonColor: "#d33",
+    //     });
 
-        return result.isConfirmed;
-    },
+    //     return result.isConfirmed;
+    // },
+
+confirmationAlert2: async (
+  title: string = "Are you sure?",
+  text: string = "",
+  options?: {
+    confirmButtonText?: string;
+    confirmButtonColor?: string;
+  }
+): Promise<boolean> => {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText:
+      options?.confirmButtonText ?? "Yes",
+    cancelButtonText: "No",
+    confirmButtonColor:
+      options?.confirmButtonColor ?? "#3085d6",
+    cancelButtonColor: "#64748b",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  return result.isConfirmed;
+},
+
+
+
+
+
+  rejectionAlert: async (
+    referenceNumber: string
+  ): Promise<string | null> => {
+    const result = await Swal.fire<string>({
+      title: `Reject ${referenceNumber}?`,
+      text: "Please provide a reason for rejecting this Working Permit.",
+      icon: "warning",
+
+      input: "textarea",
+      inputLabel: "Rejection Reason",
+      inputPlaceholder: "Enter the reason for rejection...",
+      inputAttributes: {
+        maxlength: "500",
+        "aria-label": "Rejection reason",
+      },
+
+      inputValidator: (value: string) => {
+        const remarks = value.trim();
+
+        if (!remarks) {
+          return "Rejection reason is required.";
+        }
+
+        if (remarks.length < 5) {
+          return "Please enter at least 5 characters.";
+        }
+
+        if (remarks.length > 500) {
+          return "Maximum of 500 characters allowed.";
+        }
+
+        return undefined;
+      },
+
+      showCancelButton: true,
+      confirmButtonText: "Reject Permit",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+      focusCancel: true,
+      allowOutsideClick: false,
+    });
+
+    if (!result.isConfirmed) {
+      return null;
+    }
+
+    const remarks = result.value?.trim();
+
+    return remarks || null;
+  },
+
+
+
 };
 
 export default SweetAlert;

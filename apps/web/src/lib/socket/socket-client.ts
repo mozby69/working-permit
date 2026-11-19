@@ -1,25 +1,64 @@
+// import { io, type Socket } from "socket.io-client";
+
+// import type {
+//     ClientToServerEvents,
+//     ServerToClientEvents,
+// } from "@repo/shared";
+
+// const SOCKET_URL =
+//     process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
+
+// let socket: Socket<
+//     ServerToClientEvents,
+//     ClientToServerEvents
+// > | null = null;
+
+// export const createSocket = () => {
+//     if (!socket) {
+//         socket = io(SOCKET_URL!, {
+//             //autoConnect: true,
+//             autoConnect:false,
+//             withCredentials: true,
+//         });
+//     }
+
+//     return socket;
+// };
+
+
 import { io, type Socket } from "socket.io-client";
 
 import type {
-    ClientToServerEvents,
-    ServerToClientEvents,
+  ClientToServerEvents,
+  ServerToClientEvents,
 } from "@repo/shared";
 
-const SOCKET_URL =
-    process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
+const SOCKET_URL = process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
 
 let socket: Socket<
-    ServerToClientEvents,
-    ClientToServerEvents
+  ServerToClientEvents,
+  ClientToServerEvents
 > | null = null;
 
 export const createSocket = () => {
-    if (!socket) {
-        socket = io(SOCKET_URL!, {
-            autoConnect: true,
-            withCredentials: true,
-        });
-    }
+  if (!SOCKET_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_BACKEND_LAN_URL is not configured"
+    );
+  }
 
-    return socket;
+  if (!socket) {
+    socket = io(SOCKET_URL, {
+      autoConnect: false,
+      withCredentials: true,
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
+  }
+
+  return socket;
 };

@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -207,4 +207,29 @@ export async function addWorkingPermitRemarkService(
   );
 
   return response.data.data;
+}
+
+
+
+
+
+
+
+
+
+
+
+export async function rejectWorkingPermitService(
+  workingPermitId: string,
+  stage: RejectApprovalStage,
+  rejectRemarks: string
+): Promise<RejectWorkingPermitResponse> {
+  const response = await api.patch<RejectWorkingPermitResponse>(
+    `/approval/${encodeURIComponent(workingPermitId)}/${rejectionEndpoints[stage]}`,
+    {
+      rejectRemarks,
+    }
+  );
+
+  return response.data;
 }

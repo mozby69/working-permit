@@ -28,3 +28,18 @@ export type TroubleshooterResult = {
   receivedById: number;
   status: "IN_PROGRESS" | "COMPLETED";
 };
+
+
+
+
+export type RejectionService = (
+  workingPermitId: string,
+  userId: number,
+  rejectRemarks: string
+) => Promise<{
+  workingPermitId: string;
+  sequence: number;
+  stage: string;
+  status: "REJECTED";
+  statusAt: string;
+}>;

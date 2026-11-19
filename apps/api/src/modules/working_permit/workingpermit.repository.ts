@@ -5,6 +5,7 @@ import { QueryParams } from "../../../../../packages/shared/src/types/query.type
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/client";
+import { notifyAssignedApproverTx } from "../notifications/notification.service";
 //import { APPROVAL_WORKFLOW } from "../wp_approval/approval.config.js";
 
 
@@ -63,7 +64,7 @@ export async function addRequestRepo(
       update: { lastValue: { increment: 1 } },
     });
 
-    return tx.workingPermit.create({
+    const permit = await tx.workingPermit.create({
       data: {
         referenceNumber: `WP${counter.lastValue}`,
         createdBy: { connect: { id: userId } },
@@ -88,6 +89,19 @@ export async function addRequestRepo(
       },
       include: { ApprovalTable: true },
     });
+
+   const notification = await notifyAssignedApproverTx(
+  tx,
+  permit,
+  "CHECKER"
+);
+
+return {
+  permit,
+  notification,
+};
+
+
   });
 }
 
@@ -143,7 +157,15 @@ export async function displayWorkingPermit(params: QueryParamWP) {
   const pageLimit = Number.isSafeInteger(limit) && limit > 0 ? Math.min(limit, 100) : 10;
 
   const visible: Prisma.WorkingPermitWhereInput[] = [];
-  if (roles.includes("COORDINATOR")) visible.push({ createdById: userId });
+  // if (roles.includes("COORDINATOR")) 
+  //   visible.push({ 
+  //   createdById: userId
+  //  });
+  
+  if (roles.includes("COORDINATOR")) {
+    visible.push({});
+  }
+
   if (roles.includes("CHECKER")) {
     visible.push({ ApprovalTable: { some: { role: "CHECKER", approverId: userId } } });
   }
@@ -402,10 +424,12 @@ export async function updateWorkingPermitRepo(
       where: { id: data.fromId, isBranch: false },
       select: { checkerId: true, checker: { select: { name: true, isActive: true } } },
     });
+
     const branch = await tx.departmentBranches.findUnique({
       where: { id: data.branchDepartmentId },
       select: { id: true },
     });
+
     const worker = await tx.workerList.findUnique({
       where: { id: data.requestToId },
       select: {
@@ -414,6 +438,8 @@ export async function updateWorkingPermitRepo(
         finalApproverUser: { select: { isActive: true } },
       },
     });
+
+
     if (!department?.checkerId || !department.checker?.isActive || !branch ||
         !worker?.finalApproverUserId || !worker.finalApproverUser?.isActive ||
         (data.requestLevel === "LEVEL_2" &&
@@ -450,6 +476,8 @@ export async function updateWorkingPermitRepo(
         approverId: worker.finalApproverUserId,
       },
     ];
+
+
     await tx.approvalTable.createMany({
       data: assignments.map(item => ({ workingPermitId: id, ...item })),
     });

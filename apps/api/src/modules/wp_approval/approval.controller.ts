@@ -11,13 +11,18 @@ import {
   approveFinalApproverService,
   receiveWorkingPermitService,
   completeWorkingPermitService,
+  rejectCheckerService,
+  rejectFirstApproverService,
+  rejectFinalApproverService,
 } from "./approval.service.js";
 
 import { emitWPUpdated } from "@/socket/emitters/wp.emitter.js";
 
 import type {
   ApprovalService,
+  RejectionService,
 } from "./approval.types.js";
+import { rejectWorkingPermitSchema } from "@repo/shared";
 
 // ==================================================
 // SHARED VALIDATION
@@ -227,3 +232,75 @@ export async function completeWorkingPermitController(
     next(error);
   }
 }
+
+
+
+
+
+
+
+// ==========================================
+// REJECTION CONTROLLER FACTORY
+// ==========================================
+
+export function createRejectionController(
+  service: RejectionService
+) {
+  return async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    const workingPermitId = req.params.id;
+
+
+    if (!userId || !Number.isSafeInteger(userId)) {
+      throw new Error("Unauthorized user.");
+    }
+
+
+    if (
+      typeof workingPermitId !== "string" ||
+      !workingPermitId.trim()
+    ) {
+      throw new Error("Invalid Working Permit ID.");
+    }
+
+
+    const { rejectRemarks } =
+      rejectWorkingPermitSchema.parse(req.body);
+
+
+    const result = await service(
+      workingPermitId,
+      userId,
+      rejectRemarks
+    );
+
+ 
+    emitWPUpdated({
+      id: result.workingPermitId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Working Permit rejected successfully.",
+      data: result,
+    });
+  };
+}
+
+// ==========================================
+// CHECKER
+// ==========================================
+
+export const rejectCheckerController = createRejectionController(rejectCheckerService);
+
+// ==========================================
+// FIRST APPROVER
+// ==========================================
+
+export const rejectFirstApproverController = createRejectionController(rejectFirstApproverService);
+
+// ==========================================
+// FINAL APPROVER
+// ==========================================
+
+export const rejectFinalApproverController = createRejectionController(rejectFinalApproverService);

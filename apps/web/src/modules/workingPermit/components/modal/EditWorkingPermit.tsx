@@ -29,6 +29,8 @@ import {
 } from "../../hooks/useWorkingPermit";
 
 import { DepartmentBranchSelect } from "../ui/departmentBranches";
+import AttachmentPreview from "../ui/attachmentPreview"; 
+
 
 type Props = {
   permit: WorkingPermitResponse;
@@ -190,7 +192,7 @@ export default function EditWorkingPermit({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-7"
+      className="space-y-7 p-4"
       noValidate
     >
       {/* REFERENCE */}
@@ -417,24 +419,26 @@ export default function EditWorkingPermit({
             </p>
           </div>
 
-          {permit.attachments.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500">
-                Existing attachments
-              </p>
-              {permit.attachments.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
-                >
-                  <FileText size={17} className="text-indigo-600" />
-                  <span className="truncate text-sm text-slate-700">
-                    {file.originalName}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+{/* EXISTING ATTACHMENTS */}
+
+    {permit.attachments.length > 0 && (
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-slate-500">
+          Existing attachments
+        </p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {permit.attachments.map((attachment) => (
+            <AttachmentPreview
+              key={attachment.id}
+              permitId={permit.id}
+              attachment={attachment}
+            />
+          ))}
+        </div>
+      </div>
+    )}
+
 
           <input
             ref={fileInputRef}
@@ -462,29 +466,37 @@ export default function EditWorkingPermit({
             </span>
           </button>
 
-          {files.map((file, index) => (
-            <div
-              key={`${file.name}-${index}`}
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <FileText size={16} className="text-slate-500" />
-                <span className="truncate text-sm">{file.name}</span>
+        
+          {/* NEW ATTACHMENTS */}
+
+          {files.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-slate-500">
+                New attachments
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {files.map((file, index) => (
+                  <AttachmentPreview
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    file={file}
+                    onRemove={() => {
+                      setFiles((previous) =>
+                        previous.filter((_, i) => i !== index)
+                      );
+                    }}
+                    disabled={isSaving}
+                  />
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setFiles((previous) =>
-                    previous.filter((_, i) => i !== index)
-                  )
-                }
-                className="rounded-lg p-2 text-red-500 hover:bg-red-50"
-                aria-label={`Remove ${file.name}`}
-              >
-                <Trash2 size={16} />
-              </button>
+
+              <p className="text-right text-xs text-slate-500">
+                {permit.attachments.length + files.length} of {MAX_FILES} files
+                selected
+              </p>
             </div>
-          ))}
+          )}
+
         </section>
       </fieldset>
 

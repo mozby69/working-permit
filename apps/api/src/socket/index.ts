@@ -13,11 +13,22 @@ export function registerSocketHandlers(io: AppSocketServer) {
     io.use(authenticateSocket);
 
     io.on("connection", (socket) => {
-        console.log("Socket connected:", socket.id);
-        console.log("Authenticated user:", socket.data.user);
+    const user = socket.data.user;
 
-        notificationHandler(io, socket);
-        chatHandler(io, socket);
+    if (
+        !user ||
+        typeof user.id !== "number" ||
+        !Number.isSafeInteger(user.id) ||
+        user.id <= 0
+    ) {
+        socket.disconnect(true);
+        return;
+    }
+
+    socket.join(`user:${user.id}`);
+
+    notificationHandler(io, socket);
+    chatHandler(io, socket);
 
         socket.on("disconnect", () => {
             console.log("Disconnected");
