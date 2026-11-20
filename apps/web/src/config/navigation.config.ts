@@ -48,10 +48,12 @@ export const navigation: NavigationItem[] = [
         icon: ClipboardList,
         roles: ["BRANCH"],
         },
+
+
         {
         title: "Ongoing Permit",
         href: ROUTES.USER.ONGOING_PERMIT,
         icon: CircleDashed,
-        roles: ["COORDINATOR","CHECKER","FIRST_APPROVER","FINAL_APPROVER","TROUBLESHOOTER"],
+        roles: ["FIRST_APPROVER","FINAL_APPROVER"],
     },
 ];
