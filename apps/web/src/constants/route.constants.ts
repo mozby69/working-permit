@@ -10,6 +10,9 @@ export const ROUTES = {
     USER:{
         WORKING_PERMIT: "/workingPermit",
         ONGOING_PERMIT: "/onGoingPermit"
+    },
+     BRANCH:{
+        WORKING_PERMIT: "/branch",
     }
 } as const;
 

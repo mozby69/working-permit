@@ -1,11 +1,17 @@
-import { CreateDepartmentBranchInput, UpdateDepartmentBranchInput } from "@repo/shared";
-import { createDepartmentBranchRepo, deleteDepartmentBranchRepo, findDepartmentBranchById, findDepartmentBranchByName, getAllDepartmentBranches, updateDepartmentBranchRepo } from "./branch.repository";
+import { CreateDepartmentBranchInput, DepartmentBranchFilter, GetBranchWorkingParams, UpdateDepartmentBranchInput } from "@repo/shared";
+import { createDepartmentBranchRepo, deleteDepartmentBranchRepo, findDepartmentBranchById, findDepartmentBranchByName, getAllDepartmentBranches, getBranchWorkingRepo, getPaginationDepartmentBranches, updateDepartmentBranchRepo } from "./branch.repository";
 
 
 export async function getDepartmentBranchesService(
   isBranch?: boolean
 ) {
   return getAllDepartmentBranches({ isBranch });
+}
+
+export async function getPaginationDepartmentBranchesService(
+  filter: DepartmentBranchFilter = {}
+) {
+  return getPaginationDepartmentBranches(filter);
 }
 
 export  async function createDepartmentBranchService(
@@ -78,3 +84,34 @@ export async function deleteDepartmentBranchService(id: number) {
     return deleteDepartmentBranchRepo(id);
     
 }
+
+export async function getBranchWorkingService({
+  userId,
+  page = 1,
+  limit = 10,
+  search = "",
+}: GetBranchWorkingParams) {
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    throw new Error("Invalid authenticated user");
+  }
+
+  const safePage =
+    Number.isSafeInteger(page) && page > 0
+      ? page
+      : 1;
+
+  const safeLimit =
+    Number.isSafeInteger(limit) && limit > 0
+      ? Math.min(limit, 100)
+      : 10;
+
+  return getBranchWorkingRepo({
+    userId,
+    page: safePage,
+    limit: safeLimit,
+    search: search.trim(),
+  });
+}
+
+
+

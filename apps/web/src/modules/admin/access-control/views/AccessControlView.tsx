@@ -331,7 +331,7 @@ export default function AccessControlView() {
                 isOpen={userModal.isOpen}
                 onClose={handleCloseUserModal}
                 title={selectedUser ? "Edit User" : "Create User"}
-                size="md"
+                size="lg"
                 footer={
                     <>
                         <Button

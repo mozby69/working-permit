@@ -4,4 +4,5 @@ export * from "./constants/index";
 export * from "./utils/index";
 export * from "./socket/";
 export * from "./types/working-permit.types";
+export * from "./types/branch/branch.types"
 export * from "./types/notification.types";

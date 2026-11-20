@@ -19,6 +19,9 @@ export function useCreateWorkingPermit() {
       await queryClient.invalidateQueries({
         queryKey: ["working-permit-display"],
       });
+       await queryClient.invalidateQueries({
+        queryKey: ["ongoing-permit"],
+      });
     },
   });
 }
@@ -115,6 +118,9 @@ export function useApproveWorkingPermit() {
       await queryClient.invalidateQueries({
         queryKey: ["working-permit-display"],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["ongoing-permit"],
+      });
     },
   });
 }
@@ -138,6 +144,9 @@ export function useReceiveWorkingPermit() {
       await queryClient.invalidateQueries({
         queryKey: ["working-permits"],
       });
+        await queryClient.invalidateQueries({
+        queryKey: ["ongoing-permit"],
+      });
     },
   });
 }
@@ -159,6 +168,9 @@ export function useCompleteWorkingPermit() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["working-permits"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["ongoing-permit"],
       });
     },
   });

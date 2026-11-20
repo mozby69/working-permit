@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DepartmentBranchFilter, departmentBranchService, } from "../service/department-branch.service";
-import { CreateDepartmentBranchInput, UpdateDepartmentBranchInput } from "@repo/shared";
+import {  departmentBranchService, } from "../service/department-branch.service";
+import { CreateDepartmentBranchInput, DepartmentBranchFilter, UpdateDepartmentBranchInput } from "@repo/shared";
 
 
 const queryKey = ["department-branches"] as const;
@@ -12,6 +12,18 @@ export function useDepartmentBranches(
     queryKey: [...queryKey, params.isBranch ?? "all"],
     queryFn: () => departmentBranchService.getAll(params),
     select: (response) => response.data,
+    staleTime: 60_000,
+  });
+}
+
+// New hook - paginated tables
+export function usePaginatedDepartmentBranches(
+  params: DepartmentBranchFilter = {}
+) {
+  return useQuery({
+    queryKey: ["department-branches", "paginated", params],
+    queryFn: () => departmentBranchService.getPaginated(params),
+    placeholderData: (previousData) => previousData,
     staleTime: 60_000,
   });
 }

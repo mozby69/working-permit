@@ -34,6 +34,19 @@ export function mapUser(user: any): User {
         }
     }
 
+    const branchAssignments =
+    user.branchAssignments?.map(
+      (assignment: any) => ({
+        branchId: assignment.branchId,
+
+        branch: {
+          id: assignment.branch.id,
+          entityName: assignment.branch.entityName,
+          isBranch: assignment.branch.isBranch,
+        },
+      })
+    ) ?? [];
+
     return {
         id: user.id,
         name: user.name,
@@ -44,6 +57,7 @@ export function mapUser(user: any): User {
         permissions: Array.from(
             permissionMap.values()
         ),
+        branchAssignments,
     };
 }
 

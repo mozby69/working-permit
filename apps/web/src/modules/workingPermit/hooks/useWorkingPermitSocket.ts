@@ -1,6 +1,3 @@
-
-
-
 "use client";
 
 import { useEffect } from "react";
@@ -8,29 +5,39 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createSocket } from "@/lib/socket/socket-client";
 
 export function useWPSocket() {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    useEffect(() => {
-        const socket = createSocket();
+  useEffect(() => {
+    const socket = createSocket();
 
-        const handleWPCreated = () => {
-            queryClient.invalidateQueries({
-                queryKey: ["working-permit-display"],
-            });
-        };
+    const invalidateWorkingPermits = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["working-permit-display"],
+      });
+    };
 
-        const handleWPUpdated = () => {
-            queryClient.invalidateQueries({
-                queryKey: ["working-permit-display"],
-            });
-        };
+    const invalidateOngoingPermits = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["ongoing-permit"],
+      });
+    };
 
-        socket.on("wp:created", handleWPCreated);
-        socket.on("wp:updated", handleWPUpdated);
+    const handleWPCreated = () => {
+      invalidateWorkingPermits();
+      invalidateOngoingPermits();
+    };
 
-        return () => {
-            socket.off("wp:created", handleWPCreated);
-            socket.off("wp:updated", handleWPUpdated);
-        };
-    }, [queryClient]);
+    const handleWPUpdated = () => {
+      invalidateWorkingPermits();
+      invalidateOngoingPermits();
+    };
+
+    socket.on("wp:created", handleWPCreated);
+    socket.on("wp:updated", handleWPUpdated);
+
+    return () => {
+      socket.off("wp:created", handleWPCreated);
+      socket.off("wp:updated", handleWPUpdated);
+    };
+  }, [queryClient]);
 }

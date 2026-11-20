@@ -13,6 +13,7 @@ const statusStyles: Record<WorkingPermitStatus, string> = {
   REJECTED: "bg-red-100 text-red-700 ring-red-200",
   IN_PROGRESS: "bg-indigo-100 text-indigo-700 ring-indigo-200",
   COMPLETED: "bg-green-100 text-green-700 ring-green-200",
+
 };
 
 const dotStyles: Record<WorkingPermitStatus, string> = {

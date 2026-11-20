@@ -2,7 +2,6 @@
 import Modal from "@/components/common/ModalHeader";
 import { FilesIcon, Plus,CalendarDays, X, MessageSquarePlus, Ban } from "lucide-react";
 import ModalAddRequest from "../components/modal/AddRequest";
-// import { useDisclosure } from "@/hooks/useDisclosure";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useState } from "react";
 import { useGetWorkingPermit, useRejectWorkingPermit, useWorkerList } from "../hooks/useWorkingPermit";
@@ -16,14 +15,13 @@ import EditWorkingPermit from "../components/modal/EditWorkingPermit";
 import AddRemark from "../components/modal/AddRemarks";
 import toast from "react-hot-toast";
 import SweetAlert from "@/lib/alerts/alert";
-import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 import PermissionGuard from "@/components/guards/PermissionGuard";
-import RoleGuard from "@/components/guards/RoleGuard";
-import { useAuth } from "@/modules/authentication/hooks/useAuth";
+
+
 
 
 export default function WorkingPermitView(){
-    useWPSocket()
+    //useWPSocket()
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isModalOpen2, setIsModalOpen2] = useState(false);
     const [userPage, setUserPage] = useState(1);

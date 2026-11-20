@@ -48,6 +48,12 @@ export async function seedRoles() {
                 "VIEW_WORKING_PERMIT",
             ],
         },
+        {
+            name: "BRANCH",
+            permissions: [
+                "VIEW_WORKING_PERMIT",
+            ],
+        },
     ];
 
     for (const role of roles) {

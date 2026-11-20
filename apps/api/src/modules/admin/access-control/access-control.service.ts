@@ -31,6 +31,7 @@ export async function createUser(
         email,
         password,
         roleIds,
+        branchIds = [],
     } = params;
 
     const duplicate =
@@ -57,6 +58,7 @@ export async function createUser(
             email,
             password: hashedPassword,
             roleIds,
+            branchIds,
         });
 
     return mapUser(user);

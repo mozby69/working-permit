@@ -1,4 +1,4 @@
-import { AddRequestInput, CheckDuplicateWorkingPermitInput, UpdateWorkingPermitInput } from "@repo/shared";
+import { AddRequestInput, CheckDuplicateWorkingPermitInput, MyApprovedPermitFilters, UpdateWorkingPermitInput } from "@repo/shared";
 import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -265,4 +265,17 @@ export async function checkDuplicateWorkingPermitService(
   data: CheckDuplicateWorkingPermitInput
 ) {
   return workingRepo.checkDuplicateWorkingPermitRepo(data);
+}
+//Kim
+
+
+
+export async function getMyApprovedPermitService(
+  userId: number,
+  filters: MyApprovedPermitFilters = {}
+) {
+  return workingRepo.getMyApprovedPermitRepo(
+    userId,
+    filters
+  );
 }

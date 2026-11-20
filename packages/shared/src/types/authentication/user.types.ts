@@ -8,7 +8,18 @@ export interface User {
     isActive: boolean;
     roles: Role[];
     permissions: Permission[];
+    branchAssignments?: UserBranchAssignment[];
 }
+
+export interface UserBranchAssignment {
+  branchId: number;
+  branch: {
+    id: number;
+    entityName: string;
+    isBranch: boolean;
+  };
+}
+
 
 export interface LoginResponse {
     success: boolean;

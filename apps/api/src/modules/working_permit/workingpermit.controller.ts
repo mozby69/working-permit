@@ -1,4 +1,4 @@
-import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, checkDuplicateWorkingPermitSchema, updateWorkingPermitSchema } from '@repo/shared';
+import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, checkDuplicateWorkingPermitSchema, myApprovedPermitQuerySchema, updateWorkingPermitSchema } from '@repo/shared';
 import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
@@ -13,6 +13,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { emitNotificationCreated } from '@/socket/emitters/notification.emitter';
+import z from 'zod';
 
 
 export async function createRequestController(
@@ -622,6 +623,77 @@ export async function checkDuplicateWorkingPermitController(
       data: result,
     });
   } catch (error: unknown) {
+    next(error);
+  }
+}
+
+
+export async function getMyApprovedPermitController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    // ==========================================
+    // AUTHENTICATED USER
+    // ==========================================
+
+    const user = req.user;
+
+    if (
+      !user ||
+      typeof user.id !== "number" ||
+      !Number.isSafeInteger(user.id) ||
+      user.id <= 0
+    ) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    // ==========================================
+    // VALIDATE QUERY PARAMETERS
+    // ==========================================
+
+    const parsed = myApprovedPermitQuerySchema.safeParse(
+      req.query
+    );
+
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid query parameters",
+        errors: z.flattenError(parsed.error),
+      });
+      return;
+    }
+
+    const filters = parsed.data;
+
+    // ==========================================
+    // GET APPROVED PERMITS
+    // ==========================================
+
+    const result =
+      await workingPermitService.getMyApprovedPermitService(
+        user.id,
+        filters
+      );
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.status(200).json({
+      success: true,
+      message: "Approved permits retrieved successfully",
+      data: result.data,
+      pagination: result.pagination,
+      summary: result.summary,
+    });
+  } catch (error) {
     next(error);
   }
 }

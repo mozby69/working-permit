@@ -12,7 +12,6 @@ export const workingPermitStatus = z.enum([
   "REJECTED",
   "COMPLETED",
   "IN_PROGRESS",
-  "CANCELLED"
 ]);
 
 export const addRequestSchema = z.object({
@@ -244,3 +243,24 @@ export const duplicateWorkingPermitResponseSchema = z.object({
 export type DuplicateWorkingPermitResponse = z.infer<
   typeof duplicateWorkingPermitResponseSchema
 >;
+
+export const myApprovedPermitQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+
+  limit: z.coerce.number().int().min(1).max(100).default(6),
+
+  search: z.string().trim().max(200).default(""),
+
+  status: z
+    .enum([
+      "ALL",
+      "UNFINISHED",
+      "PENDING",
+      "APPROVED",
+      "REJECTED",
+      "COMPLETED",
+      "IN_PROGRESS",
+      "CANCELLED",
+    ])
+    .default("ALL"),
+});

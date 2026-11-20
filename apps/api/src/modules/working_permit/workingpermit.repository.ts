@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database/prisma";
 import { getDate } from "@/utils/dateFormatter";
-import { AddRequestInput, CheckDuplicateWorkingPermitInput, UpdateWorkingPermitInput } from "@repo/shared";
+import { AddRequestInput, CheckDuplicateWorkingPermitInput, MyApprovedPermitFilters, UpdateWorkingPermitInput } from "@repo/shared";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -658,5 +658,264 @@ export async function checkDuplicateWorkingPermitRepo(
           status: existingPermit.status,
         }
       : null,
+  };
+}
+
+
+export async function getMyApprovedPermitRepo(
+  userId: number,
+  filters: MyApprovedPermitFilters = {}
+) {
+  const {
+    page = 1,
+    limit = 6,
+    search = "",
+    status = "ALL",
+  } = filters;
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+
+  const currentPage = Math.max(1, Math.floor(page));
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Math.floor(limit))
+  );
+
+  const skip = (currentPage - 1) * pageSize;
+
+  // ==========================================
+  // APPROVER FILTER
+  // ==========================================
+
+  const approverWhere: Prisma.WorkingPermitWhereInput = {
+    ApprovalTable: {
+      some: {
+        approverId: userId,
+        status: {
+          in: ["APPROVED", "COMPLETED"],
+        },
+      },
+    },
+  };
+
+  // ==========================================
+  // SEARCH FILTER
+  // ==========================================
+
+  const searchWhere: Prisma.WorkingPermitWhereInput =
+    search.trim()
+      ? {
+          OR: [
+            {
+              referenceNumber: {
+                contains: search.trim(),
+              },
+            },
+            {
+              requestFor: {
+                contains: search.trim(),
+              },
+            },
+            {
+              requestedBy: {
+                contains: search.trim(),
+              },
+            },
+            {
+              branchDepartment: {
+                is: {
+                  entityName: {
+                    contains: search.trim(),
+                  },
+                },
+              },
+            },
+            {
+              WorkerList: {
+                is: {
+                  workerName: {
+                    contains: search.trim(),
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {};
+
+  // ==========================================
+  // STATUS FILTER
+  // ==========================================
+
+  let statusWhere: Prisma.WorkingPermitWhereInput = {};
+
+  if (status === "UNFINISHED") {
+    statusWhere = {
+      status: {
+        not: "COMPLETED",
+      },
+    };
+  } else if (status !== "ALL") {
+    statusWhere = {
+      status,
+    };
+  }
+
+  // ==========================================
+  // COMBINED FILTER
+  // ==========================================
+
+  const where: Prisma.WorkingPermitWhereInput = {
+    AND: [
+      approverWhere,
+      searchWhere,
+      statusWhere,
+    ],
+  };
+
+  // ==========================================
+  // DATABASE QUERIES
+  // ==========================================
+
+  const [permits, total, statusCounts] =
+    await prisma.$transaction([
+      prisma.workingPermit.findMany({
+        where,
+
+        skip,
+        take: pageSize,
+
+        include: {
+          branchDepartment: {
+            select: {
+              id: true,
+              entityName: true,
+            },
+          },
+
+          fromDepartment: {
+            select: {
+              id: true,
+              entityName: true,
+            },
+          },
+
+          WorkerList: {
+            select: {
+              id: true,
+              workerName: true,
+            },
+          },
+
+          receivedBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          remarksList: {
+            orderBy: {
+              createdAt: "desc",
+            },
+            select: {
+              id: true,
+              description: true,
+              createdAt: true,
+              createdBy: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+
+          ApprovalTable: {
+            orderBy: {
+              sequence: "asc",
+            },
+            select: {
+              id: true,
+              sequence: true,
+              role: true,
+              status: true,
+              approvedAt: true,
+              rejectedAt: true,
+              rejectRemarks: true,
+              approver: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+
+        orderBy: [
+          { updatedAt: "desc" },
+          { id: "desc" },
+        ],
+      }),
+
+      // Total matching records after search/status filters
+      prisma.workingPermit.count({
+        where,
+      }),
+
+      // Summary counts across all approved permits
+      prisma.workingPermit.groupBy({
+        by: ["status"],
+        where: approverWhere,
+        _count: {
+          _all: true,
+        },
+      }),
+    ]);
+
+  // ==========================================
+  // SUMMARY
+  // ==========================================
+
+  const getCount = (status: WorkingPermitStatus) =>
+    statusCounts.find(
+      (item) => item.status === status
+    )?._count._all ?? 0;
+
+  const pending = getCount("PENDING");
+  const approved = getCount("APPROVED");
+  const inProgress = getCount("IN_PROGRESS");
+  const completed = getCount("COMPLETED");
+  const rejected = getCount("REJECTED");
+  const cancelled = getCount("CANCELLED");
+
+  const totalApprovedPermits = statusCounts.reduce(
+    (sum, item) => sum + item._count._all,
+    0
+  );
+
+  return {
+    data: permits,
+
+    pagination: {
+      page: currentPage,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    },
+
+    summary: {
+      total: totalApprovedPermits,
+      pending,
+      approved,
+      inProgress,
+      completed,
+      rejected,
+      cancelled,
+      unfinished: totalApprovedPermits - completed,
+    },
   };
 }

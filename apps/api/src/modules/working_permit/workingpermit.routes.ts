@@ -32,6 +32,7 @@ router.get(
       "FIRST_APPROVER",
       "FINAL_APPROVER",
       "TROUBLESHOOTER",
+      "BRANCH",
     ],
   }),
   workingController.viewAttachmentController
@@ -58,5 +59,9 @@ router.post(
   }),
   workingController.checkDuplicateWorkingPermitController
 );
+
+//Kim 
+router.get("/my-approved-permit", workingController.getMyApprovedPermitController);
+
 
 export default router; 
