@@ -50,8 +50,13 @@ router.post(
   workingController.addWorkingPermitRemarkController
 );
 
-
-
 router.get("/get-request-type",workingController.getAllRequestTypesController);
+router.post(
+  "/check-duplicate",
+  authorize({
+    roles: ["COORDINATOR", "CHECKER"],
+  }),
+  workingController.checkDuplicateWorkingPermitController
+);
 
 export default router; 

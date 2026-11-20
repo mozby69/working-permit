@@ -19,6 +19,7 @@ import SweetAlert from "@/lib/alerts/alert";
 import { useWPSocket } from "../hooks/useWorkingPermitSocket";
 import PermissionGuard from "@/components/guards/PermissionGuard";
 import RoleGuard from "@/components/guards/RoleGuard";
+import { useAuth } from "@/modules/authentication/hooks/useAuth";
 
 
 export default function WorkingPermitView(){
@@ -35,6 +36,8 @@ export default function WorkingPermitView(){
     const [remarkPermit, setRemarkPermit] =useState<WorkingPermitResponse | null>(null);
     const [selectedDate, setSelectedDate] = useState("");
     const [showDateFilter, setShowDateFilter] = useState(false);
+
+
 
 
     const rejectMutation = useRejectWorkingPermit();

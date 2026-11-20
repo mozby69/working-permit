@@ -405,7 +405,7 @@ export async function completeWorkingPermitRepo(
       where: {
         id: workingPermitId,
         status: WorkingPermitStatus.IN_PROGRESS,
-        receivedById: userId,
+        //receivedById: userId,
 
         WorkerList: {
           is: {
@@ -422,6 +422,7 @@ export async function completeWorkingPermitRepo(
       data: {
         status: WorkingPermitStatus.COMPLETED,
         statusAt: new Date(),
+        completeById: userId,
       },
     });
 

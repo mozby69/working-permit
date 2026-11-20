@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, RequestTypesResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckDuplicateWorkingPermitInput, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, DuplicateWorkingPermitResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, RequestTypesResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -245,3 +245,15 @@ export async function getRequestTypes() {
   return response.data.data;
 }
 
+
+
+export async function checkDuplicateWorkingPermitService(
+  payload: CheckDuplicateWorkingPermitInput,
+): Promise<DuplicateWorkingPermitResponse["data"]> {
+  const response = await api.post<DuplicateWorkingPermitResponse>(
+    "/working-permit/check-duplicate",
+    payload,
+  );
+
+  return response.data.data;
+}

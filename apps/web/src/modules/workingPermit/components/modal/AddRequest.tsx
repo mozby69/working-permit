@@ -38,11 +38,14 @@ import {
   useWorkerList,
   useDepartmentBranches,
   useRequestTypes,
+  useCheckDuplicateWorkingPermit,
 } from "@/modules/workingPermit/hooks/useWorkingPermit";
 
 import { DepartmentBranchSelect } from "../ui/departmentBranches";
 import AttachmentPreview from "../ui/attachmentPreview"; 
 import toast from "react-hot-toast";
+import { duplicateWorkingPermitAlert } from "../../helper/wp.helper";
+import { useAuth } from "@/modules/authentication/hooks/useAuth";
 
 
 
@@ -124,6 +127,8 @@ export default function ModalAddRequest({
   onCancel,
 }: ModalAddRequestProps) {
 
+    const { hasRole,user } = useAuth();
+    console.log('user',user);
 
   const {
     data: workers = [],
@@ -150,7 +155,7 @@ export default function ModalAddRequest({
 } = useRequestTypes();
 
   const createMutation = useCreateWorkingPermit();
-
+  const duplicateMutation = useCheckDuplicateWorkingPermit();
 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +181,7 @@ export default function ModalAddRequest({
     handleSubmit,
     reset,
     setValue,
+    getValues,
     formState: {
       errors,
       isSubmitting,
@@ -200,7 +206,8 @@ export default function ModalAddRequest({
     },
   });
 
-  const isSaving = isSubmitting || createMutation.isPending;
+    const isSaving =
+    isSubmitting || createMutation.isPending || duplicateMutation.isPending;
 
 
 
@@ -418,25 +425,52 @@ export default function ModalAddRequest({
   // SUBMIT REQUEST
   // ==========================================
 
-  const submitForm = async (
-    values: AddRequestSchema
-  ) => {
+    const submitForm = async (values: AddRequestSchema) => {
     setSubmitError(null);
 
     try {
+      // ==========================================
+      // STEP 1: CHECK DUPLICATES
+      // ==========================================
+
+      const duplicateResult = await duplicateMutation.mutateAsync({
+        requestToId: values.requestToId,
+        fromId: values.fromId,
+        branchDepartmentId: values.branchDepartmentId,
+        requestTypeId: values.requestTypeId ?? null,
+      });
+
+      // ==========================================
+      // STEP 2: WARN, BUT ALLOW CONTINUATION
+      // ==========================================
+
+      if (duplicateResult.isDuplicate && duplicateResult.existingPermit) {
+        const confirmed = await duplicateWorkingPermitAlert(
+          duplicateResult.existingPermit.referenceNumber,
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      // ==========================================
+      // STEP 3: CREATE WORKING PERMIT
+      // ==========================================
+
       await createMutation.mutateAsync({
         ...values,
         attachments: files,
       });
 
+      // ==========================================
+      // STEP 4: SUCCESS
+      // ==========================================
+
       reset();
       setFiles([]);
 
-  
-
-      toast.success(
-        "Working Permit created successfully!"
-      );
+      toast.success("Working Permit created successfully!");
 
       onCancel();
     } catch (error: unknown) {
@@ -450,9 +484,22 @@ export default function ModalAddRequest({
     }
   };
 
+
+  useEffect(() => {
+  if (!user?.name) return;
+
+  // Only populate when the field is empty
+  if (!getValues("requestedBy")) {
+    setValue("requestedBy", user.name);
+  }
+}, [user?.name, setValue, getValues]);
+
   // ==========================================
   // RENDER
   // ==========================================
+
+
+
 
   return (
     <>

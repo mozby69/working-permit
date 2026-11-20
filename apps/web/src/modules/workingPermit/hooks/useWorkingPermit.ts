@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serviceWorkingPermit from '../services/workingPermitService'
-import { AddRemarkParams, ApprovalResponse, ApproveWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, RejectWorkingPermitInput, RejectWorkingPermitResponse, RequestType, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
+import { AddRemarkParams, ApprovalResponse, ApproveWorkingPermitInput, CheckDuplicateWorkingPermitInput, CreateWorkingPermitPayload, QueryParams, RejectWorkingPermitInput, RejectWorkingPermitResponse, RequestType, TroubleshooterActionResponse, TroubleshooterMutationInput, UpdateWorkingPermitParams } from '@repo/shared';
 
 
 
@@ -249,5 +249,14 @@ export function useRequestTypes() {
     queryFn: serviceWorkingPermit.getRequestTypes,
     staleTime: 5 * 60 * 1000,
     retry: 1,
+  });
+}
+
+
+
+export function useCheckDuplicateWorkingPermit() {
+  return useMutation({
+    mutationFn: (payload: CheckDuplicateWorkingPermitInput) =>
+      serviceWorkingPermit.checkDuplicateWorkingPermitService(payload),
   });
 }

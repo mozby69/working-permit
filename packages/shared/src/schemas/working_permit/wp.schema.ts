@@ -210,3 +210,37 @@ export const approveWorkingPermitParamsSchema = z.object({
 export const rejectWorkingPermitSchema = z.object({
   rejectRemarks: z.string().trim().min(5).max(500),
 });
+
+
+
+
+//check duplicate
+export const checkDuplicateWorkingPermitSchema = addRequestSchema.pick({
+  requestToId: true,
+  fromId: true,
+  branchDepartmentId: true,
+  requestTypeId: true,
+});
+
+export type CheckDuplicateWorkingPermitInput = z.infer<
+  typeof checkDuplicateWorkingPermitSchema
+>;
+
+export const duplicateWorkingPermitResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.object({
+    isDuplicate: z.boolean(),
+    existingPermit: z
+      .object({
+        id: z.string(),
+        referenceNumber: z.string(),
+        date: z.string(),
+        status: workingPermitStatus,
+      })
+      .nullable(),
+  }),
+});
+
+export type DuplicateWorkingPermitResponse = z.infer<
+  typeof duplicateWorkingPermitResponseSchema
+>;

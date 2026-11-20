@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/database/prisma";
 import { getDate } from "@/utils/dateFormatter";
-import { AddRequestInput, UpdateWorkingPermitInput } from "@repo/shared";
+import { AddRequestInput, CheckDuplicateWorkingPermitInput, UpdateWorkingPermitInput } from "@repo/shared";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { Prisma } from "../../../generated/prisma/client";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
@@ -614,4 +614,49 @@ export async function getAllRequestTypesRepo() {
       description: "asc",
     },
   });
+}
+
+
+
+
+
+export async function checkDuplicateWorkingPermitRepo(
+  data: CheckDuplicateWorkingPermitInput
+) {
+  const permitDate = getDate();
+
+  const existingPermit = await prisma.workingPermit.findFirst({
+    where: {
+      requestToId: data.requestToId,
+      fromId: data.fromId,
+      branchDepartmentId: data.branchDepartmentId,
+      requestTypeId: data.requestTypeId ?? null,
+      date: permitDate,
+      status: WorkingPermitStatus.PENDING
+    },
+
+    select: {
+      id: true,
+      referenceNumber: true,
+      date: true,
+      status: true,
+    },
+
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return {
+    isDuplicate: existingPermit !== null,
+
+    existingPermit: existingPermit
+      ? {
+          id: existingPermit.id,
+          referenceNumber: existingPermit.referenceNumber,
+          date: existingPermit.date.toISOString().slice(0, 10),
+          status: existingPermit.status,
+        }
+      : null,
+  };
 }

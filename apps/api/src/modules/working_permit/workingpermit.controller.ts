@@ -1,4 +1,4 @@
-import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, updateWorkingPermitSchema } from '@repo/shared';
+import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, checkDuplicateWorkingPermitSchema, updateWorkingPermitSchema } from '@repo/shared';
 import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
@@ -583,6 +583,43 @@ export async function getAllRequestTypesController(
       success: true,
       message: "Request types retrieved successfully.",
       data: requestTypes,
+    });
+  } catch (error: unknown) {
+    next(error);
+  }
+}
+
+
+
+
+
+export async function checkDuplicateWorkingPermitController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const parsed =
+      checkDuplicateWorkingPermitSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid duplicate check parameters.",
+        errors: parsed.error.flatten(),
+      });
+
+      return;
+    }
+
+    const result =
+      await workingPermitService.checkDuplicateWorkingPermitService(
+        parsed.data
+      );
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (error: unknown) {
     next(error);
