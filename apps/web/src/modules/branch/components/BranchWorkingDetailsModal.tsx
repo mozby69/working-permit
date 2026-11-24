@@ -180,67 +180,72 @@ export default function BranchWorkingDetailsModal({
   // LOAD ATTACHMENT AS BLOB
   // ==========================================
 
-  useEffect(() => {
+// ==========================================
+// LOAD ATTACHMENT AS BLOB
+// ==========================================
+
+useEffect(() => {
     if (!previewFile) return;
 
+    const file = previewFile;
     const controller = new AbortController();
 
     let objectUrl: string | null = null;
 
     async function loadAttachment() {
-      setPreviewLoading(true);
-      setPreviewError(null);
-      setPreviewUrl(null);
+        setPreviewLoading(true);
+        setPreviewError(null);
+        setPreviewUrl(null);
 
-      try {
-       const response = await api.get<Blob>(
-          getAttachmentEndpoint(
-            permit.id,
-            previewFile!.id
-          ),
-          {
-            responseType: "blob",
-            signal: controller.signal,
-          }
-        );
+        try {
+            const response = await api.get<Blob>(
+                getAttachmentEndpoint(
+                    permit.id,
+                    file.id
+                ),
+                {
+                    responseType: "blob",
+                    signal: controller.signal,
+                }
+            );
 
-        if (controller.signal.aborted) return;
+            if (controller.signal.aborted) return;
 
-        const blob = new Blob([response.data], {
-          type: previewFile!.mimeType,
-        });
+            const blob = new Blob([response.data], {
+                type: file.mimeType,
+            });
 
-        objectUrl = URL.createObjectURL(blob);
+            objectUrl = URL.createObjectURL(blob);
 
-        setPreviewUrl(objectUrl);
-      } catch (error) {
-        if (controller.signal.aborted) return;
+            setPreviewUrl(objectUrl);
+        } catch (error) {
+            if (controller.signal.aborted) return;
 
-        console.error(
-          "Failed to load attachment:",
-          error
-        );
+            console.error(
+                "Failed to load attachment:",
+                error
+            );
 
-        setPreviewError(
-          "Unable to load attachment. Verify the file endpoint and permissions."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setPreviewLoading(false);
+            setPreviewError(
+                "Unable to load attachment. Verify the file endpoint and permissions."
+            );
+        } finally {
+            if (!controller.signal.aborted) {
+                setPreviewLoading(false);
+            }
         }
-      }
     }
 
     void loadAttachment();
 
     return () => {
-      controller.abort();
+        controller.abort();
 
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+        }
     };
-  }, [previewFile]);
+}, [previewFile, permit.id]);
 
   // ==========================================
   // DOWNLOAD BLOB
@@ -265,41 +270,41 @@ export default function BranchWorkingDetailsModal({
     []
   );
 
-  const downloadAttachment = useCallback(
+const downloadAttachment = useCallback(
     async (file: PermitAttachment) => {
-      if (downloadingId) return;
+        if (downloadingId) return;
 
-      setDownloadingId(file.id);
+        setDownloadingId(file.id);
 
-      try {
-      const response = await api.get<Blob>(
-        getAttachmentEndpoint(
-          permit.id,
-          file.id
-        ),
-        {
-          responseType: "blob",
+        try {
+            const response = await api.get<Blob>(
+                getAttachmentEndpoint(
+                    permit.id,
+                    file.id
+                ),
+                {
+                    responseType: "blob",
+                }
+            );
+
+            const blob = new Blob([response.data], {
+                type: file.mimeType,
+            });
+
+            saveBlob(blob, file.originalName);
+        } catch (error) {
+            console.error(
+                "Failed to download attachment:",
+                error
+            );
+
+            alert("Failed to download attachment.");
+        } finally {
+            setDownloadingId(null);
         }
-      );
-
-        const blob = new Blob([response.data], {
-          type: file.mimeType,
-        });
-
-        saveBlob(blob, file.originalName);
-      } catch (error) {
-        console.error(
-          "Failed to download attachment:",
-          error
-        );
-
-        alert("Failed to download attachment.");
-      } finally {
-        setDownloadingId(null);
-      }
     },
-    [downloadingId, saveBlob]
-  );
+    [downloadingId, saveBlob, permit.id]
+);
 
   // ==========================================
   // REMARKS

@@ -53,7 +53,7 @@ export default function LoginForm() {
     } catch (error) {
       SweetAlert.errorAlert(
         "Error",
-        "Invalid credentials"
+        `Invalid credentials ${error}`
       );
     }
   }

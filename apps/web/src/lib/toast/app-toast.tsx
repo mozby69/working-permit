@@ -14,8 +14,7 @@ import type {
 
 const renderToast = (
     message: string,
-    type: ToastType,
-    options?: ToastOptions
+    type: ToastType
 ) => {
     const Icon = toastIcons[type];
 
@@ -25,7 +24,7 @@ const renderToast = (
         >
             <Icon size={18} className="shrink-0" />
 
-            <span className="flex-1 text-sm" >
+            <span className="flex-1 text-sm">
                 {message}
             </span>
         </div>
@@ -34,27 +33,39 @@ const renderToast = (
 
 const AppToast = {
     success(message: string, options?: ToastOptions) {
-        return toast.custom(() => renderToast(message, "success", options), {
-            duration: options?.duration ?? 4000,
-        });
+        return toast.custom(
+            () => renderToast(message, "success"),
+            {
+                duration: options?.duration ?? 4000,
+            }
+        );
     },
 
     error(message: string, options?: ToastOptions) {
-        return toast.custom(() => renderToast(message, "error", options), {
-            duration: options?.duration ?? 4000,
-        });
+        return toast.custom(
+            () => renderToast(message, "error"),
+            {
+                duration: options?.duration ?? 4000,
+            }
+        );
     },
 
     warning(message: string, options?: ToastOptions) {
-        return toast.custom(() => renderToast(message, "warning", options), {
-            duration: options?.duration ?? 4000,
-        });
+        return toast.custom(
+            () => renderToast(message, "warning"),
+            {
+                duration: options?.duration ?? 4000,
+            }
+        );
     },
 
     info(message: string, options?: ToastOptions) {
-        return toast.custom(() => renderToast(message, "info", options), {
-            duration: options?.duration ?? 4000,
-        });
+        return toast.custom(
+            () => renderToast(message, "info"),
+            {
+                duration: options?.duration ?? 4000,
+            }
+        );
     },
 
     dismiss(id?: string) {

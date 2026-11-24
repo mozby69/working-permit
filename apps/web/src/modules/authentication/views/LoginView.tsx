@@ -2,7 +2,6 @@ import Image from "next/image";
 import {
   ShieldCheck,
   FileCheck2,
-  ArrowRight,
   LockKeyhole,
 } from "lucide-react";
 

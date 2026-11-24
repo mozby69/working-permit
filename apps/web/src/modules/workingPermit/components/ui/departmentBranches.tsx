@@ -214,33 +214,34 @@ export function DepartmentBranchSelect({
   return (
     <>
       <button
-        ref={triggerRef}
-        type="button"
-        disabled={disabled}
-        aria-expanded={open}
-        aria-controls={open ? listboxId : undefined}
-        aria-haspopup="listbox"
-        aria-invalid={invalid}
-        onClick={() => {
-          if (!open) setSearch("");
-          setOpen((previous) => !previous);
-        }}
-        className={`
-          flex h-11 w-full items-center
-          justify-between gap-2 rounded-lg
-          border bg-white px-3.5 text-left
-          text-sm text-slate-800 outline-none
-          transition-colors
-          focus:ring-2 focus:ring-blue-100
-          disabled:cursor-not-allowed
-          disabled:opacity-50
-          ${
+    ref={triggerRef}
+    type="button"
+    role="combobox"
+    disabled={disabled}
+    aria-expanded={open}
+    aria-controls={open ? listboxId : undefined}
+    aria-haspopup="listbox"
+    aria-invalid={invalid}
+    onClick={() => {
+        if (!open) setSearch("");
+        setOpen((previous) => !previous);
+    }}
+    className={`
+        flex h-11 w-full items-center
+        justify-between gap-2 rounded-lg
+        border bg-white px-3.5 text-left
+        text-sm text-slate-800 outline-none
+        transition-colors
+        focus:ring-2 focus:ring-blue-100
+        disabled:cursor-not-allowed
+        disabled:opacity-50
+        ${
             invalid
-              ? "border-red-500"
-              : "border-slate-200 hover:border-slate-300"
-          }
-        `}
-      >
+                ? "border-red-500"
+                : "border-slate-200 hover:border-slate-300"
+        }
+    `}
+>
         <span className="min-w-0 flex-1 truncate">
           {selected?.entityName ??
             "Select department / branch"}

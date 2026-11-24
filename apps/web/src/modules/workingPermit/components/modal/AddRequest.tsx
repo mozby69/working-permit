@@ -109,9 +109,7 @@ function isPdfFile(file: File): boolean {
   return file.type === "application/pdf";
 }
 
-function canPreviewFile(file: File): boolean {
-  return isImageFile(file) || isPdfFile(file);
-}
+
 
 function formatFileSize(size: number): string {
   if (size < 1024 * 1024) {
@@ -1128,7 +1126,7 @@ export default function ModalAddRequest({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
+            className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
             onMouseDown={(event) => {
               if (
                 event.target ===

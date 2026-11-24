@@ -1,203 +1,38 @@
-name: CI/CD - Build, Publish and Deploy
+name: Build and Publish Docker Images
 
 on:
-  pull_request:
-    branches:
-      - main
-
   push:
     branches:
       - main
     tags:
       - "v*"
-
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
-  NODE_VERSION: "24"
-
-concurrency:
-  group: cicd-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
-  # ==========================================
-  # PHASE 1: FRONTEND AND BACKEND CI
-  # ==========================================
-
-  ci:
-    name: CI - ${{ matrix.app }}
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        app:
-          - web
-          - api
-
-    env:
-      DATABASE_URL: mysql://root:ci_password@127.0.0.1:3306/wp_test
-
-    services:
-      mysql:
-        image: mysql:8.4
-
-        env:
-          MYSQL_ROOT_PASSWORD: ci_password
-          MYSQL_DATABASE: wp_test
-
-        ports:
-          - 3306:3306
-
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared package
-        run: pnpm --filter @repo/shared build
-
-      - name: Generate Prisma Client
-        if: matrix.app == 'api'
-        run: pnpm --filter api generate
-
-      - name: Prepare test database
-        if: matrix.app == 'api'
-        run: pnpm --filter api exec prisma migrate deploy
-
-      - name: Lint
-        run: pnpm --filter ${{ matrix.app }} lint
-
-      - name: Type check
-        run: pnpm --filter ${{ matrix.app }} typecheck
-
-      - name: Run tests
-        run: pnpm --filter ${{ matrix.app }} test:run
-
-  # ==========================================
-  # PHASE 1: DEPENDENCY SECURITY
-  # ==========================================
-
-  dependency-security:
-    name: Dependency Security
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Audit dependencies
-        run: pnpm audit --audit-level=high
-
-  # ==========================================
-  # PHASE 1: SECRET SCANNING
-  # ==========================================
-
-  secret-security:
-    name: Secret Security
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Scan repository with Gitleaks
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/repo:ro" \
-            zricethezav/gitleaks:v8.24.3 \
-            git /repo \
-            --redact \
-            --verbose \
-            --exit-code 1
-
-  # ==========================================
-  # PHASE 2: BUILD AND PUBLISH IMAGES
-  # ==========================================
-
   build-and-push:
-    name: Build and Publish - ${{ matrix.image }}
-
-    needs:
-      - ci
-      - dependency-security
-      - secret-security
-
-    if: >-
-      github.event_name != 'pull_request' &&
-      (
-        github.ref == 'refs/heads/main' ||
-        startsWith(github.ref, 'refs/tags/v')
-      )
-
+    name: Build ${{ matrix.image }}
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      packages: write
 
     strategy:
       fail-fast: false
-
       matrix:
         include:
           - image: wp-web
             dockerfile: Dockerfile.web
-            cache_scope: web
 
           - image: wp-api
             dockerfile: Dockerfile.api
-            cache_scope: api
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -215,89 +50,19 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
-
-          flavor: |
-            latest=false
-
           tags: |
-            type=sha,format=long,prefix=sha-
             type=semver,pattern={{version}}
             type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
 
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-
           push: true
-
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
-
-          build-args: |
-            NEXT_PUBLIC_BACKEND_LAN_URL=${{ vars.NEXT_PUBLIC_BACKEND_LAN_URL }}
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_SOCKET_URL=${{ vars.NEXT_PUBLIC_SOCKET_URL }}
-
-          cache-from: type=gha,scope=${{ matrix.cache_scope }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.cache_scope }}
-
-  # ==========================================
-  # PHASE 3: PRODUCTION DEPLOYMENT
-  # ==========================================
-
-  deploy-production:
-    name: Deploy Production
-
-    needs:
-      - build-and-push
-
-    if: >-
-      github.event_name != 'pull_request' &&
-      (
-        github.ref == 'refs/heads/main' ||
-        startsWith(github.ref, 'refs/tags/v')
-      )
-
-    runs-on: ubuntu-latest
-
-    environment:
-      name: production
-
-    concurrency:
-      group: wp-production-deployment
-      cancel-in-progress: false
-
-    steps:
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Deploy exact commit version
-        env:
-          SSH_HOST: ${{ secrets.PRODUCTION_HOST }}
-          SSH_USER: ${{ secrets.PRODUCTION_USER }}
-          SSH_PORT: ${{ vars.PRODUCTION_SSH_PORT || '22' }}
-          DEPLOY_TAG: sha-${{ github.sha }}
-        run: |
-          ssh \
-            -i ~/.ssh/deploy_key \
-            -p "$SSH_PORT" \
-            -o StrictHostKeyChecking=yes \
-            "$SSH_USER@$SSH_HOST" \
-            "/srv/wp/scripts/deploy-production.sh '$DEPLOY_TAG'"
-
-      - name: Remove SSH credentials
-        if: always()
-        run: rm -f ~/.ssh/deploy_key
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

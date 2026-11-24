@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import Image from "next/image";
 
 type Attachment = {
   id: string;
@@ -41,7 +42,7 @@ export default function AttachmentPreviewModal({
   useEffect(() => {
     if (!file) return;
 
-    setZoom(1);
+    //setZoom(1);
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -62,7 +63,7 @@ export default function AttachmentPreviewModal({
   const isPdf = file.mimeType === "application/pdf";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-6">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
@@ -155,15 +156,18 @@ export default function AttachmentPreviewModal({
             </p>
           ) : isImage ? (
             <div className="flex min-h-full min-w-full items-center justify-center">
-              <img
-                src={fileUrl}
-                alt={file.originalName}
-                className="max-h-[70vh] max-w-full rounded-lg object-contain shadow-sm"
-                style={{
+            <Image
+              src={fileUrl}
+              alt={file.originalName}
+              width={1200}
+              height={800}
+              unoptimized
+              className="h-auto w-auto max-h-[70vh] max-w-full rounded-lg object-contain shadow-sm"
+              style={{
                   transform: `scale(${zoom})`,
                   transformOrigin: "center center",
-                }}
-              />
+              }}
+          />
             </div>
           ) : isPdf ? (
             <iframe

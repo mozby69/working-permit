@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { Skeleton } from "boneyard-js/react";
 import "@/bones/registry";
 
@@ -12,20 +11,21 @@ export default function DashboardView() {
     const dashboardData = data?.data;
 
     // Development only: keep skeleton visible longer
-    const [showSkeleton, setShowSkeleton] = useState(true);
+    const showSkeleton = dashboardLoading;
+    // const [showSkeleton, setShowSkeleton] = useState(true);
 
-    useEffect(() => {
-        if (dashboardLoading) {
-            setShowSkeleton(true);
-            return;
-        }
+    // useEffect(() => {
+    //     if (dashboardLoading) {
+    //         setShowSkeleton(true);
+    //         return;
+    //     }
 
-        const timer = setTimeout(() => {
-            setShowSkeleton(false);
-        }, 3000);
+    //     const timer = setTimeout(() => {
+    //         setShowSkeleton(false);
+    //     }, 3000);
 
-        return () => clearTimeout(timer);
-    }, [dashboardLoading]);
+    //     return () => clearTimeout(timer);
+    // }, [dashboardLoading]);
 
     return (
         <Skeleton

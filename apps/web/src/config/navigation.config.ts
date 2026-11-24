@@ -1,7 +1,6 @@
 import {
     LayoutDashboard,
     Users,
-    Truck,
     ClipboardList,
     Settings,
     File,

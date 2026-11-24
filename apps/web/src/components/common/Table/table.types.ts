@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 /* =====================
    HEADER
 ===================== */
+export type TableRowKey = string | number;
 
 export type PaginationMeta = {
    page: number;
@@ -52,7 +53,7 @@ export type TableProps<T> = {
    /* Table */
    columns: TableColumn<T>[];
    data: T[];
-   rowKey?: (row: T) => React.Key;
+rowKey?: (row: T) => TableRowKey;
 
    /* State */
    isLoading?: boolean;
@@ -76,7 +77,7 @@ export type TableBodyProps<T> = {
    columns: TableColumn<T>[];
    data: T[];
 
-   rowKey?: (row: T) => React.Key;
+rowKey?: (row: T) => TableRowKey;
 
    onView?: (row: T) => void;
    onEdit?: (row: T) => void;

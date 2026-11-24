@@ -37,12 +37,12 @@ export default function AccessControlView() {
 
     const { mutateAsync: createUser, isPending: pendingCreateUser } = useCreateUser();
     const { mutateAsync: updateUser, isPending: pendingUpdateUser } = useUpdateUser();
-    const { mutateAsync: deleteUser, isPending: pendingDeleteUser } = useDeleteUser();
+    const { mutateAsync: deleteUser } = useDeleteUser();
 
     const { mutateAsync: createRole, isPending: pendingCreateRole } = useCreateRole();
     const { mutateAsync: updateRole, isPending: pendingUpdateRole } = useUpdateRole();
 
-    const { mutateAsync: updatePermissions, isPending: pendingUpdatePermission } = useUpdateRolePermissions();
+    const { mutateAsync: updatePermissions } = useUpdateRolePermissions();
 
     const rolesQuery = useRoles();
     const permissionsQuery = usePermissions();
@@ -113,7 +113,7 @@ export default function AccessControlView() {
         } catch (error) {
             SweetAlert.errorAlert(
                 "Failed",
-                "Failed to created role."
+                `Failed to created role ${error}`
             );
         }
     }
@@ -132,7 +132,7 @@ export default function AccessControlView() {
         } catch (error) {
             SweetAlert.errorAlert(
                 "Failed",
-                "Failed to update role."
+                `Failed to created role ${error}`
             );
         }
     }
