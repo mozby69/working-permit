@@ -15,6 +15,7 @@ import {
   Inbox,
   Loader2,
   MessageSquareText,
+  MessageSquareWarning,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -166,6 +167,23 @@ const approverOrder =
         },
       ];
 
+
+
+      const formatApprovalDate = (date: string | null): string => {
+        if (!date) return "-";
+
+        const parsed = new Date(date);
+
+        if (Number.isNaN(parsed.getTime())) {
+          return "-";
+        }
+
+        return new Intl.DateTimeFormat("en-PH", {
+          timeZone: "Asia/Manila",
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(parsed);
+      };
 
 
   return (
@@ -337,42 +355,123 @@ const approverOrder =
       </section>
 
       {/* Assigned approval steps */}
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-        <SectionHeading
-          number="04"
-          title="Approval History"
-          description="Assigned approvers and their approval dates."
-        />
-        <div className="space-y-3">
-          {permit.approvals.map((step) => (
-            <div key={step.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
-                  {step.sequence}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">
-                    {step.role.replaceAll("_", " ")}
-                  </p>
-                  <p className="text-xs text-slate-600">{step.approverName}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {step.approvedAt
-                      ? new Intl.DateTimeFormat("en-PH", {
-                          timeZone: "Asia/Manila",
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(new Date(step.approvedAt))
-                      : "Awaiting approval"}
-                  </p>
-                </div>
-              </div>
-              <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                {step.approvedAt ? "APPROVED" : "PENDING"}
+   <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+  <SectionHeading
+    number="04"
+    title="Approval History"
+    description="Assigned approvers, approval status and rejection remarks."
+  />
+
+  <div className="space-y-3">
+    {permit.approvals.map((step) => {
+      const isApproved = step.status === "APPROVED";
+      const isRejected = step.status === "REJECTED";
+
+      const statusClass = isApproved
+        ? "border-blue-200 bg-blue-50 text-blue-700"
+        : isRejected
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-amber-200 bg-amber-50 text-amber-700";
+
+      const dotClass = isApproved
+        ? "bg-blue-500"
+        : isRejected
+          ? "bg-red-500"
+          : "bg-amber-500";
+
+      return (
+        <div
+          key={step.id}
+          className={`rounded-lg border p-4 ${
+            isRejected
+              ? "border-red-200 bg-red-50/40"
+              : "border-slate-200 bg-slate-50"
+          }`}
+        >
+          {/* APPROVAL INFORMATION */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              {/* SEQUENCE NUMBER */}
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                  isRejected
+                    ? "bg-red-100 text-red-700"
+                    : "bg-indigo-100 text-indigo-700"
+                }`}
+              >
+                {step.sequence}
               </span>
+
+              {/* APPROVER DETAILS */}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800">
+                  {step.role.replaceAll("_", " ")}
+                </p>
+
+                <p className="text-xs text-slate-600">
+                  {step.approverName}
+                </p>
+
+                {/* APPROVAL OR REJECTION DATE */}
+                <p
+                  className={`mt-1 text-xs ${
+                    isRejected
+                      ? "text-red-600"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {isRejected
+                    ? step.rejectedAt
+                      ? `Rejected on ${formatApprovalDate(
+                          step.rejectedAt
+                        )}`
+                      : "Request rejected"
+                    : isApproved
+                      ? step.approvedAt
+                        ? formatApprovalDate(step.approvedAt)
+                        : "Request approved"
+                      : "Awaiting approval"}
+                </p>
+              </div>
             </div>
-          ))}
+
+            {/* STATUS BADGE */}
+            <span
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusClass}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${dotClass}`}
+              />
+
+              {step.status}
+            </span>
+          </div>
+
+          {/* REJECTION REMARKS */}
+          {isRejected && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3.5 sm:ml-11">
+              <div className="flex items-center gap-2">
+                <MessageSquareWarning
+                  size={15}
+                  className="shrink-0 text-red-600"
+                />
+
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                  Rejection Remarks
+                </h4>
+              </div>
+
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-red-900">
+                {step.rejectRemarks?.trim() ||
+                  "No rejection remarks provided."}
+              </p>
+            </div>
+          )}
         </div>
-      </section>
+      );
+    })}
+  </div>
+</section>
 
       {/* Attachment */}
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">

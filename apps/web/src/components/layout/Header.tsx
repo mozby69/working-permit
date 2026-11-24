@@ -11,6 +11,7 @@ import {
   Clock,
   FileText,
   X,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,8 +26,11 @@ import {
 } from "@/modules/notification/hooks/useNotification";
 
 import { useRouter } from "next/navigation";
+import SettingsModal from "../settings/settingsModal";
+import PermissionGuard from "../guards/PermissionGuard";
 
 export default function Header() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -198,47 +202,97 @@ export default function Header() {
 
       {/* RIGHT: NOTIFICATIONS */}
 
-      <div className="flex items-center gap-3">
+    {/* RIGHT: HEADER ACTIONS */}
 
-        <div className="relative">
+<div className="ml-auto flex shrink-0 items-center gap-2">
 
-          {/* BELL BUTTON */}
+  {/* SETTINGS BUTTON */}
+   <PermissionGuard permissions={["SOUND_SETTINGS"]}> 
+  <button
+    type="button"
+    onClick={() => {
+      setNotificationOpen(false);
+      setIsSettingsOpen(true);
+    }}
+    title="Settings"
+    aria-label="Open settings"
+    aria-haspopup="dialog"
+    className="
+      group relative flex h-10 w-10 shrink-0
+      items-center justify-center
+      rounded-xl border border-transparent
+      text-[#475569]
+      transition-all duration-200
+      hover:border-[#C7D2FE]
+      hover:bg-[#EEF2FF]
+      hover:text-[#4F46E5]
+      focus-visible:outline-2
+      focus-visible:outline-indigo-500
+    "
+  >
+    <Settings
+      size={21}
+      strokeWidth={1.8}
+      className="
+        transition-transform duration-300
+        group-hover:rotate-45
+      "
+    />
+  </button>
 
-          <button
-            type="button"
-            onClick={() => setNotificationOpen((prev) => !prev)}
-            aria-label={`Notifications, ${unreadCount} unread`}
-            aria-expanded={notificationOpen}
-            className="
-              relative flex h-10 w-10
-              items-center justify-center
-              rounded-xl border border-transparent
-              text-[#475569]
-              transition-all duration-200
-              hover:border-[#C7D2FE]
-              hover:bg-[#EEF2FF]
-              hover:text-[#4F46E5]
-              focus-visible:outline-2
-              focus-visible:outline-indigo-500
-            "
-          >
-            <Bell size={21} strokeWidth={1.8} />
 
-            {unreadCount > 0 && (
-              <span
-                className="
-                  absolute -right-1 -top-1
-                  flex h-[19px] min-w-[19px]
-                  items-center justify-center
-                  rounded-full border-2 border-white
-                  bg-red-500 px-1
-                  text-[10px] font-bold text-white
-                "
-              >
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
+  {/* VERTICAL DIVIDER */}
+    
+  <div
+    aria-hidden="true"
+    className="mx-1 h-6 w-px bg-slate-200"
+  />
+    </PermissionGuard>
+
+  {/* NOTIFICATION CONTAINER */}
+  <div className="relative shrink-0">
+
+    {/* BELL BUTTON */}
+    <button
+      type="button"
+      onClick={() =>
+        setNotificationOpen((prev) => !prev)
+      }
+      title="Notifications"
+      aria-label={`Notifications, ${unreadCount} unread`}
+      aria-expanded={notificationOpen}
+      className="
+        relative flex h-10 w-10 shrink-0
+        items-center justify-center
+        rounded-xl border border-transparent
+        text-[#475569]
+        transition-all duration-200
+        hover:border-[#C7D2FE]
+        hover:bg-[#EEF2FF]
+        hover:text-[#4F46E5]
+        focus-visible:outline-2
+        focus-visible:outline-indigo-500
+      "
+    >
+      <Bell size={21} strokeWidth={1.8} />
+
+      {unreadCount > 0 && (
+        <span
+          className="
+            absolute -right-1 -top-1
+            flex h-4.75 min-w-4.75
+            items-center justify-center
+            rounded-full border-2 border-white
+            bg-red-500 px-1
+            text-[10px] font-bold text-white
+          "
+        >
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      )}
+    </button>
+
+    {/* KEEP YOUR EXISTING NOTIFICATION DROPDOWN HERE */}
 
           {/* NOTIFICATION DROPDOWN */}
 
@@ -314,7 +368,7 @@ export default function Header() {
 
                 {/* NOTIFICATION LIST */}
 
-                <div className="max-h-[420px] overflow-y-auto">
+                <div className="max-h-105 overflow-y-auto">
 
                   {isLoading ? (
                     <div className="px-5 py-12 text-center">
@@ -420,6 +474,16 @@ export default function Header() {
           )}
         </div>
       </div>
+
+
+
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+
     </header>
   );
 }

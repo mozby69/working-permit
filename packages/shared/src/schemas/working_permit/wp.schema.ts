@@ -103,6 +103,8 @@ export const permitApprovalSchema = z.object({
   approverName: z.string(),
   approvedAt: z.string().nullable(),
   status: workingPermitStatus,
+  rejectedAt: z.string().nullable(),
+  rejectRemarks: z.string().nullable(),
 });
 export type PermitApproval = z.infer<typeof permitApprovalSchema>;
 

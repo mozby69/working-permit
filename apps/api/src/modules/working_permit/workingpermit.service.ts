@@ -157,8 +157,10 @@ export async function getWorkingPermitService(params: QueryParamWP) {
         role: item.role,
         approverId: item.approverId,
         approverName: item.approver.name,
-          status: item.status,
+        status: item.status,
         approvedAt: item.approvedAt?.toISOString() ?? null,
+        rejectedAt: item.rejectedAt?.toISOString() ?? null,
+        rejectRemarks: item.rejectRemarks ?? null,
       })),
       attachments: permit.attachments.map(file => ({
         id: file.id,

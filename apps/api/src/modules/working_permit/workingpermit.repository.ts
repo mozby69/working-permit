@@ -304,7 +304,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         branchDepartment: { select: { id: true, entityName: true } },
         ApprovalTable: {
           select: {
-            id: true, sequence: true, role: true, approverId: true, status:true, approvedAt: true,
+            id: true, sequence: true, role: true, approverId: true, status:true, approvedAt: true, rejectedAt:true,rejectRemarks:true,
             approver: { select: { id: true, name: true } },
           },
           orderBy: { sequence: "asc" },
@@ -758,6 +758,15 @@ export async function getAllRequestTypesRepo() {
 export async function checkDuplicateWorkingPermitRepo(
   data: CheckDuplicateWorkingPermitInput
 ) {
+
+    if (data.requestTypeId == null) {
+    return {
+      isDuplicate: false,
+      existingPermit: null,
+    };
+  }
+
+
   const permitDate = getDate();
 
   const existingPermit = await prisma.workingPermit.findFirst({
@@ -765,7 +774,7 @@ export async function checkDuplicateWorkingPermitRepo(
       requestToId: data.requestToId,
       fromId: data.fromId,
       branchDepartmentId: data.branchDepartmentId,
-      requestTypeId: data.requestTypeId ?? null,
+      requestTypeId: data.requestTypeId,
       date: permitDate,
       status: WorkingPermitStatus.PENDING
     },

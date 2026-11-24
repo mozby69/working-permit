@@ -26,6 +26,73 @@
 // };
 
 
+
+
+
+
+
+
+
+
+
+
+// import { io, type Socket } from "socket.io-client";
+
+// import type {
+//   ClientToServerEvents,
+//   ServerToClientEvents,
+// } from "@repo/shared";
+
+// const SOCKET_URL = process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
+
+// type AppSocket = Socket<
+//   ServerToClientEvents,
+//   ClientToServerEvents
+// >;
+
+// let socket: AppSocket | null = null;
+
+// export const createSocket = (): AppSocket => {
+//   if (!SOCKET_URL) {
+//     throw new Error(
+//       "NEXT_PUBLIC_BACKEND_LAN_URL is not configured"
+//     );
+//   }
+
+//   if (!socket) {
+//     socket = io(SOCKET_URL, {
+//       autoConnect: false,
+//       withCredentials: true,
+//       transports: ["websocket"],
+//       reconnection: true,
+//       reconnectionAttempts: Infinity,
+//       reconnectionDelay: 1000,
+//       reconnectionDelayMax: 5000,
+//       timeout: 20000,
+//     });
+//   }
+
+//   return socket;
+// };
+
+
+// export const disconnectSocket = (): void => {
+//   if (socket) {
+//     socket.disconnect();
+//     socket = null;
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
 import { io, type Socket } from "socket.io-client";
 
 import type {
@@ -33,16 +100,17 @@ import type {
   ServerToClientEvents,
 } from "@repo/shared";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_BACKEND_LAN_URL;
 
-type AppSocket = Socket<
+export type AppSocket = Socket<
   ServerToClientEvents,
   ClientToServerEvents
 >;
 
 let socket: AppSocket | null = null;
 
-export const createSocket = (): AppSocket => {
+export function createSocket(): AppSocket {
   if (!SOCKET_URL) {
     throw new Error(
       "NEXT_PUBLIC_BACKEND_LAN_URL is not configured"
@@ -53,22 +121,23 @@ export const createSocket = (): AppSocket => {
     socket = io(SOCKET_URL, {
       autoConnect: false,
       withCredentials: true,
-      transports: ["websocket"],
+
+      transports: ["polling", "websocket"],
+
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+
       timeout: 20000,
     });
   }
 
   return socket;
-};
+}
 
-// Disconnect the current user's socket on logout
-export const disconnectSocket = (): void => {
+export function disconnectSocket(): void {
   if (socket) {
     socket.disconnect();
-    socket = null;
   }
-};
+}

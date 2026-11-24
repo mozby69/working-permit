@@ -23,6 +23,10 @@ export async function seedPermissions() {
             code: "ADD_WORKING_PERMIT",
             name: "add working",
         },
+          {
+            code: "SOUND_SETTINGS",
+            name: "Can View Settings",
+        },
     ];
 
     for (const permission of permissions) {
