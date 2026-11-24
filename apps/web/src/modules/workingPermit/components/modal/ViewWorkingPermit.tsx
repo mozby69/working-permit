@@ -9,15 +9,12 @@ import {
   CheckCheck,
   ClipboardList,
   ClipboardType,
-  File,
   FileText,
   Hash,
   ImageIcon,
   Inbox,
   Loader2,
   MessageSquareText,
-  Paperclip,
-
   UserRound,
   UsersRound,
 } from "lucide-react";

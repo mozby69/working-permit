@@ -1,5 +1,5 @@
 import api from "@/lib/api/api-client";
-import { AddRequestInput, AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckDuplicateWorkingPermitInput, CheckerApprovalResponse, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, DuplicateWorkingPermitResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, RequestTypesResponse, TroubleshooterActionResponse, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WorkingPermitResponse, WPListResponse, wpListResponseSchema } from "@repo/shared";
+import {  AddWorkingPermitRemarkInput, approvalEndpoints, ApprovalResponse, ApprovalStage, CheckDuplicateWorkingPermitInput, CreateWorkingPermitPayload, DepartmentBranch, DepartmentBranchesResponse, DuplicateWorkingPermitResponse, NextReferenceResponse, QueryParams, RejectApprovalStage, rejectionEndpoints, RejectWorkingPermitResponse, RequestTypesResponse, TroubleshooterActionResponse, UpdateWorkingPermitPayload, WorkerListItem, WorkerListResponse, WorkingPermitRemark, WPListResponse, wpListResponseSchema } from "@repo/shared";
 
 
 
@@ -177,21 +177,71 @@ export async function getWorkingPermitAttachment(
 
 export async function updateWorkingPermitService(
   id: string,
-  payload: CreateWorkingPermitPayload
+  payload: UpdateWorkingPermitPayload
 ): Promise<{ id: string }> {
   const formData = new FormData();
-  formData.append("requestToId", String(payload.requestToId));
-  formData.append("fromId", String(payload.fromId));
-  formData.append("branchDepartmentId", String(payload.branchDepartmentId));
-  formData.append("requestLevel", payload.requestLevel);
-  formData.append("requestFor", payload.requestFor);
-  formData.append("requestedBy", payload.requestedBy);
-  formData.append("checkedBy", payload.checkedBy ?? "");
-  for (const file of payload.attachments) formData.append("attachments", file);
-  const response = await api.patch<{ success: boolean; data: { id: string } }>(
+
+  formData.append(
+    "requestToId",
+    String(payload.requestToId)
+  );
+
+  formData.append(
+    "fromId",
+    String(payload.fromId)
+  );
+
+  formData.append(
+    "branchDepartmentId",
+    String(payload.branchDepartmentId)
+  );
+
+  formData.append(
+    "requestLevel",
+    payload.requestLevel
+  );
+
+  formData.append(
+    "requestFor",
+    payload.requestFor
+  );
+
+  formData.append(
+    "requestedBy",
+    payload.requestedBy
+  );
+
+  formData.append(
+    "checkedBy",
+    payload.checkedBy ?? ""
+  );
+
+  formData.append(
+    "requestTypeId",
+    payload.requestTypeId == null
+      ? ""
+      : String(payload.requestTypeId)
+  );
+
+  formData.append(
+    "removedAttachmentIds",
+    JSON.stringify(payload.removedAttachmentIds)
+  );
+
+  for (const file of payload.attachments) {
+    formData.append("attachments", file);
+  }
+
+  const response = await api.patch<{
+    success: boolean;
+    data: {
+      id: string;
+    };
+  }>(
     `/working-permit/${encodeURIComponent(id)}`,
     formData
   );
+
   return response.data.data;
 }
 

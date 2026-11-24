@@ -127,8 +127,8 @@ export default function ModalAddRequest({
   onCancel,
 }: ModalAddRequestProps) {
 
-    const { hasRole,user } = useAuth();
-    console.log('user',user);
+    const { user } = useAuth();
+
 
   const {
     data: workers = [],

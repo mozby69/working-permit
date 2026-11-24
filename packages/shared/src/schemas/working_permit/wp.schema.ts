@@ -41,7 +41,8 @@ export const updateWorkingPermitSchema = addRequestSchema.pick({
     requestFor: true,
     branchDepartmentId: true, 
     requestedBy: true, 
-    checkedBy: true
+    checkedBy: true,
+    requestTypeId:true,
    });
 export type UpdateWorkingPermitInput = z.infer<typeof updateWorkingPermitSchema>;
 export type AddRequestSchema = z.output<typeof addRequestSchema>;
@@ -210,7 +211,7 @@ export const rejectWorkingPermitSchema = z.object({
   rejectRemarks: z.string().trim().min(5).max(500),
 });
 
-
+export const removedAttachmentsSchema = z.array(z.string().min(1));
 
 
 //check duplicate

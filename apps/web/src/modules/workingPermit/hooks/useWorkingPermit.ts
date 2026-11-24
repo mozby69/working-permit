@@ -186,7 +186,10 @@ export function useUpdateWorkingPermit() {
       id,
       payload,
     }: UpdateWorkingPermitParams) => {
-      return serviceWorkingPermit.updateWorkingPermitService(id, payload);
+      return serviceWorkingPermit.updateWorkingPermitService(
+        id,
+        payload
+      );
     },
 
     onSuccess: async () => {

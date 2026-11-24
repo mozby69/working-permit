@@ -417,76 +417,196 @@ export async function updateWorkingPermitRepo(
   userId: number,
   data: UpdateWorkingPermitInput,
   attachments: UploadedAttachment[],
+  removedAttachmentIds: string[]
 ) {
   return prisma.$transaction(async (tx) => {
     const permit = await tx.workingPermit.findUnique({
       where: { id },
       select: {
-        createdById: true, status: true, requestLevel: true,
-        attachments: { select: { id: true } },
-        ApprovalTable: { select: { approvedAt: true } },
+        createdById: true,
+        status: true,
+        requestLevel: true,
+
+        attachments: {
+          select: {
+            id: true,
+            storedName: true,
+          },
+        },
+
+        ApprovalTable: {
+          select: {
+            approvedAt: true,
+          },
+        },
       },
     });
-    if (!permit) return { outcome: "NOT_FOUND" as const };
-    if (permit.createdById !== userId) return { outcome: "FORBIDDEN" as const };
-    if (permit.attachments.length + attachments.length > 5) {
-      return { outcome: "TOO_MANY_FILES" as const };
+
+    if (!permit) {
+      return { outcome: "NOT_FOUND" as const };
     }
-    if (permit.status !== WorkingPermitStatus.PENDING ||
-        permit.ApprovalTable.some(a => a.approvedAt !== null)) {
+
+    if (permit.createdById !== userId) {
+      return { outcome: "FORBIDDEN" as const };
+    }
+
+    if (
+      permit.status !== WorkingPermitStatus.PENDING ||
+      permit.ApprovalTable.some(
+        (approval) => approval.approvedAt !== null
+      )
+    ) {
       return { outcome: "LOCKED" as const };
     }
 
+    // Validate selected attachments belong to this permit.
+    const removalIds = new Set(removedAttachmentIds);
+
+    const attachmentsToRemove = permit.attachments.filter(
+      (attachment) => removalIds.has(attachment.id)
+    );
+
+    if (attachmentsToRemove.length !== removalIds.size) {
+      return { outcome: "INVALID_ATTACHMENTS" as const };
+    }
+
+    // Existing - removed + newly uploaded.
+    const totalAttachments =
+      permit.attachments.length -
+      attachmentsToRemove.length +
+      attachments.length;
+
+    if (totalAttachments > 5) {
+      return { outcome: "TOO_MANY_FILES" as const };
+    }
+
     const department = await tx.departmentBranches.findFirst({
-      where: { id: data.fromId, isBranch: false },
-      select: { checkerId: true, checker: { select: { name: true, isActive: true } } },
+      where: {
+        id: data.fromId,
+        isBranch: false,
+      },
+      select: {
+        checkerId: true,
+        checker: {
+          select: {
+            name: true,
+            isActive: true,
+          },
+        },
+      },
     });
 
     const branch = await tx.departmentBranches.findUnique({
-      where: { id: data.branchDepartmentId },
-      select: { id: true },
+      where: {
+        id: data.branchDepartmentId,
+      },
+      select: {
+        id: true,
+      },
     });
 
     const worker = await tx.workerList.findUnique({
-      where: { id: data.requestToId },
+      where: {
+        id: data.requestToId,
+      },
       select: {
-        firstApproverUserId: true, finalApproverUserId: true,
-        firstApproverUser: { select: { isActive: true } },
-        finalApproverUser: { select: { isActive: true } },
+        firstApproverUserId: true,
+        finalApproverUserId: true,
+
+        firstApproverUser: {
+          select: {
+            isActive: true,
+          },
+        },
+
+        finalApproverUser: {
+          select: {
+            isActive: true,
+          },
+        },
       },
     });
 
-
-    if (!department?.checkerId || !department.checker?.isActive || !branch ||
-        !worker?.finalApproverUserId || !worker.finalApproverUser?.isActive ||
-        (data.requestLevel === "LEVEL_2" &&
-          (!worker.firstApproverUserId || !worker.firstApproverUser?.isActive))) {
+    if (
+      !department?.checkerId ||
+      !department.checker?.isActive ||
+      !branch ||
+      !worker?.finalApproverUserId ||
+      !worker.finalApproverUser?.isActive ||
+      (data.requestLevel === "LEVEL_2" &&
+        (!worker.firstApproverUserId ||
+          !worker.firstApproverUser?.isActive))
+    ) {
       return { outcome: "INVALID_SELECTION" as const };
     }
 
-    // Conditional guard: an approval cannot be added while editing.
+    // Guard against approval changes during editing.
     const changed = await tx.workingPermit.updateMany({
       where: {
-        id, createdById: userId, status: WorkingPermitStatus.PENDING,
-        ApprovalTable: { every: { approvedAt: null } },
+        id,
+        createdById: userId,
+        status: WorkingPermitStatus.PENDING,
+        ApprovalTable: {
+          every: {
+            approvedAt: null,
+          },
+        },
       },
       data: {
-        requestToId: data.requestToId, fromId: data.fromId,
+        requestToId: data.requestToId,
+        fromId: data.fromId,
         branchDepartmentId: data.branchDepartmentId,
         requestLevel: data.requestLevel,
         requestFor: data.requestFor,
         requestedBy: data.requestedBy,
         checkedBy: department.checker.name,
+
+        requestTypeId: data.requestTypeId ?? null,
       },
     });
-    if (changed.count !== 1) return { outcome: "LOCKED" as const };
 
-    await tx.approvalTable.deleteMany({ where: { workingPermitId: id } });
+    if (changed.count !== 1) {
+      return { outcome: "LOCKED" as const };
+    }
+
+    // Delete selected existing attachment records.
+    if (attachmentsToRemove.length > 0) {
+      await tx.workingPermitAttachment.deleteMany({
+        where: {
+          workingPermitId: id,
+          id: {
+            in: attachmentsToRemove.map(
+              (attachment) => attachment.id
+            ),
+          },
+        },
+      });
+    }
+
+    // Rebuild approval assignments.
+    await tx.approvalTable.deleteMany({
+      where: {
+        workingPermitId: id,
+      },
+    });
+
     const assignments = [
-      { sequence: 1, role: "CHECKER", approverId: department.checkerId },
+      {
+        sequence: 1,
+        role: "CHECKER",
+        approverId: department.checkerId,
+      },
+
       ...(data.requestLevel === "LEVEL_2"
-        ? [{ sequence: 2, role: "FIRST_APPROVER", approverId: worker.firstApproverUserId! }]
+        ? [
+            {
+              sequence: 2,
+              role: "FIRST_APPROVER",
+              approverId: worker.firstApproverUserId!,
+            },
+          ]
         : []),
+
       {
         sequence: data.requestLevel === "LEVEL_1" ? 2 : 3,
         role: "FINAL_APPROVER",
@@ -494,20 +614,35 @@ export async function updateWorkingPermitRepo(
       },
     ];
 
-
     await tx.approvalTable.createMany({
-      data: assignments.map(item => ({ workingPermitId: id, ...item })),
+      data: assignments.map((assignment) => ({
+        workingPermitId: id,
+        ...assignment,
+      })),
     });
 
+    // Save new attachment records.
     if (attachments.length > 0) {
       await tx.workingPermitAttachment.createMany({
-        data: attachments.map(file => ({
-          workingPermitId: id, originalName: file.originalName,
-          storedName: file.storedName, mimeType: file.mimeType, fileSize: file.fileSize,
+        data: attachments.map((file) => ({
+          workingPermitId: id,
+          originalName: file.originalName,
+          storedName: file.storedName,
+          mimeType: file.mimeType,
+          fileSize: file.fileSize,
         })),
       });
     }
-    return { outcome: "UPDATED" as const, id };
+
+    return {
+      outcome: "UPDATED" as const,
+      id,
+      removedFiles: attachmentsToRemove.map(
+        (attachment) => ({
+          storedName: attachment.storedName,
+        })
+      ),
+    };
   });
 }
 

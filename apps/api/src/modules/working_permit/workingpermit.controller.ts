@@ -1,4 +1,4 @@
-import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, checkDuplicateWorkingPermitSchema, myApprovedPermitQuerySchema, updateWorkingPermitSchema } from '@repo/shared';
+import { addRequestSchema, addWorkingPermitRemarkSchema, approveWorkingPermitParamsSchema, checkDuplicateWorkingPermitSchema, myApprovedPermitQuerySchema, removedAttachmentsSchema, updateWorkingPermitSchema } from '@repo/shared';
 import * as workingPermitService from './workingpermit.service';
 
 import type { NextFunction, Request, Response } from "express";
@@ -7,7 +7,7 @@ import { emitUserCreated } from '@/socket/emitters/user.emitter';
 import { emitWPCreated, emitWPUpdated } from '@/socket/emitters/wp.emitter';
 import { AttachmentParams, UploadedAttachment } from './workingpermit.types';
 import { findAttachmentRepo } from './workingpermit.repository';
-import { UPLOAD_DIRECTORY } from '@/middleware/uploadAttachement';
+// import { UPLOAD_DIRECTORY } from '@/middleware/uploadAttachement';
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
@@ -416,68 +416,224 @@ export async function viewAttachmentController(
 
 
 
-export async function updateWorkingPermitController(req: Request, res: Response, next: NextFunction) {
-  const files: Express.Multer.File[] = Array.isArray(req.files) ? req.files : [];
+
+
+
+
+const UPLOAD_DIRECTORY = path.resolve(
+  process.env.WP_UPLOAD_DIRECTORY ??
+    path.join(process.cwd(), "storage", "working-permits")
+);
+
+
+async function deleteStoredAttachment(
+  storedName: string
+): Promise<void> {
+  if (
+    storedName !== path.basename(storedName) ||
+    storedName === "." ||
+    storedName === ".."
+  ) {
+    throw new Error("Invalid stored attachment filename.");
+  }
+
+  const filePath = path.resolve(
+    UPLOAD_DIRECTORY,
+    storedName
+  );
+
+  if (
+    !filePath.startsWith(
+      `${UPLOAD_DIRECTORY}${path.sep}`
+    )
+  ) {
+    throw new Error("Attachment path is outside upload directory.");
+  }
+
+  await fs.unlink(filePath).catch((error: unknown) => {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return;
+    }
+
+    throw error;
+  });
+}
+
+export async function updateWorkingPermitController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const files: Express.Multer.File[] = Array.isArray(req.files)
+    ? req.files
+    : [];
+
   let committed = false;
+
   const cleanup = async () => {
-    if (!committed) await Promise.all(files.map(file => fs.unlink(file.path).catch(() => undefined)));
+    if (!committed) {
+      await Promise.all(
+        files.map((file) =>
+          fs.unlink(file.path).catch(() => undefined)
+        )
+      );
+    }
   };
+
   try {
     const userId = req.user?.id;
-    if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId <= 0) {
+
+    if (
+      typeof userId !== "number" ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0
+    ) {
       await cleanup();
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
-    const parsedId = approveWorkingPermitParamsSchema.safeParse({ id: req.params.id });
+
+    const parsedId =
+      approveWorkingPermitParamsSchema.safeParse({
+        id: req.params.id,
+      });
+
+    let rawRemovedIds: unknown = [];
+
+    try {
+      rawRemovedIds = JSON.parse(
+        typeof req.body.removedAttachmentIds === "string"
+          ? req.body.removedAttachmentIds
+          : "[]"
+      );
+    } catch {
+      await cleanup();
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid attachment removal data.",
+      });
+    }
+
+    const parsedRemovedIds = removedAttachmentsSchema.safeParse(rawRemovedIds);
+
     const parsed = updateWorkingPermitSchema.safeParse({
       ...req.body,
       requestToId: Number(req.body.requestToId),
       fromId: Number(req.body.fromId),
-      branchDepartmentId: Number(req.body.branchDepartmentId),
+      branchDepartmentId: Number(
+        req.body.branchDepartmentId
+      ),
+      requestTypeId:
+        req.body.requestTypeId === "" ||
+        req.body.requestTypeId == null
+          ? null
+          : Number(req.body.requestTypeId),
     });
-    if (!parsedId.success || !parsed.success) {
+
+    if (
+      !parsedId.success ||
+      !parsed.success ||
+      !parsedRemovedIds.success
+    ) {
       await cleanup();
+
       return res.status(400).json({
         success: false,
         message: "Invalid working permit details",
-        errors: parsed.success ? undefined : parsed.error.flatten(),
+        errors: parsed.success
+          ? undefined
+          : parsed.error.flatten(),
       });
     }
 
-    const result = await workingPermitService.updateWorkingPermitService(
-      parsedId.data.id,
-      userId,
-      parsed.data,
-      files.map(file => ({
-        originalName: file.originalname,
-        storedName: file.filename,
-        mimeType: file.mimetype,
-        fileSize: file.size,
-      }))
-    );
+    const result =
+      await workingPermitService.updateWorkingPermitService(
+        parsedId.data.id,
+        userId,
+        parsed.data,
+        files.map((file) => ({
+          originalName: file.originalname,
+          storedName: file.filename,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+        })),
+        parsedRemovedIds.data
+      );
 
     if (result.outcome !== "UPDATED") {
       await cleanup();
-      const status = result.outcome === "NOT_FOUND" ? 404
-        : result.outcome === "FORBIDDEN" ? 403
-        : result.outcome === "LOCKED" ? 409 : 400;
-      const message = result.outcome === "LOCKED"
-        ? "Editing is no longer allowed because the checker has processed this permit."
-        : result.outcome === "FORBIDDEN"
-        ? "Only the creator can edit this working permit."
-        : result.outcome === "NOT_FOUND"
-        ? "Working permit not found."
-        : result.outcome === "TOO_MANY_FILES"
-        ? "A permit can have a maximum of 5 attachments."
-        : "Invalid department, checker, branch or request recipient.";
-      return res.status(status).json({ success: false, message });
+
+      const status =
+        result.outcome === "NOT_FOUND"
+          ? 404
+          : result.outcome === "FORBIDDEN"
+          ? 403
+          : result.outcome === "LOCKED"
+          ? 409
+          : 400;
+
+      const message =
+        result.outcome === "LOCKED"
+          ? "Editing is no longer allowed because the checker has processed this permit."
+          : result.outcome === "FORBIDDEN"
+          ? "Only the creator can edit this working permit."
+          : result.outcome === "NOT_FOUND"
+          ? "Working permit not found."
+          : result.outcome === "TOO_MANY_FILES"
+          ? "A permit can have a maximum of 5 attachments."
+          : result.outcome === "INVALID_ATTACHMENTS"
+          ? "Invalid attachment selection."
+          : "Invalid department, checker, branch or request recipient.";
+
+      return res.status(status).json({
+        success: false,
+        message,
+      });
     }
 
     committed = true;
-    try { emitWPUpdated({ id: result.id }); }
-    catch (error) { console.error("Failed to emit permit update event:", error); }
+
+    // Database changes are committed.
+    // Delete physical files afterward.
+    const deletionResults = await Promise.allSettled(
+      result.removedFiles.map((file) =>
+        deleteStoredAttachment(file.storedName)
+      )
+    );
+
+    for (const deletion of deletionResults) {
+      if (deletion.status === "rejected") {
+        console.error(
+          "Failed to delete stored working permit attachment:",
+          deletion.reason
+        );
+      }
+    }
+
+    try {
+      emitWPUpdated({ id: result.id });
+    } catch (error) {
+      console.error(
+        "Failed to emit permit update event:",
+        error
+      );
+    }
+
     return res.status(200).json({
-      success: true, message: "Working permit updated successfully", data: { id: result.id },
+      success: true,
+      message: "Working permit updated successfully",
+      data: {
+        id: result.id,
+      },
     });
   } catch (error: unknown) {
     await cleanup();

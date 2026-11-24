@@ -238,10 +238,21 @@ export async function getWorkerListService() {
 }
 
 
-export async function updateWorkingPermitService(id: string, userId: number, data: UpdateWorkingPermitInput, attachments: UploadedAttachment[]) {
-  return workingRepo.updateWorkingPermitRepo(id, userId, data, attachments);
+export async function updateWorkingPermitService(
+  id: string,
+  userId: number,
+  data: UpdateWorkingPermitInput,
+  attachments: UploadedAttachment[],
+  removedAttachmentIds: string[]
+) {
+  return workingRepo.updateWorkingPermitRepo(
+    id,
+    userId,
+    data,
+    attachments,
+    removedAttachmentIds
+  );
 }
-
 
 
 export async function addWorkingPermitRemarkService(

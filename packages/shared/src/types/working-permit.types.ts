@@ -185,7 +185,7 @@ export type Props = {
 
 export type UpdateWorkingPermitParams = {
   id: string;
-  payload: CreateWorkingPermitPayload;
+  payload: UpdateWorkingPermitPayload;
 };
 
 
@@ -240,3 +240,10 @@ export interface RequestTypesResponse {
   message?: string;
   data: RequestType[];
 }
+
+
+
+export type UpdateWorkingPermitPayload =
+  CreateWorkingPermitPayload & {
+    removedAttachmentIds: string[];
+  };
