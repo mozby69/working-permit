@@ -176,9 +176,15 @@ export async function displayWorkingPermit(params: QueryParamWP) {
     visible.push({});
   }
 
+  visible.push({
+  createdById: userId,
+});
+
+
   if (roles.includes("CHECKER")) {
     visible.push({ ApprovalTable: { some: { role: "CHECKER", approverId: userId } } });
   }
+
   if (roles.includes("FIRST_APPROVER")) {
     visible.push({
       requestLevel: "LEVEL_2",

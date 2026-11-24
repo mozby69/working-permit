@@ -756,7 +756,7 @@ export default function ModalAddRequest({
             {/* BRANCH / DEPARTMENT */}
             <div className="min-w-0 space-y-1.5">
               <label className="block text-[13px] font-medium text-slate-700">
-                Branch / Department{" "}
+                Requesting Branch / Department{" "}
                 <span className="text-red-500">*</span>
               </label>
 

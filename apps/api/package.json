@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch --tsconfig tsconfig.json src/server.ts",
     "build": "pnpm typecheck && tsup",
-    "typecheck": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "start": "node dist/server.mjs",
     "create:user": "tsx prisma/factories/user.factory.ts",
     "test": "vitest",
@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "prisma": "prisma",
     "migrate": "prisma migrate dev",
+    "lint": "eslint src",
     "generate": "prisma generate"
   },
   "prisma": {

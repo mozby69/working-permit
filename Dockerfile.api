@@ -1,0 +1,89 @@
+
+
+FROM node:24-bookworm-slim AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
+
+WORKDIR /app
+
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+
+FROM base AS dependencies
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+
+COPY apps/api/package.json apps/api/package.json
+COPY packages/shared/package.json packages/shared/package.json
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --filter api...
+
+# ==========================================
+# BUILDER
+# ==========================================
+
+FROM dependencies AS builder
+
+COPY apps/api apps/api
+COPY packages/shared packages/shared
+
+# Generate Prisma Client
+RUN DATABASE_URL="mysql://unused:unused@localhost:3306/unused" \
+    pnpm --filter api generate
+
+# Build shared package
+RUN pnpm --filter @repo/shared build
+
+# Build backend
+RUN pnpm --filter api build
+
+# Prepare production dependencies
+RUN pnpm deploy --legacy --filter api --prod /prod/api
+
+# ==========================================
+# PRODUCTION RUNNER
+# ==========================================
+
+FROM node:24-bookworm-slim AS runner
+
+ENV NODE_ENV=production
+ENV PORT=5001
+ENV PATH="/app/node_modules/.bin:${PATH}"
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system --gid 1001 nodejs \
+    && useradd --system --uid 1001 --gid nodejs api \
+    && mkdir -p /app/logs \
+    && chown -R api:nodejs /app/logs
+
+COPY --from=builder --chown=api:nodejs /prod/api/package.json ./package.json
+
+COPY --from=builder --chown=api:nodejs /prod/api/node_modules ./node_modules
+
+COPY --from=builder --chown=api:nodejs /app/apps/api/dist ./dist
+
+COPY --from=builder --chown=api:nodejs /app/apps/api/prisma ./prisma
+
+COPY --from=builder --chown=api:nodejs /app/apps/api/generated ./generated
+
+COPY --from=builder --chown=api:nodejs /app/apps/api/prisma.config.ts ./prisma.config.ts
+
+USER api
+
+EXPOSE 5001
+
+CMD ["node", "dist/server.mjs"]
