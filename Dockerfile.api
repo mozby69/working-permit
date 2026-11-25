@@ -114,6 +114,7 @@ RUN test -x /app/node_modules/.bin/prisma \
     && test -f /app/prisma/schema.prisma \
     && test -d /app/prisma/migrations \
     && test -f /app/prisma.config.ts \
+    && test -x /prod/api/node_modules/.bin/tsx \
     && test -f /app/dist/server.mjs
 
 EXPOSE 5001
