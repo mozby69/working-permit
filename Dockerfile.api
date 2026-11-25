@@ -64,6 +64,10 @@ RUN test -x /prod/api/node_modules/.bin/prisma
 # PRODUCTION RUNNER
 # ==========================================
 
+# ==========================================
+# PRODUCTION RUNNER
+# ==========================================
+
 FROM node:24-bookworm-slim AS runner
 
 ENV NODE_ENV=production
@@ -85,39 +89,44 @@ RUN groupadd --system --gid 1001 nodejs \
                 /app/storage/working-permits \
     && chown -R api:nodejs /app/logs /app/storage
 
-# Copy production package configuration
+# Production package configuration
 COPY --from=builder --chown=api:nodejs \
     /prod/api/package.json ./package.json
 
-# Copy production dependencies
+# Production dependencies
 COPY --from=builder --chown=api:nodejs \
     /prod/api/node_modules ./node_modules
 
-# Copy compiled backend
+# Compiled backend
 COPY --from=builder --chown=api:nodejs \
     /app/apps/api/dist ./dist
 
-# Copy Prisma schema and migrations
+# Source files required by seeders
+COPY --from=builder --chown=api:nodejs \
+    /app/apps/api/src ./src
+
+# Prisma schema, migrations and seeders
 COPY --from=builder --chown=api:nodejs \
     /app/apps/api/prisma ./prisma
 
-# Copy generated Prisma Client
+# Generated Prisma Client
 COPY --from=builder --chown=api:nodejs \
     /app/apps/api/generated ./generated
 
-# Copy Prisma configuration
+# Prisma configuration
 COPY --from=builder --chown=api:nodejs \
     /app/apps/api/prisma.config.ts ./prisma.config.ts
 
-# Run application as non-root
 USER api
 
 # Verify production files
 RUN test -x /app/node_modules/.bin/prisma \
+    && test -x /app/node_modules/.bin/tsx \
     && test -f /app/prisma/schema.prisma \
     && test -d /app/prisma/migrations \
     && test -f /app/prisma.config.ts \
-    && test -x /app/node_modules/.bin/tsx \
+    && test -f /app/prisma/seed.ts \
+    && test -f /app/src/lib/database/prisma.ts \
     && test -f /app/dist/server.mjs
 
 EXPOSE 5001
