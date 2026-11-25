@@ -21,7 +21,7 @@ out/
 dist/
 build/
 
-
+Dockerfile.dev
 # ------------------------
 # Turborepo
 # ------------------------

@@ -1,68 +1,189 @@
 
-name: workspace-ts
+name: wp-dev
 
 services:
   api:
-    image: workspace-ts-api:local
     build:
       context: .
       dockerfile: Dockerfile.dev
+
+    image: wp-dev:local
+    container_name: wp-api-dev
+    restart: unless-stopped
+    init: true
+
     working_dir: /workspace
+
     command: >
       sh -c "pnpm --filter api exec prisma generate &&
              pnpm --filter api dev"
+
     env_file:
       - ./apps/api/.env.docker
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-    ports:
-      - "5001:5001"
-    volumes:
-      - .:/workspace
-      - root_node_modules:/workspace/node_modules
-      - api_node_modules:/workspace/apps/api/node_modules
-      - web_node_modules:/workspace/apps/web/node_modules
-      - shared_node_modules:/workspace/packages/shared/node_modules
-    networks:
-      - app_net
-      - postgres17_net
-    restart: unless-stopped
 
-  web:
-    image: workspace-ts-web:local
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    working_dir: /workspace
-    command: pnpm --filter web dev
-    env_file:
-      - ./apps/web/.env.docker
     environment:
       NODE_ENV: development
-      WATCHPACK_POLLING: "true"
+      PORT: "5001"
       CHOKIDAR_USEPOLLING: "true"
+
     ports:
-      - "3001:3001"
+      - "127.0.0.1:5001:5001"
+
     volumes:
       - .:/workspace
       - root_node_modules:/workspace/node_modules
       - api_node_modules:/workspace/apps/api/node_modules
       - web_node_modules:/workspace/apps/web/node_modules
       - shared_node_modules:/workspace/packages/shared/node_modules
+      - ./storage:/workspace/apps/api/storage
+
     networks:
-      - app_net
+      - wp-network
+      - mysql_database_network
+
+  web:
+    image: wp-dev:local
+    container_name: wp-web-dev
+    restart: unless-stopped
+    init: true
+    stdin_open: true
+    tty: true
+
+    working_dir: /workspace/apps/web
+
+    command:
+      - pnpm
+      - exec
+      - next
+      - dev
+      - --hostname
+      - "0.0.0.0"
+      - --port
+      - "3001"
+
+    environment:
+      NODE_ENV: development
+      PORT: "3001"
+      HOSTNAME: "0.0.0.0"
+
+      NEXT_PUBLIC_BACKEND_LAN_URL: http://localhost:5001
+      NEXT_PUBLIC_API_URL: http://localhost:5001/api
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:5001
+
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+
+    ports:
+      - "127.0.0.1:3001:3001"
+
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - api_node_modules:/workspace/apps/api/node_modules
+      - web_node_modules:/workspace/apps/web/node_modules
+      - shared_node_modules:/workspace/packages/shared/node_modules
+      - next_cache:/workspace/apps/web/.next
+
     depends_on:
       - api
-    restart: unless-stopped
+
+    networks:
+      - wp-network
 
 volumes:
   root_node_modules:
   api_node_modules:
   web_node_modules:
   shared_node_modules:
+  next_cache:
 
 networks:
-  app_net:
+  wp-network:
     driver: bridge
-  postgres17_net:
+
+  mysql_database_network:
     external: true
+    name: mysql_database_network
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# name: wp-local
+
+# services:
+#   api:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.api
+
+#     image: wp-api:local
+#     container_name: wp-api-local
+#     restart: unless-stopped
+
+#     env_file:
+#       - ./apps/api/.env.docker
+
+#     environment:
+#       NODE_ENV: production
+#       PORT: "5001"
+
+#     ports:
+#       - "127.0.0.1:5001:5001"
+
+#     volumes:
+#       - ./storage:/app/storage
+
+#     networks:
+#       - wp-network
+#       - mysql_database_network
+
+#   web:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.web
+
+#       args:
+#         NEXT_PUBLIC_BACKEND_LAN_URL: http://localhost:5001
+#         NEXT_PUBLIC_API_URL: http://localhost:5001/api
+#         NEXT_PUBLIC_SOCKET_URL: http://localhost:5001
+
+#     image: wp-web:local
+#     container_name: wp-web-local
+#     restart: unless-stopped
+
+#     environment:
+#       NODE_ENV: production
+#       PORT: "3001"
+#       HOSTNAME: "0.0.0.0"
+
+#     ports:
+#       - "127.0.0.1:3001:3001"
+
+#     depends_on:
+#       - api
+
+#     networks:
+#       - wp-network
+
+# networks:
+#   wp-network:
+#     driver: bridge
+
+#   mysql_database_network:
+#     external: true
+#     name: mysql_database_network
