@@ -54,6 +54,9 @@ RUN pnpm --filter api build
 # Prepare production dependencies
 RUN pnpm deploy --legacy --filter api --prod /prod/api
 
+RUN test -x /prod/api/node_modules/.bin/prisma \
+    && test -x /prod/api/node_modules/.bin/tsx
+
 # Verify Prisma CLI is included
 RUN test -x /prod/api/node_modules/.bin/prisma
 
@@ -114,7 +117,7 @@ RUN test -x /app/node_modules/.bin/prisma \
     && test -f /app/prisma/schema.prisma \
     && test -d /app/prisma/migrations \
     && test -f /app/prisma.config.ts \
-    && test -x /prod/api/node_modules/.bin/tsx \
+    && test -x /app/node_modules/.bin/tsx \
     && test -f /app/dist/server.mjs
 
 EXPOSE 5001
