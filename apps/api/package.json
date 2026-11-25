@@ -22,6 +22,7 @@
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "prisma": "^7.10.1",
     "@repo/shared": "workspace:*",
     "bcrypt": "^6.0.0",
     "cookie": "^2.0.1",
