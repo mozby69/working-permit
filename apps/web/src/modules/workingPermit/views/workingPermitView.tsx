@@ -339,7 +339,7 @@ const handleRejectPermit = async (
 
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold tracking-tight text-[#26342F]">
-            Working Permit
+            Working Permitssss
           </h1>
 
           <p className="mt-1 text-[13px] leading-relaxed text-[#8A958C]">
