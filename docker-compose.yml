@@ -27,7 +27,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
 
     ports:
-      - "127.0.0.1:5001:5001"
+      - "5001:5001"
 
     volumes:
       - .:/workspace
@@ -66,15 +66,15 @@ services:
       PORT: "3001"
       HOSTNAME: "0.0.0.0"
 
-      NEXT_PUBLIC_BACKEND_LAN_URL: http://localhost:5001
-      NEXT_PUBLIC_API_URL: http://localhost:5001/api
-      NEXT_PUBLIC_SOCKET_URL: http://localhost:5001
+      NEXT_PUBLIC_BACKEND_LAN_URL: http://192.168.1.137:5001
+      NEXT_PUBLIC_API_URL: http://192.168.1.137:5001/api
+      NEXT_PUBLIC_SOCKET_URL: http://192.168.1.137:5001
 
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
 
     ports:
-      - "127.0.0.1:3001:3001"
+      - "3001:3001"
 
     volumes:
       - .:/workspace
