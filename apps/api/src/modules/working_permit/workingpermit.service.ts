@@ -3,6 +3,7 @@ import  * as workingRepo from "./workingpermit.repository";
 import { QueryParams } from "../../../../../packages/shared/src/types/query.types";
 import { QueryParamWP, UploadedAttachment } from "./workingpermit.types";
 import { WorkingPermitStatus } from "../../../generated/prisma/enums";
+import { sendNotificationPush } from "../notifications/notification.service";
 
 
 
@@ -11,13 +12,17 @@ export async function createRequestService(
   userId: number,
   attachments: UploadedAttachment[]
 ) {
-  return workingRepo.addRequestRepo(
+  const result = await workingRepo.addRequestRepo(
     params,
     userId,
     attachments
   );
-}
 
+
+  void sendNotificationPush(result.notification);
+
+  return result;
+}
 
 export async function getNextReferenceService() {
   return workingRepo.getNextReferenceRepo();

@@ -84,30 +84,30 @@ const refreshBrowserState = async () => {
   // Refresh permission when the user returns
   // from browser settings.
 
-  useEffect(() => {
-    function handleFocus() {
-      void refreshBrowserState().catch(
-        (error: unknown) => {
-          console.error(
-            "[WEB PUSH] Refresh failed",
-            error
-          );
-        }
-      );
-    }
+//   useEffect(() => {
+//     function handleFocus() {
+//       void refreshBrowserState().catch(
+//         (error: unknown) => {
+//           console.error(
+//             "[WEB PUSH] Refresh failed",
+//             error
+//           );
+//         }
+//       );
+//     }
 
-    window.addEventListener(
-      "focus",
-      handleFocus
-    );
+//     window.addEventListener(
+//       "focus",
+//       handleFocus
+//     );
 
-    return () => {
-      window.removeEventListener(
-        "focus",
-        handleFocus
-      );
-    };
-  }, [refreshBrowserState]);
+//     return () => {
+//       window.removeEventListener(
+//         "focus",
+//         handleFocus
+//       );
+//     };
+//   }, [refreshBrowserState]);
 
   // ==========================================
   // PUBLIC KEY QUERY

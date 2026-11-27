@@ -72,19 +72,20 @@ export default function SettingsModal({
           onClose();
         }
       }}
-      className="
-        fixed inset-0 m-auto
-        w-[calc(100%-2rem)] max-w-lg
-        overflow-hidden rounded-2xl
-        border border-slate-200
-        bg-white p-0 shadow-2xl
-        backdrop:bg-black/60
-
-      "
+    className="
+      fixed inset-0 m-auto
+      w-[calc(100%-2rem)] max-w-lg
+      max-h-[90dvh]
+      overflow-hidden rounded-2xl
+      border border-slate-200
+      bg-white p-0 shadow-2xl
+      backdrop:bg-black/60
+    "
     >
-      <div>
+      <div className="flex max-h-[90dvh] flex-col">
         {/* HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+     {/* HEADER */}
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <Settings size={22} />
@@ -115,7 +116,7 @@ export default function SettingsModal({
         </div>
 
         {/* BODY */}
-        <div className="space-y-6 px-6 py-6">
+  <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 py-6">
           {/* SECTION TITLE */}
           <div className="flex items-center gap-2">
             <BellRing
@@ -279,7 +280,8 @@ export default function SettingsModal({
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+
+      <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
           <span className="text-xs text-slate-400">
             Preferences are saved automatically.
           </span>

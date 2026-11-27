@@ -8,8 +8,38 @@ import {
   rejectWorkingPermitRepo,
 } from "./approval.repository.js";
 import { emitNotificationCreated } from "@/socket/emitters/notification.emitter.js";
+import { CreatedNotification } from "../notifications/notification.types.js";
+import { sendNotificationPush } from "../notifications/notification.service.js";
 
-// Approves the assigned Checker (sequence 1 for both levels).
+
+
+function dispatchNotifications(
+  notifications: CreatedNotification[]
+): void {
+  for (const notification of notifications) {
+ 
+    try {
+      emitNotificationCreated({
+        ...notification,
+        createdAt: notification.createdAt.toISOString(),
+      });
+    } catch (error: unknown) {
+      console.error(
+        "[NOTIFICATION] Socket emit failed",
+        {
+          notificationId: notification.id,
+          error,
+        }
+      );
+    }
+
+    // New Web Push notification
+    // Do not block the approval response.
+    void sendNotificationPush(notification);
+  }
+}
+
+
 export async function approveCheckerService(
   workingPermitId: string,
   userId: number
@@ -21,24 +51,26 @@ export async function approveCheckerService(
       "CHECKER"
     );
 
-  for (const notification of notifications) {
-    try {
-      console.log("[CHECKER NOTIFICATION EMIT]", {
-        recipientId: notification.userId,
-        notificationId: notification.id,
-      });
 
-      emitNotificationCreated({
-        ...notification,
-        createdAt: notification.createdAt.toISOString(),
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Failed to emit next approver notification:",
-        error
-      );
-    }
-  }
+  dispatchNotifications(notifications);
+  // for (const notification of notifications) {
+  //   try {
+  //     console.log("[CHECKER NOTIFICATION EMIT]", {
+  //       recipientId: notification.userId,
+  //       notificationId: notification.id,
+  //     });
+
+  //     emitNotificationCreated({
+  //       ...notification,
+  //       createdAt: notification.createdAt.toISOString(),
+  //     });
+  //   } catch (error: unknown) {
+  //     console.error(
+  //       "Failed to emit next approver notification:",
+  //       error
+  //     );
+  //   }
+  // }
 
   return result;
 }
@@ -56,19 +88,22 @@ export async function approveFinalApproverService(
     );
 
 
-  for (const notification of notifications) {
-    try {
-      emitNotificationCreated({
-        ...notification,
-        createdAt: notification.createdAt.toISOString(),
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Failed to emit Final Approver notification:",
-        error
-      );
-    }
-  }
+  // for (const notification of notifications) {
+  //   try {
+  //     emitNotificationCreated({
+  //       ...notification,
+  //       createdAt: notification.createdAt.toISOString(),
+  //     });
+  //   } catch (error: unknown) {
+  //     console.error(
+  //       "Failed to emit Final Approver notification:",
+  //       error
+  //     );
+  //   }
+  // }
+
+
+  dispatchNotifications(notifications);
 
   return result;
 }
@@ -85,12 +120,13 @@ export async function approveFirstApproverService(
       "FIRST_APPROVER"
     );
 
-  for (const notification of notifications) {
-    emitNotificationCreated({
-      ...notification,
-      createdAt: notification.createdAt.toISOString(),
-    });
-  }
+     dispatchNotifications(notifications);
+  // for (const notification of notifications) {
+  //   emitNotificationCreated({
+  //     ...notification,
+  //     createdAt: notification.createdAt.toISOString(),
+  //   });
+  // }
 
   return result;
 }
@@ -109,19 +145,22 @@ export async function receiveWorkingPermitService(
       userId
     );
 
-  for (const notification of notifications) {
-    try {
-      emitNotificationCreated({
-        ...notification,
-        createdAt: notification.createdAt.toISOString(),
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Failed to emit Coordinator IN_PROGRESS notification:",
-        error
-      );
-    }
-  }
+  // for (const notification of notifications) {
+  //   try {
+  //     emitNotificationCreated({
+  //       ...notification,
+  //       createdAt: notification.createdAt.toISOString(),
+  //     });
+  //   } catch (error: unknown) {
+  //     console.error(
+  //       "Failed to emit Coordinator IN_PROGRESS notification:",
+  //       error
+  //     );
+  //   }
+  // }
+
+
+  dispatchNotifications(notifications);
 
   return result;
 }
@@ -139,19 +178,21 @@ export async function completeWorkingPermitService(
       userId
     );
 
-  for (const notification of notifications) {
-    try {
-      emitNotificationCreated({
-        ...notification,
-        createdAt: notification.createdAt.toISOString(),
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Failed to emit Coordinator COMPLETED notification:",
-        error
-      );
-    }
-  }
+      dispatchNotifications(notifications);
+
+  // for (const notification of notifications) {
+  //   try {
+  //     emitNotificationCreated({
+  //       ...notification,
+  //       createdAt: notification.createdAt.toISOString(),
+  //     });
+  //   } catch (error: unknown) {
+  //     console.error(
+  //       "Failed to emit Coordinator COMPLETED notification:",
+  //       error
+  //     );
+  //   }
+  // }
 
   return result;
 }

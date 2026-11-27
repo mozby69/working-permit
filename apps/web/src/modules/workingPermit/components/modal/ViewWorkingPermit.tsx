@@ -52,12 +52,12 @@ export default function ViewWorkingPermit({permit,onCancel}: ViewWorkingPermitPr
     isPending: isSaving,
     } = useApproveWorkingPermit();
 
-  const formattedDate = new Intl.DateTimeFormat("en-PH", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(permit.date));
+  // const formattedDate = new Intl.DateTimeFormat("en-PH", {
+  //   timeZone: "Asia/Manila",
+  //   year: "numeric",
+  //   month: "long",
+  //   day: "numeric",
+  // }).format(new Date(permit.date));
 
 
 
