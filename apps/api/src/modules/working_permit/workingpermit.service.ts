@@ -151,6 +151,7 @@ export async function getWorkingPermitService(params: QueryParamWP) {
       statusAt: permit.statusAt?.toISOString() ?? null,
       receivedById: permit.receivedById,
       receivedAt: permit.receivedAt?.toISOString() ?? null,
+      createdAt: permit.createdAt?.toISOString() ?? null,
       approvals: approvals.map(item => ({
         id: item.id,
         sequence: item.sequence,

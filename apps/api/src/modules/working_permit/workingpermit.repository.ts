@@ -283,6 +283,7 @@ export async function displayWorkingPermit(params: QueryParamWP) {
         statusAt: true,
         receivedById: true,
         receivedAt: true,
+        createdAt:true,
         attachments: {
           select: {
             id: true, workingPermitId: true, originalName: true, storedName: true,

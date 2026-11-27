@@ -8,6 +8,7 @@ import branchRoutes from "@/modules/admin/branch/branch.route";
 import workingRoute from "@/modules/admin/working/working.route";
 import approvalRoute from "@/modules/wp_approval/approval.routes";
 import notifcationRoute from "@/modules/notifications/notification.routes";
+import pushNotificationRoute from "@/modules/push-notification/push-notification.routes";
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use("/admin/", workingRoute);
 router.use("/working-permit",authenticate,workingPermitRoute);
 router.use("/approval",authenticate,approvalRoute);
 router.use("/notifications",authenticate,notifcationRoute);
+router.use("/push-notification",authenticate,pushNotificationRoute);
 
 export default router;

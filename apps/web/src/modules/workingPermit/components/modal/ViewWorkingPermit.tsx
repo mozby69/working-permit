@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 import { DetailField, SectionHeading } from "../../helper/wp.helper";
 import { useApproveWorkingPermit, useCompleteWorkingPermit, useReceiveWorkingPermit } from "../../hooks/useWorkingPermit";
 import AttachmentPreview from "../ui/attachmentPreview";
+import { formatDateTime } from "@/utils/format-date";
 
 
 interface ViewWorkingPermitProps {
@@ -236,8 +237,8 @@ const approverOrder =
           />
 
           <DetailField
-            label="Request Date"
-            value={formattedDate}
+            label="Date / Time Requested"
+            value={formatDateTime(permit.createdAt)}
             icon={<CalendarDays size={15} />}
           />
 
@@ -256,6 +257,12 @@ const approverOrder =
           <DetailField
             label="Request Type"
             value={permit.requestType?.description ?? "Not specified"}
+            icon={<ClipboardType size={15} />}
+          />
+
+            <DetailField
+            label="Date / Time Done"
+            value={formatDateTime(permit.statusAt) ?? "N/A"}
             icon={<ClipboardType size={15} />}
           />
                     

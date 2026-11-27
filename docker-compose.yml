@@ -9,7 +9,7 @@ services:
 
     image: wp-dev:local
     container_name: wp-api-dev
-    restart: unless-stopped
+    #restart: unless-stopped
     init: true
 
     working_dir: /workspace
@@ -23,11 +23,11 @@ services:
 
     environment:
       NODE_ENV: development
-      PORT: "5001"
+      PORT: "5002"
       CHOKIDAR_USEPOLLING: "true"
 
     ports:
-      - "5001:5001"
+      - "5002:5002"
 
     volumes:
       - .:/workspace
@@ -44,7 +44,7 @@ services:
   web:
     image: wp-dev:local
     container_name: wp-web-dev
-    restart: unless-stopped
+    #restart: unless-stopped
     init: true
     stdin_open: true
     tty: true
@@ -59,22 +59,22 @@ services:
       - --hostname
       - "0.0.0.0"
       - --port
-      - "3001"
+      - "3002"
 
     environment:
       NODE_ENV: development
-      PORT: "3001"
+      PORT: "3002"
       HOSTNAME: "0.0.0.0"
 
-      NEXT_PUBLIC_BACKEND_LAN_URL: http://192.168.1.137:5001
-      NEXT_PUBLIC_API_URL: http://192.168.1.137:5001/api
-      NEXT_PUBLIC_SOCKET_URL: http://192.168.1.137:5001
+      NEXT_PUBLIC_BACKEND_LAN_URL: http://localhost:5002
+      NEXT_PUBLIC_API_URL: http://localhost:5002/api
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:5002
 
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
 
     ports:
-      - "3001:3001"
+      - "3002:3002"
 
     volumes:
       - .:/workspace

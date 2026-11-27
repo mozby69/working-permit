@@ -156,6 +156,7 @@ export const workingPermitResponseSchema = z.object({
   canApproveFinalApprover: z.boolean(),
   canReceiveTroubleshooter: z.boolean(),
   canCompleteTroubleshooter: z.boolean(),
+  createdAt: z.string().nullable(),
   //remarkEntries: z.array(workingPermitRemarkSchema),
   canAddRemarks: z.boolean(),
   fromDepartment: z.object({
