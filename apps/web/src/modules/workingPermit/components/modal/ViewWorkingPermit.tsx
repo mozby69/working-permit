@@ -468,7 +468,7 @@ const approverOrder =
                 </h4>
               </div>
 
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-red-900">
+              <p className="mt-2 whitespace-pre-wrap wrap-break text-sm leading-relaxed text-red-900">
                 {step.rejectRemarks?.trim() ||
                   "No rejection remarks provided."}
               </p>
@@ -570,7 +570,7 @@ const approverOrder =
             </div>
 
             <div className="rounded-lg border border-slate-100 bg-white px-4 py-3">
-              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+              <p className="whitespace-pre-wrap wrap-break text-sm leading-6 text-slate-700">
                 {remark.description}
               </p>
             </div>

@@ -22,7 +22,7 @@ export function DetailField({
         {label}
       </div>
 
-      <p className="break-words text-sm font-semibold text-slate-800">
+      <p className="wrap-break text-sm font-semibold text-slate-800">
         {value === null || value === undefined || value === ""
           ? "Not specified"
           : value}

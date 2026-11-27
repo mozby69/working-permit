@@ -10,7 +10,7 @@ import {
 import { pushNotificationService } from "../services/pushNotifcationService";
 import { isPushNotificationSupported,getExistingPushSubscription,createBrowserPushSubscription,serializePushSubscription, getPushBrowserState } from "../utils/pushNotificationUtils";
 import { PushBrowserState } from "@repo/shared";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
 
 export const pushNotificationKeys = {
