@@ -15,6 +15,8 @@ import {
 
 import { useNotificationSound } from
   "@/modules/notification/hooks/useNotificationSound";
+import PushNotificationSettings from "@/modules/push-notification/components/pushNotificationSettings";
+import { useAuth } from "@/modules/authentication/hooks/useAuth";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,6 +28,8 @@ export default function SettingsModal({
   onClose,
 }: SettingsModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+      const { user } = useAuth();
 
   const {
     enabled,
@@ -251,6 +255,13 @@ export default function SettingsModal({
               Test Sound
             </button>
           </div>
+
+          {user && (
+            <PushNotificationSettings
+              key={user.id}
+              userId={user.id}
+            />
+          )}
 
           {/* INFORMATION */}
           <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4">

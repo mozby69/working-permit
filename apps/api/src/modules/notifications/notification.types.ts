@@ -29,3 +29,15 @@ export interface PermitNotificationContext {
     approverId: number;
   }[];
 }
+
+
+export type CreatedNotification = {
+  id: string;
+  userId: number;
+  title: string;
+  message: string;
+  type: string;
+  workingPermitId: string | null;
+  isRead: boolean;
+  createdAt: Date;
+};

@@ -1,6 +1,7 @@
 import { Prisma } from "../../../generated/prisma/client";
+import { pushNotificationService } from "../push-notification/push-notification.service";
 import * as notificationRepo from "./notification.repository";
-import type { NotificationQuery, PermitNotificationContext, PermitNotificationStage } from "./notification.types";
+import type { CreatedNotification, NotificationQuery, PermitNotificationContext, PermitNotificationStage } from "./notification.types";
 
 // ==========================================
 // GET NOTIFICATIONS
@@ -111,4 +112,73 @@ export async function notifyCoordinatorStatusTx(
     type: `WP_${status}`,
     workingPermitId: permit.id,
   });
+}
+
+
+
+
+
+// ==========================================
+// SEND WEB PUSH NOTIFICATION
+// CALL ONLY AFTER TRANSACTION COMMIT
+// ==========================================
+
+export async function sendNotificationPush(
+  notification: CreatedNotification
+): Promise<void> {
+  try {
+    const config =
+      pushNotificationService.getPublicKey();
+
+    if (!config.enabled) {
+      return;
+    }
+
+    const result =
+      await pushNotificationService.sendToUser(
+        notification.userId,
+        {
+          title: notification.title,
+
+          body: notification.message,
+
+          icon: "/jgc-logo-indigo.svg",
+
+          tag: `notification-${notification.id}`,
+
+          data: {
+            notificationId: notification.id,
+
+            permitId:
+              notification.workingPermitId ??
+              undefined,
+
+            type: notification.type,
+
+            url: "/workingPermit",
+          },
+        }
+      );
+
+    if (result.total > 0) {
+      console.info("[WEB PUSH] Notification processed", {
+        notificationId: notification.id,
+        userId: notification.userId,
+        total: result.total,
+        sent: result.sent,
+        failed: result.failed,
+        expired: result.expired,
+      });
+    }
+  } catch (error: unknown) {
+    console.error("[WEB PUSH] Notification failed", {
+      notificationId: notification.id,
+      userId: notification.userId,
+
+      error:
+        error instanceof Error
+          ? error.name
+          : "Unknown error",
+    });
+  }
 }
